@@ -33,6 +33,9 @@ addresses = [
     # Add more pairs as needed
 ]
 
+# TODO: Add different threshold UR's for each asset
+THREHSOLD_UR = 0.95
+
 # Build contract function
 def build_contract(address):
     contract = w3.eth.contract(address=address, abi=abi_atoken) # Polygon USDC Pool
@@ -49,13 +52,15 @@ def send_telegram_message(message):
 
 def print_stuff(token_name, ur):
     # maybe only print if UR is somewhere? like ur >= .95 ?
-    message = (
-    "🚨 **BEEP BOP** 🚨\n"
-    f"💎 Market asset: {token_name}\n"
-    f"📊 Utilization rate: {ur:.2%}"
-    )
-    print(message)
-    send_telegram_message(message)
+
+    if (ur > THREHSOLD_UR):
+        message = (
+        "🚨 **BEEP BOP** 🚨\n"
+        f"💎 Market asset: {token_name}\n"
+        f"📊 Utilization rate: {ur:.2%}"
+        )
+        print(message)
+        send_telegram_message(message)
 
 
 # Main function
