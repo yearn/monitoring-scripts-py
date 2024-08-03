@@ -65,8 +65,9 @@ def query_swap(single_swap, fund_management):
 
 
 def main():
-    res = stmatic.functions.convertStMaticToMatic(10**18).call()
-    message = f"🔄 1 StMATIC is: {res[0]} MATIC in Lido"
+    res = int(stmatic.functions.convertStMaticToMatic(10**18).call()[0])
+    human_readable_res = res / 1e18
+    message = f"🔄 1 StMATIC is: {human_readable_res:.5f} MATIC in Lido"
     send_telegram_message(message)
 
     # 1 stMATIC, 1000 stMATIC, 100K stMATIC
@@ -78,8 +79,11 @@ def main():
         single_swap['amount'] = int(amount)
         result = query_swap(single_swap, fund_management)
         if result is not None:
-            message = f"📊 Swap result for amount {amount:.0f}: {result}"
+            human_readable_amount = amount / 1e18
+            human_readable_result = result / 1e18
+            message = f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
             send_telegram_message(message)
+
 
 
 if __name__ == "__main__":
