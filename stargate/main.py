@@ -7,7 +7,7 @@ import requests
 load_dotenv()
 
 provider_url_polygon = os.getenv("PROVIDER_URL")
-w3 = Web3(Web3.HTTPProvider(provider_url_polygon))
+provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
 
 with open("../common-abi/Strategy.json") as f:
     abi_data = json.load(f)
@@ -30,6 +30,14 @@ polygon_addresses = [
     "0x2c5d0c3DB75D2f8A4957c74BE09194a9271Cf28D", # stargate staker usdt strategy
     "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", # dai
     "0x06eD7C67755344548FAFe1822bEE365C4208a57F" # stargate staker dai strategy
+    # Add more pairs as needed
+]
+
+arbitrum_addresses = [
+    "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",  # usdc.e
+    "0x2AE37f40235F3721DC78176dDBd100A12A8ce19C", # stargate staker usdc.e strategy
+    "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", # usdt
+    "0x5108DB0852C0CAA2Df797DcF31f8A73bFb335452" # stargate staker usdt strategy
     # Add more pairs as needed
 ]
 
@@ -93,6 +101,9 @@ def process_assets(chain_name, addresses, provider_url):
 def main():
     print("Processing Polygon assets...")
     process_assets("Polygon", polygon_addresses, provider_url_polygon)
+
+    print("Processing Arbitrum assets...")
+    process_assets("Arbitrum", arbitrum_addresses, provider_url_arb)
 
 
 if __name__ == "__main__":
