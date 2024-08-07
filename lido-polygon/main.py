@@ -63,12 +63,21 @@ def query_swap(single_swap, fund_management):
         print(f"Error calling querySwap: {e}")
         return None
 
+p = 0.05 # 5% 
+
+def check_peg(validator_rate, balancer_rate):
+    if balancer_rate == 0:
+        return False
+    # Calculate the percentage difference
+    difference = abs(validator_rate - balancer_rate)
+    percentage_diff = difference / validator_rate
+    return percentage_diff >= p # 0.06 >= 0.05
+
 
 def main():
-    res = int(stmatic.functions.convertStMaticToMatic(10**18).call()[0])
-    human_readable_res = res / 1e18
-    message = f"🔄 1 StMATIC is: {human_readable_res:.5f} MATIC in Lido"
-    send_telegram_message(message)
+    validator_rate = int(stmatic.functions.convertStMaticToMatic(10**18).call()[0])
+    human_readable_res = validator_rate / 1e18
+    first_message = f"🔄 1 StMATIC is: {human_readable_res:.5f} MATIC in Lido"
 
     # 1 stMATIC, 1000 stMATIC, 100K stMATIC
     # spot price, med amount, big amount
@@ -77,11 +86,14 @@ def main():
     for amount in amounts:
         single_swap = single_swap_template.copy()
         single_swap['amount'] = int(amount)
-        result = query_swap(single_swap, fund_management)
-        if result is not None:
+        validator_rate = human_readable_res * amount
+        balancer_rate = query_swap(single_swap, fund_management)
+        if balancer_rate is not None and check_peg(validator_rate, balancer_rate):
             human_readable_amount = amount / 1e18
-            human_readable_result = result / 1e18
+            human_readable_result = balancer_rate / 1e18
             message = f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
+            # print(message)
+            send_telegram_message(first_message)
             send_telegram_message(message)
 
 
