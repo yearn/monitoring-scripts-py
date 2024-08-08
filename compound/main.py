@@ -73,7 +73,7 @@ def send_telegram_message(message):
     if response.status_code != 200:
         print(f"Failed to send message: {response.status_code} - {response.text}")
 
-THRESHOLD_UR = 0.1
+THRESHOLD_UR = 0.93
 def print_stuff(chain_name, token_name, ur):
     if ur > THRESHOLD_UR:
         message = (
