@@ -28,6 +28,16 @@ jobs:
           PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
           PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
           PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
+      - name: Run Compound script
+        run: |
+          cd compound && python main.py && cd ..
+        env:
+          TELEGRAM_BOT_TOKEN_COMP: ${{ secrets.TELEGRAM_BOT_TOKEN_COMP }}
+          TELEGRAM_CHAT_ID_COMP: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
+          PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+          PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
+          PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
+          PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
       - name: Run Lido Matic script
         run: cd lido/stmatic && python main.py && cd ../..
         env:
