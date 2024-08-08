@@ -20,7 +20,7 @@ with open("./abi/StMatic.json") as f:
 
 stmatic = w3.eth.contract(address="0x9ee91F9f426fA633d227f7a9b000E28b9dfd8599", abi=abi_stmatic) # 
 
-with open("../common-abi/BalancerQuery.json") as f:
+with open("../../common-abi/BalancerQuery.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_bq = abi_data["result"]
@@ -73,7 +73,6 @@ def check_peg(validator_rate, balancer_rate):
     percentage_diff = difference / validator_rate
     return percentage_diff >= p # 0.06 >= 0.05
 
-
 def main():
     validator_rate = int(stmatic.functions.convertStMaticToMatic(10**18).call()[0])
     human_readable_res = validator_rate / 1e18
@@ -92,11 +91,9 @@ def main():
             human_readable_amount = amount / 1e18
             human_readable_result = balancer_rate / 1e18
             message = f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
-            # print(message)
-            send_telegram_message(first_message)
-            send_telegram_message(message)
-
-
+            print(message)
+            # send_telegram_message(first_message)
+            # send_telegram_message(message)
 
 if __name__ == "__main__":
     main()

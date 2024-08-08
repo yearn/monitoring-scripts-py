@@ -35,6 +35,12 @@ jobs:
           TELEGRAM_CHAT_ID_STMATIC: ${{ secrets.TELEGRAM_CHAT_ID_STMATIC }}
           PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
           PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
+      - name: Run Lido Ethereum script
+        run: cd lido && cd steth && python main.py && cd .. && cd ..
+        env:
+          TELEGRAM_BOT_TOKEN_STMATIC: ${{ secrets.TELEGRAM_BOT_TOKEN_STMATIC }}
+          TELEGRAM_CHAT_ID_STMATIC: ${{ secrets.TELEGRAM_CHAT_ID_STMATIC }}
+          PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
       - name: Run Stargate script
         run: cd stargate && python main.py && cd ..
         env:
