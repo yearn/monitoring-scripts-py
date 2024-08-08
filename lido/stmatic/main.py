@@ -6,6 +6,7 @@ import requests
 
 load_dotenv()
 
+peg_threshold = 0.05 # 5%
 provider_url = os.getenv("PROVIDER_URL_MAINNET")
 provider_url_polygon = os.getenv("PROVIDER_URL")
 w3 = Web3(Web3.HTTPProvider(provider_url))
@@ -18,7 +19,7 @@ with open("./abi/StMatic.json") as f:
     elif isinstance(abi_data, list):
         abi_stmatic = abi_data
 
-stmatic = w3.eth.contract(address="0x9ee91F9f426fA633d227f7a9b000E28b9dfd8599", abi=abi_stmatic) # 
+stmatic = w3.eth.contract(address="0x9ee91F9f426fA633d227f7a9b000E28b9dfd8599", abi=abi_stmatic)
 
 with open("../../common-abi/BalancerQuery.json") as f:
     abi_data = json.load(f)
@@ -27,8 +28,7 @@ with open("../../common-abi/BalancerQuery.json") as f:
     elif isinstance(abi_data, list):
         abi_bq = abi_data
 
-balancer_query = w3_polygon.eth.contract(address="0xE39B5e3B6D74016b2F6A9673D7d7493B6DF549d5", abi=abi_bq) #
-
+balancer_query = w3_polygon.eth.contract(address="0xE39B5e3B6D74016b2F6A9673D7d7493B6DF549d5", abi=abi_bq)
 
 single_swap_template = {
     "poolId": "0xf0ad209e2e969eaaa8c882aac71f02d8a047d5c2000200000000000000000b49", # gyroscope concentraded pool
@@ -40,15 +40,15 @@ single_swap_template = {
 }
 
 fund_management = {
-    "sender": "0xBA12222222228d8Ba445958a75a0704d566BF2C8", 
+    "sender": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     "fromInternalBalance": False,
-    "recipient": "0xBA12222222228d8Ba445958a75a0704d566BF2C8", 
+    "recipient": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
     "toInternalBalance": False
 }
 
 def send_telegram_message(message):
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_STMATIC")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID_STMATIC")
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_LIDO")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID_LIDO")
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     params = {"chat_id": chat_id, "text": message}
     response = requests.get(url, params=params)
@@ -63,15 +63,13 @@ def query_swap(single_swap, fund_management):
         print(f"Error calling querySwap: {e}")
         return None
 
-p = 0.05 # 5% 
-
 def check_peg(validator_rate, balancer_rate):
     if balancer_rate == 0:
         return False
     # Calculate the percentage difference
     difference = abs(validator_rate - balancer_rate)
     percentage_diff = difference / validator_rate
-    return percentage_diff >= p # 0.06 >= 0.05
+    return percentage_diff >= peg_threshold # 0.06 >= 0.05
 
 def main():
     validator_rate = int(stmatic.functions.convertStMaticToMatic(10**18).call()[0])
