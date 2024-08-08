@@ -15,7 +15,7 @@ if response.status_code == 200:
     borrows = int(data["borrows"])
 
     # ratio of bad debt to total value locked
-    ratio_of_bad_debt = round(total_bad_debt / tvl * 100, 2)
+    ratio_of_bad_debt = round(total_bad_debt / tvl * 100, 4)
     date = datetime.datetime.fromtimestamp(updated)
     debt = locale.currency(total_bad_debt / 10**decimals, grouping=True)
     tvl = locale.currency(tvl / 10**decimals, grouping=True)
