@@ -28,18 +28,18 @@ jobs:
           PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
           PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
           PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
-      - name: Run Lido Polygon script
-        run: cd lido-polygon && python main.py && cd ..
+      - name: Run Lido Matic script
+        run: cd lido/stmatic && python main.py && cd ../..
         env:
-          TELEGRAM_BOT_TOKEN_STMATIC: ${{ secrets.TELEGRAM_BOT_TOKEN_STMATIC }}
-          TELEGRAM_CHAT_ID_STMATIC: ${{ secrets.TELEGRAM_CHAT_ID_STMATIC }}
+          TELEGRAM_BOT_TOKEN_LIDO: ${{ secrets.TELEGRAM_BOT_TOKEN_LIDO }}
+          TELEGRAM_CHAT_ID_LIDO: ${{ secrets.TELEGRAM_CHAT_ID_LIDO }}
           PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
           PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
       - name: Run Lido Ethereum script
-        run: cd lido && cd steth && python main.py && cd .. && cd ..
+        run: cd lido/steth && python main.py && cd ../..
         env:
-          TELEGRAM_BOT_TOKEN_STMATIC: ${{ secrets.TELEGRAM_BOT_TOKEN_STMATIC }}
-          TELEGRAM_CHAT_ID_STMATIC: ${{ secrets.TELEGRAM_CHAT_ID_STMATIC }}
+          TELEGRAM_BOT_TOKEN_LIDO: ${{ secrets.TELEGRAM_BOT_TOKEN_LIDO }}
+          TELEGRAM_CHAT_ID_LIDO: ${{ secrets.TELEGRAM_CHAT_ID_LIDO }}
           PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
       - name: Run Stargate script
         run: cd stargate && python main.py && cd ..

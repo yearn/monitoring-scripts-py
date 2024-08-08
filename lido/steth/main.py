@@ -6,6 +6,7 @@ import requests
 
 load_dotenv()
 
+peg_threshold = 0.05 # 5% used
 provider_url = os.getenv("PROVIDER_URL_MAINNET")
 w3 = Web3(Web3.HTTPProvider(provider_url))
 
@@ -24,12 +25,12 @@ with open("./abi/Steth.json") as f:
         abi_steth = abi_data
 
 
-steth = w3.eth.contract(address="0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", abi=abi_steth) # 
-curve_pool = w3.eth.contract(address="0xDC24316b9AE028F1497c275EB9192a3Ea0f67022", abi=abi_curve_pool) # 
+steth = w3.eth.contract(address="0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", abi=abi_steth)
+curve_pool = w3.eth.contract(address="0xDC24316b9AE028F1497c275EB9192a3Ea0f67022", abi=abi_curve_pool)
 
 def send_telegram_message(message):
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_STMATIC")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID_STMATIC")
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_LIDO")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID_LIDO")
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     params = {"chat_id": chat_id, "text": message}
     response = requests.get(url, params=params)
@@ -41,18 +42,17 @@ def check_steth_validator_rate():
     ts = steth.functions.totalSupply().call()
     ta = steth.functions.getTotalPooledEther().call()
     return ta / ts
-    
+
 def check_steth_crv_pool_rate(amount_in):
     return curve_pool.functions.get_dy(1, 0, int(amount_in)).call()
 
-p = 0.05
 def check_peg(validator_rate, curve_rate):
     if curve_rate == 0:
         return False
     # Calculate the percentage difference
     difference = abs(validator_rate - curve_rate)
     percentage_diff = difference / validator_rate
-    return percentage_diff >= p # 0.06 >= 0.05
+    return percentage_diff >= peg_threshold # 0.06 >= 0.05
 
 def main():
     validator_rate_unscaled = check_steth_validator_rate() #  for 1 stETH in not 18 decimals
@@ -61,7 +61,7 @@ def main():
     amounts = [1e18, 100e18, 1000e18]
 
     for amount in amounts:
-        curve_rate = check_steth_crv_pool_rate(amount) # in 18 decimals 
+        curve_rate = check_steth_crv_pool_rate(amount) # in 18 decimals
         validator_rate_scaled = validator_rate_unscaled * amount
         if curve_rate is not None and check_peg(validator_rate_scaled, curve_rate):
             human_readable_amount = amount / 1e18
