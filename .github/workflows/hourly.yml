@@ -29,6 +29,13 @@ jobs:
           PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
           PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
           PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
+      - name: Run Spark script
+        run: |
+          cd spark && python main.py && cd ..
+        env:
+          TELEGRAM_BOT_TOKEN_SPARK: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
+          TELEGRAM_CHAT_ID_SPARK: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
+          PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
       - name: Run Compound script
         run: |
           cd compound && python main.py && cd ..
