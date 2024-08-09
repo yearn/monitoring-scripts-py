@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  DEBT_THRESHOLD_RATIO: "0.01"
+  DEBT_THRESHOLD_RATIO: "0.1"
   BAD_DEBT_TELEGRAM_TOKEN: ${{ secrets.BAD_DEBT_TELEGRAM_TOKEN }}
   BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_MAKER }}
 
