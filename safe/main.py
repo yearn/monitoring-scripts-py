@@ -1,6 +1,8 @@
 import requests
 from brownie import Contract
 from dotenv import load_dotenv
+import subprocess
+import os
 
 load_dotenv()
 
@@ -63,10 +65,42 @@ def check_for_pending_transactions(safe_address):
     else:
         print("No pending transactions found with higher nonce than the last executed transaction.")
 
-def main():
-    safe_address = "0xfE30CaD51Ad8990c3852Ff4798b4A27827E02e5b"  # Replace with your Safe address
+def run_script(safe_address):
     check_for_pending_transactions(safe_address)
 
-# Run the main function
+def run_for_network(network_name, safe_address):
+    print(f"Running for network: {network_name}")
+
+    # os.chdir("..")
+    
+    # Correct the path to your script
+    script_path = os.path.abspath("./main.py")  # Adjusted to correct path
+    
+    # Run the Brownie command with the correct path
+    command = ["brownie", "run", script_path, "--network", network_name]
+    result = subprocess.run(command, capture_output=True, text=True)
+    
+    # Print output from the command
+    print(result.stdout)
+    if result.stderr:
+        print(f"Error on {network_name}:\n{result.stderr}")
+    
+    # Run the main script logic after Brownie command
+    run_script(safe_address)
+
+
+def main():
+    # os.chdir("..")
+
+    networks = {
+        "mainnet": "0x65bb797c2B9830d891D87288F029ed8dACc19705",
+        "polygon-main": "0x47290DE56E71DC6f46C26e50776fe86cc8b21656",
+        "optimism-main": "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43",
+        "arbitrum-main": "0x9CD50907aeb5D16F29Bddf7e1aBb10018Ee8717d"
+    }
+
+    for network, safe_address in networks.items():
+        run_for_network(network, safe_address)
+
 if __name__ == "__main__":
     main()
