@@ -48,7 +48,7 @@ def check_for_pending_transactions(safe_address):
 
     if pending_transactions:
         print(f"Pending transactions with nonce higher than {get_last_executed_nonce(safe_address)}:")
-        network.connect('opti-main')
+        network.connect('optimism-main')
         for tx in pending_transactions:
             target_contract = tx['to']
             calldata = tx['data']
