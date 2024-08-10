@@ -1,5 +1,5 @@
 import requests
-from brownie import Contract
+from brownie import Contract, network
 from dotenv import load_dotenv
 import subprocess
 import os
@@ -9,7 +9,7 @@ load_dotenv()
 # for mainnet: brownie run safe/main.py --network mainnet
 
 def get_safe_transactions(safe_address, executed=None, limit=10):
-    base_url = "https://safe-transaction-mainnet.safe.global/api/v1"
+    base_url = "https://safe-transaction-optimism.safe.global/api/v1"
     endpoint = f"{base_url}/safes/{safe_address}/multisig-transactions/"
 
     params = {
@@ -48,6 +48,7 @@ def check_for_pending_transactions(safe_address):
 
     if pending_transactions:
         print(f"Pending transactions with nonce higher than {get_last_executed_nonce(safe_address)}:")
+        network.connect('opti-main')
         for tx in pending_transactions:
             target_contract = tx['to']
             calldata = tx['data']
@@ -72,19 +73,19 @@ def run_for_network(network_name, safe_address):
     print(f"Running for network: {network_name}")
 
     # os.chdir("..")
-    
+
     # Correct the path to your script
-    script_path = os.path.abspath("./main.py")  # Adjusted to correct path
-    
-    # Run the Brownie command with the correct path
-    command = ["brownie", "run", script_path, "--network", network_name]
-    result = subprocess.run(command, capture_output=True, text=True)
-    
-    # Print output from the command
-    print(result.stdout)
-    if result.stderr:
-        print(f"Error on {network_name}:\n{result.stderr}")
-    
+    # script_path = os.path.abspath("./main.py")  # Adjusted to correct path
+
+    # # Run the Brownie command with the correct path
+    # command = ["brownie", "run", script_path, "--network", network_name]
+    # result = subprocess.run(command, capture_output=True, text=True)
+
+    # # Print output from the command
+    # print(result.stdout)
+    # if result.stderr:
+    #     print(f"Error on {network_name}:\n{result.stderr}")
+
     # Run the main script logic after Brownie command
     run_script(safe_address)
 
@@ -93,10 +94,11 @@ def main():
     # os.chdir("..")
 
     networks = {
-        "mainnet": "0x65bb797c2B9830d891D87288F029ed8dACc19705",
-        "polygon-main": "0x47290DE56E71DC6f46C26e50776fe86cc8b21656",
-        "optimism-main": "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43",
-        "arbitrum-main": "0x9CD50907aeb5D16F29Bddf7e1aBb10018Ee8717d"
+        # "mainnet": "0x65bb797c2B9830d891D87288F029ed8dACc19705",
+        # "polygon-main": "0x47290DE56E71DC6f46C26e50776fe86cc8b21656",
+        # "optimism-main": "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43",
+        # "arbitrum-main": "0x9CD50907aeb5D16F29Bddf7e1aBb10018Ee8717d",
+        "optim-yearn": "0xea3a15df68fCdBE44Fdb0DB675B2b3A14a148b26"
     }
 
     for network, safe_address in networks.items():
