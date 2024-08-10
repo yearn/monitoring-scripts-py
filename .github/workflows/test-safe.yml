@@ -1,0 +1,34 @@
+name: Monitoring Scripts
+
+on:
+  push:
+    branches:
+      - safe-y
+
+jobs:
+  my_job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip" # caching pip dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Print Brownie
+        run: |
+          brownie networks list True
+      - name: Run Safe script
+        run: |
+          cd safe && python main.py
+        env:
+          TELEGRAM_BOT_TOKEN_AAVE: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
+          TELEGRAM_CHAT_ID_AAVE: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
+          PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+          PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
+          PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
+          PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
