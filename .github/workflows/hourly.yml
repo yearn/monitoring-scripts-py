@@ -32,6 +32,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Modify Brownie host
+        run: |
+          brownie networks modify mainnet host=$PROVIDER_URL_MAINNET
+          brownie networks modify arbitrum-main host=$PROVIDER_URL_ARBITRUM
+          brownie networks modify optimism-main host=$PROVIDER_URL_OPTIMISM
+          brownie networks modify polygon-main host=$PROVIDER_URL
       - name: Run Aave script
         run: cd aave && python main.py && cd ..
       - name: Run Spark script
