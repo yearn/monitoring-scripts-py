@@ -52,7 +52,7 @@ jobs:
       - name: Run Comp V3 USDCe Polygon
         run: python bad-debt/bad-debt-trigger.py
         env:
-          PROTOCOL: "Comp V3 USDC Polygon"
+          PROTOCOL: "Comp V3 USDCe Polygon"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/polygon_compound%20v3_USDCe.json"
       - name: Run Comp V3 WETH Base
         run: python bad-debt/bad-debt-trigger.py
