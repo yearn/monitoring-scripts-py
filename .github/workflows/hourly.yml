@@ -3,7 +3,20 @@ name: Monitoring Scripts
 on:
   schedule:
     - cron: "0 * * * *"
-  workflow_dispatch:
+
+env:
+  PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+  PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
+  PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
+  PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
+  TELEGRAM_BOT_TOKEN_AAVE: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
+  TELEGRAM_CHAT_ID_AAVE: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
+  TELEGRAM_BOT_TOKEN_COMP: ${{ secrets.TELEGRAM_BOT_TOKEN_COMP }}
+  TELEGRAM_CHAT_ID_COMP: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
+  TELEGRAM_BOT_TOKEN_LIDO: ${{ secrets.TELEGRAM_BOT_TOKEN_LIDO }}
+  TELEGRAM_CHAT_ID_LIDO: ${{ secrets.TELEGRAM_CHAT_ID_LIDO }}
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
 jobs:
   my_job:
@@ -20,49 +33,16 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run Aave script
-        run: |
-          cd aave && python main.py && cd ..
-        env:
-          TELEGRAM_BOT_TOKEN_AAVE: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
-          TELEGRAM_CHAT_ID_AAVE: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
-          PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
-          PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
-          PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
-          PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
+        run: cd aave && python main.py && cd ..
       - name: Run Spark script
-        run: |
-          cd spark && python main.py && cd ..
-        env:
-          TELEGRAM_BOT_TOKEN_SPARK: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
-          TELEGRAM_CHAT_ID_SPARK: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
-          PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
+        run: cd spark && python main.py && cd ..
       - name: Run Compound script
-        run: |
-          cd compound && python main.py && cd ..
-        env:
-          TELEGRAM_BOT_TOKEN_COMP: ${{ secrets.TELEGRAM_BOT_TOKEN_COMP }}
-          TELEGRAM_CHAT_ID_COMP: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
-          PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
-          PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
-          PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
-          PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
+        run: cd compound && python main.py && cd ..
       - name: Run Lido Matic script
         run: cd lido/stmatic && python main.py && cd ../..
-        env:
-          TELEGRAM_BOT_TOKEN_LIDO: ${{ secrets.TELEGRAM_BOT_TOKEN_LIDO }}
-          TELEGRAM_CHAT_ID_LIDO: ${{ secrets.TELEGRAM_CHAT_ID_LIDO }}
-          PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
-          PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
       - name: Run Lido Ethereum script
         run: cd lido/steth && python main.py && cd ../..
-        env:
-          TELEGRAM_BOT_TOKEN_LIDO: ${{ secrets.TELEGRAM_BOT_TOKEN_LIDO }}
-          TELEGRAM_CHAT_ID_LIDO: ${{ secrets.TELEGRAM_CHAT_ID_LIDO }}
-          PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
       - name: Run Stargate script
-        run: cd stargate && python main.py && cd ..
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
-          PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
+        run: cd stargate && python main.py && cd ../..
+      - name: Run Safe script
+        run: cd safe && python main.py && cd ..
