@@ -1,15 +1,19 @@
 import requests
 from brownie import Contract, network
 from dotenv import load_dotenv
-import subprocess
-import os
 
 load_dotenv()
 
-# for mainnet: brownie run safe/main.py --network mainnet
+safe_apis = {
+    "mainnet": "https://safe-transaction-mainnet.safe.global",
+    "arbitrum-main": "https://safe-transaction-arbitrum.safe.global",
+    "optimism-main": "https://safe-transaction-optimism.safe.global",
+    "polygon-main": "https://safe-transaction-polygon.safe.global",
+    "optim-yearn": "https://safe-transaction-optimism.safe.global",
+}
 
-def get_safe_transactions(safe_address, executed=None, limit=10):
-    base_url = "https://safe-transaction-optimism.safe.global/api/v1"
+def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
+    base_url = safe_apis[network_name] + "/api/v1"
     endpoint = f"{base_url}/safes/{safe_address}/multisig-transactions/"
 
     params = {
@@ -28,27 +32,26 @@ def get_safe_transactions(safe_address, executed=None, limit=10):
         print(f"Error: {response.status_code}")
         return None
 
-def get_last_executed_nonce(safe_address):
-    executed_txs = get_safe_transactions(safe_address, executed=True, limit=1)
+def get_last_executed_nonce(safe_address, network_name):
+    executed_txs = get_safe_transactions(safe_address, network_name, executed=True, limit=1)
     if executed_txs:
         return executed_txs[0]['nonce']
     return -1  # Return -1 if no executed transactions found
 
-def get_pending_transactions_after_last_executed(safe_address):
-    last_executed_nonce = get_last_executed_nonce(safe_address)
-    pending_txs = get_safe_transactions(safe_address, executed=False)
+def get_pending_transactions_after_last_executed(safe_address, network_name):
+    last_executed_nonce = get_last_executed_nonce(safe_address, network_name)
+    pending_txs = get_safe_transactions(safe_address, network_name, executed=False)
 
     if pending_txs:
         return [tx for tx in pending_txs if tx['nonce'] > last_executed_nonce]
     return []
 
 
-def check_for_pending_transactions(safe_address):
-    pending_transactions = get_pending_transactions_after_last_executed(safe_address)
+def check_for_pending_transactions(safe_address, network_name):
+    pending_transactions = get_pending_transactions_after_last_executed(safe_address, network_name)
 
     if pending_transactions:
-        print(f"Pending transactions with nonce higher than {get_last_executed_nonce(safe_address)}:")
-        network.connect('optimism-main')
+        network.connect(network_name)
         for tx in pending_transactions:
             target_contract = tx['to']
             calldata = tx['data']
@@ -63,46 +66,26 @@ def check_for_pending_transactions(safe_address):
             print(f"Value: {tx['value']}")
             print(f"Submission Date: {tx['submissionDate']}")
             print("---")
+            # TODO: send telegram message to specific chat_id?
     else:
         print("No pending transactions found with higher nonce than the last executed transaction.")
 
-def run_script(safe_address):
-    check_for_pending_transactions(safe_address)
-
 def run_for_network(network_name, safe_address):
     print(f"Running for network: {network_name}")
-
-    # os.chdir("..")
-
-    # Correct the path to your script
-    # script_path = os.path.abspath("./main.py")  # Adjusted to correct path
-
-    # # Run the Brownie command with the correct path
-    # command = ["brownie", "run", script_path, "--network", network_name]
-    # result = subprocess.run(command, capture_output=True, text=True)
-
-    # # Print output from the command
-    # print(result.stdout)
-    # if result.stderr:
-    #     print(f"Error on {network_name}:\n{result.stderr}")
-
-    # Run the main script logic after Brownie command
-    run_script(safe_address)
-
+    check_for_pending_transactions(safe_address, network_name)
 
 def main():
-    # os.chdir("..")
-
-    networks = {
-        # "mainnet": "0x65bb797c2B9830d891D87288F029ed8dACc19705",
-        # "polygon-main": "0x47290DE56E71DC6f46C26e50776fe86cc8b21656",
-        # "optimism-main": "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43",
-        # "arbitrum-main": "0x9CD50907aeb5D16F29Bddf7e1aBb10018Ee8717d",
-        "optim-yearn": "0xea3a15df68fCdBE44Fdb0DB675B2b3A14a148b26"
+    stargate_safe_addresses = {
+        "mainnet": "0x65bb797c2B9830d891D87288F029ed8dACc19705",
+        "polygon-main": "0x47290DE56E71DC6f46C26e50776fe86cc8b21656",
+        "optimism-main": "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43",
+        "arbitrum-main": "0x9CD50907aeb5D16F29Bddf7e1aBb10018Ee8717d",
     }
 
-    for network, safe_address in networks.items():
-        run_for_network(network, safe_address)
+    for network_name, safe_address in stargate_safe_addresses.items():
+        run_for_network(network_name, safe_address)
+
+    # TODO: add other safe addresses for other protocols
 
 if __name__ == "__main__":
     main()
