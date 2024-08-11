@@ -19,6 +19,7 @@ env:
   TELEGRAM_CHAT_ID_SILO: ${{ secrets.TELEGRAM_CHAT_ID_SILO }}
   TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
   TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+  GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
 
 jobs:
   my_job:
@@ -54,3 +55,5 @@ jobs:
         run: cd stargate && python main.py && cd ../..
       - name: Run Safe script
         run: cd safe && python main.py && cd ..
+      - name: Run Silo Bad Debt script
+        run: cd silo && python main.py && cd ..
