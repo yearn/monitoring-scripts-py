@@ -78,7 +78,7 @@ def main():
 
     # 1 stMATIC, 1000 stMATIC, 100K stMATIC
     # spot price, med amount, big amount
-    amounts = [1e18]
+    amounts = [0.0001 * 1e18]
 
     for amount in amounts:
         single_swap = single_swap_template.copy()
