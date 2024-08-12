@@ -1,80 +1,90 @@
-import requests
-import os
+import requests, json, os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# GraphQL query for all Silo's
-query = """
-{
-  siloPositions {
-    totalBorrowValue
-    totalCollateralValue
-    totalLiquidationThresholdValue
-    riskFactor
-    silo {
-        id
-    }
-  }
-}
-"""
-
-arbitrum_subgraph_id = "2ufoztRpybsgogPVW6j9NTn1JmBWFYPKbP7pAabizADU"
-mainnet_subgraph_id = "GTEyHhRmhRRJkQfrDWsapcZ8sBKAka4GFej6gn3BpJNq"
-
-def run_query(query, subgraph_id):
+def run_query(query, variables, subgraph_id):
     api_key = os.getenv("GRAPH_API_KEY")
     url = f"https://gateway.thegraph.com/api/{api_key}/subgraphs/id/{subgraph_id}"
     headers = {"Content-Type": "application/json"}
-    response = requests.post(url, json={'query': query}, headers=headers)
+    request_body = {
+        'query': query,
+        'variables': variables
+    }
+    response = requests.post(url, json=request_body, headers=headers)
     if response.status_code == 200:
         return response.json()
     else:
         raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
 
+def fetch_high_risk_silo_positions(subgraph_id):
+    query = """
+    query GetHighRiskSiloPositions($first: Int!, $skip: Int!) {
+      siloPositions(
+        first: $first,
+        skip: $skip,
+        where: { riskFactor_gt: "1" }
+      ) {
+        id
+        totalBorrowValue
+        totalCollateralValue
+        totalLiquidationThresholdValue
+        riskFactor
+        silo {
+          id
+        }
+      }
+    }
+    """
+
+    first = 100  # Number of items to fetch per request
+    high_risk_positions = []
+    skip = 0
+    iteration = 1
+
+    while True:
+        variables = {
+            "first": first,
+            "skip": skip
+        }
+        response = run_query(query, variables, subgraph_id)
+        new_positions = response['data']['siloPositions']
+
+        if not new_positions:
+            break
+
+        high_risk_positions.extend(new_positions)
+        skip += len(new_positions)
+        iteration += 1
+
+    return high_risk_positions
+
 # Function to calculate total bad debt
 def calculate_bad_debt(positions):
-    total_deposits = 0
-    total_borrows = 0
     total_bad_debt = 0
-    i = 0 # just wondering how many iterations
     for position in positions:
-        total_deposits += float(position["totalCollateralValue"])
-        total_borrows += float(position["totalBorrowValue"])
-        risk_factor = float(position["riskFactor"])
+        total_borrow_value = float(position["totalBorrowValue"])
+        total_liquidation_threshold_value = float(position["totalLiquidationThresholdValue"])
+        # that's probably not that bad debt... it's just late debt could be bad debt too
+        bad_debt = total_borrow_value - total_liquidation_threshold_value
+        total_bad_debt += bad_debt
 
-        if risk_factor > 1:
-            total_borrow_value = float(position["totalBorrowValue"])
-            total_liquidation_threshold_value = float(position["totalLiquidationThresholdValue"])
-            # thats probably not that bad debt... it's just late debt could be bad debt too
-            bad_debt = total_borrow_value - total_liquidation_threshold_value
-            total_bad_debt += bad_debt
-
-    tvl = total_deposits - total_borrows
     print(f"Total bad debt: {total_bad_debt}")
-    print(f"Total TVL: {tvl}")
-    return total_bad_debt, tvl
+    return total_bad_debt
 
 def process_silo(subgraph_id, network_name):
-    result = run_query(query, subgraph_id)
-
-    # Get the position
-    positions = result.get('data', {}).get('siloPositions', [])
+    positions = fetch_high_risk_silo_positions(subgraph_id)
     print(f"Processing {len(positions)} positions")
 
     # Calculate total bad debt
-    total_bad_debts, tvl = calculate_bad_debt(positions)
-    debt_ratio = round(total_bad_debts / tvl * 100, 4)
-    # Update this to your desired threshold
-    threshold_ratio = 0.1 # 0.1% threshold
+    total_bad_debts = calculate_bad_debt(positions)
 
-    if debt_ratio > threshold_ratio:
+    # define the threshold for bad debt
+    if total_bad_debts > 0:
         # Base beep bop message
         message = "🚨 **Bad Debt Report** 🚨\n\n"
-        message += f"🅿️ Protocol: Silo on {network_name}\n"
-        message += f"📊 Bad Debt Ratio: {debt_ratio}%\n"
+        message += f"⛓️ Silo on {network_name}\n"
         message += f"📈 Total Bad Debt: {total_bad_debts}\n"
-        message += f"💰 TVL: {tvl}\n"
         message += "----------------------\n"
         print(message)
         send_telegram_message(message)
@@ -92,6 +102,9 @@ def send_telegram_message(message):
         print(f"Failed to send message: {response.status_code} - {response.text}")
 
 def main():
+    arbitrum_subgraph_id = "2ufoztRpybsgogPVW6j9NTn1JmBWFYPKbP7pAabizADU"
+    mainnet_subgraph_id = "GTEyHhRmhRRJkQfrDWsapcZ8sBKAka4GFej6gn3BpJNq"
+
     print("Running for Mainnet...")
     process_silo(mainnet_subgraph_id, "Mainnet")
 
