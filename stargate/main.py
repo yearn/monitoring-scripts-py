@@ -44,8 +44,8 @@ arbitrum_addresses = [
 buffer = 0.1
 
 def send_telegram_message(message):
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_STARGATE")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID_STARGATE")
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     params = {"chat_id": chat_id, "text": message}
     response = requests.get(url, params=params)
