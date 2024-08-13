@@ -23,7 +23,7 @@ def fetch_high_risk_silo_positions(subgraph_id):
       siloPositions(
         first: $first,
         skip: $skip,
-        where: { riskFactor_gt: "1" }
+        where: { riskFactor_gt: "1", isActive: true }
       ) {
         id
         totalBorrowValue
@@ -32,6 +32,7 @@ def fetch_high_risk_silo_positions(subgraph_id):
         riskFactor
         silo {
           id
+          name
         }
       }
     }
@@ -40,37 +41,51 @@ def fetch_high_risk_silo_positions(subgraph_id):
     first = 100  # Number of items to fetch per request
     high_risk_positions = []
     skip = 0
-    iteration = 1
 
     while True:
         variables = {
             "first": first,
             "skip": skip
         }
-        response = run_query(query, variables, subgraph_id)
-        new_positions = response['data']['siloPositions']
+        try:
+            response = run_query(query, variables, subgraph_id)
+            if 'errors' in response:
+                print(f"GraphQL errors: {json.dumps(response['errors'], indent=2)}")
+                break
+            if 'data' not in response:
+                print(f"Unexpected response structure. 'data' key not found.")
+                break
 
-        if not new_positions:
+            new_positions = response['data']['siloPositions']
+            if not new_positions:
+                break
+
+            high_risk_positions.extend(new_positions)
+            skip += len(new_positions)
+
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
             break
-
-        high_risk_positions.extend(new_positions)
-        skip += len(new_positions)
-        iteration += 1
 
     return high_risk_positions
 
 # Function to calculate total bad debt
 def calculate_bad_debt(positions):
-    total_bad_debt = 0
+    total_bad_debts = {}
     for position in positions:
-        total_borrow_value = float(position["totalBorrowValue"])
-        total_liquidation_threshold_value = float(position["totalLiquidationThresholdValue"])
-        # that's probably not that bad debt... it's just late debt could be bad debt too
-        bad_debt = total_borrow_value - total_liquidation_threshold_value
-        total_bad_debt += bad_debt
+        risk_factor = float(position["riskFactor"])
+        if risk_factor > 1:
+            total_borrow_value = float(position["totalBorrowValue"])
+            total_liquidation_threshold_value = float(position["totalLiquidationThresholdValue"])
+            # thats probably not that bad debt.. it's just late debt could be bad debt too
+            bad_debt = total_borrow_value - total_liquidation_threshold_value
 
-    print(f"Total bad debt: {total_bad_debt}")
-    return total_bad_debt
+            silo_id = position["silo"]["name"] + "-" + position["silo"]["id"]
+            if silo_id not in total_bad_debts:
+                total_bad_debts[silo_id] = 0
+            total_bad_debts[silo_id] += bad_debt
+
+    return total_bad_debts
 
 def process_silo(subgraph_id, network_name):
     positions = fetch_high_risk_silo_positions(subgraph_id)
@@ -79,13 +94,19 @@ def process_silo(subgraph_id, network_name):
     # Calculate total bad debt
     total_bad_debts = calculate_bad_debt(positions)
 
-    # define the threshold for bad debt
-    if total_bad_debts > 0:
-        # Base beep bop message
-        message = "🚨 **Bad Debt Report** 🚨\n\n"
-        message += f"⛓️ Silo on {network_name}\n"
-        message += f"📈 Total Bad Debt: {total_bad_debts}\n"
-        message += "----------------------\n"
+    # Base beep bop message
+    message = "🚨 **Bad Debt Report** 🚨\n"
+    message += f"⛓️ Silo on {network_name}\n"
+
+    for silo_id, bad_debt in total_bad_debts.items():
+        if bad_debt > 0:
+            has_bad_debt = True
+            message += f"Silo ID: {silo_id}\n"
+            message += f"💰 Total Bad Debt: {bad_debt}\n"
+            message += "----------------------\n"
+
+    # Print the final message only if there's bad debt
+    if has_bad_debt:
         print(message)
         send_telegram_message(message)
 
