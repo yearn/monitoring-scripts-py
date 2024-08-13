@@ -1,7 +1,6 @@
-import requests
+import requests, os
 from brownie import Contract, network
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -70,6 +69,7 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
             )
             print(message) # print message here for debug
             send_telegram_message(message, protocol)
+        network.disconnect()
     else:
         print("No pending transactions found with higher nonce than the last executed transaction.")
 
@@ -84,7 +84,6 @@ def send_telegram_message(message, protocol):
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     params = {"chat_id": chat_id, "text": message}
     response = requests.get(url, params=params)
-    
     if response.status_code != 200:
         print(f"Failed to send message: {response.status_code} - {response.text}")
 
