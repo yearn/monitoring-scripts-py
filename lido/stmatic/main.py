@@ -61,7 +61,7 @@ def query_swap(single_swap, fund_management):
         return swap_res
     except Exception as e:
         print(f"Error calling querySwap: {e}")
-        return None
+        raise
 
 def check_peg(validator_rate, balancer_rate):
     if balancer_rate == 0:
@@ -78,7 +78,7 @@ def main():
 
     # 1 stMATIC, 1000 stMATIC, 100K stMATIC
     # spot price, med amount, big amount
-    amounts = [0.0000001 * 1e18]
+    amounts = [1e18, 100e18, 10_000e18] # TODO: Make these dynamic, maybe add it to env and change it there
 
     for amount in amounts:
         single_swap = single_swap_template.copy()
@@ -90,8 +90,8 @@ def main():
             human_readable_result = balancer_rate / 1e18
             message = f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
             print(message)
-            # send_telegram_message(first_message)
-            # send_telegram_message(message)
+            send_telegram_message(first_message)
+            send_telegram_message(message)
 
 if __name__ == "__main__":
     main()

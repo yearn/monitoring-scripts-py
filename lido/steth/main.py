@@ -44,7 +44,12 @@ def check_steth_validator_rate():
     return ta / ts
 
 def check_steth_crv_pool_rate(amount_in):
-    return curve_pool.functions.get_dy(1, 0, int(amount_in)).call()
+    try:
+        swap_res = curve_pool.functions.get_dy(1, 0, int(amount_in)).call()
+        return swap_res
+    except Exception as e:
+        print(f"Error calling get_dy: {e}")
+        raise
 
 def check_peg(validator_rate, curve_rate):
     if curve_rate == 0:
@@ -67,7 +72,7 @@ def main():
             human_readable_amount = amount / 1e18
             human_readable_result = curve_rate / 1e18
             message = f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
-            # print(message)
+            print(message)
             send_telegram_message(first_message)
             send_telegram_message(message)
 
