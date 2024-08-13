@@ -60,8 +60,8 @@ def query_swap(single_swap, fund_management):
         swap_res = balancer_query.functions.querySwap(single_swap, fund_management).call()
         return swap_res
     except Exception as e:
-        print(f"Error calling querySwap: {e}")
-        raise
+        error_message = f"Error calling query in balancer pool: {e}"        
+        send_telegram_message(error_message)
 
 def check_peg(validator_rate, balancer_rate):
     if balancer_rate == 0:

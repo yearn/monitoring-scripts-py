@@ -28,6 +28,7 @@ with open("./abi/Steth.json") as f:
 steth = w3.eth.contract(address="0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", abi=abi_steth)
 curve_pool = w3.eth.contract(address="0xDC24316b9AE028F1497c275EB9192a3Ea0f67022", abi=abi_curve_pool)
 
+
 def send_telegram_message(message):
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN_LIDO")
     chat_id = os.getenv("TELEGRAM_CHAT_ID_LIDO")
@@ -48,9 +49,9 @@ def check_steth_crv_pool_rate(amount_in):
         swap_res = curve_pool.functions.get_dy(1, 0, int(amount_in)).call()
         return swap_res
     except Exception as e:
-        print(f"Error calling get_dy: {e}")
-        raise
-
+        error_message = f"Error calling get_dy in curve pool: {e}"        
+        send_telegram_message(error_message)
+        
 def check_peg(validator_rate, curve_rate):
     if curve_rate == 0:
         return False
