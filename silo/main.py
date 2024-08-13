@@ -50,22 +50,14 @@ def fetch_high_risk_silo_positions(subgraph_id):
         try:
             response = run_query(query, variables, subgraph_id)
             if 'errors' in response:
-                print(f"GraphQL errors: {json.dumps(response['errors'], indent=2)}")
-                break
-            if 'data' not in response:
-                print(f"Unexpected response structure. 'data' key not found.")
-                break
+                send_telegram_message(f"GraphQL errors: {json.dumps(response['errors'], indent=2)}")
 
             new_positions = response['data']['siloPositions']
-            if not new_positions:
-                break
-
             high_risk_positions.extend(new_positions)
             skip += len(new_positions)
 
         except Exception as e:
-            print(f"An error occurred: {str(e)}")
-            break
+            send_telegram_message(f"An error occurred: {str(e)}")
 
     return high_risk_positions
 
