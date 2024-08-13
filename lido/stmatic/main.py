@@ -1,4 +1,4 @@
-from web3 import Web3, constants
+from web3 import Web3
 from dotenv import load_dotenv
 import os
 import json
@@ -28,10 +28,21 @@ with open("../../common-abi/BalancerQuery.json") as f:
     elif isinstance(abi_data, list):
         abi_bq = abi_data
 
+with open("../../common-abi/BalancerVault.json") as f:
+    abi_data = json.load(f)
+    if isinstance(abi_data, dict):
+        abi_bv = abi_data["result"]
+    elif isinstance(abi_data, list):
+        abi_bv = abi_data
+
 balancer_query = w3_polygon.eth.contract(address="0xE39B5e3B6D74016b2F6A9673D7d7493B6DF549d5", abi=abi_bq)
+balancer_vault = w3_polygon.eth.contract(address="0xBA12222222228d8Ba445958a75a0704d566BF2C8", abi=abi_bv)
+
+gyro_concen_pool_id = "0xf0ad209e2e969eaaa8c882aac71f02d8a047d5c2000200000000000000000b49"
+# stable_pool_id = "" # TODO: maybe also print the balances of this in failure?
 
 single_swap_template = {
-    "poolId": "0xf0ad209e2e969eaaa8c882aac71f02d8a047d5c2000200000000000000000b49", # gyroscope concentraded pool
+    "poolId": gyro_concen_pool_id, # gyroscope concentraded pool
     "kind": 0,  # 0 for GIVEN_IN
     "assetIn": "0x3A58a54C066FdC0f2D55FC9C89F0415C92eBf3C4", # stmatic
     "assetOut": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",  # matic
@@ -60,8 +71,21 @@ def query_swap(single_swap, fund_management):
         swap_res = balancer_query.functions.querySwap(single_swap, fund_management).call()
         return swap_res
     except Exception as e:
-        error_message = f"Error calling query in balancer pool: {e}"        
+        error_message = f"Error calling query in balancer pool: {e}"
+        print(error_message)
         send_telegram_message(error_message)
+        try:
+            amounts = balancer_vault.functions.getPoolTokens(gyro_concen_pool_id).call()[1]
+            balance_message = (
+                f"MATIC balance in concentrated pool: {int(amounts[0] / 1e18)}\n"
+                f"stMATIC balance in concentrated pool: {int(amounts[1] / 1e18)}"
+            )
+            print(balance_message)
+            send_telegram_message(balance_message)
+        except Exception as e:
+            error_message_2 = f"Error querying balances in pool: {e}"
+            print(error_message_2)
+            send_telegram_message(error_message_2)
 
 def check_peg(validator_rate, balancer_rate):
     if balancer_rate == 0:
