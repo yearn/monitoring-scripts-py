@@ -1,17 +1,15 @@
-name: Compound V3 Bad Debt Trigger
+name: Bad Debt Triggers
 
 on:
   schedule:
-    - cron: "5 * * * *"
-  workflow_dispatch:
+    - cron: "15 * * * *"
 
 env:
-  DEBT_THRESHOLD_RATIO: "0.1"
+  DEBT_THRESHOLD_RATIO: "0.1" # 0.1% debt threshold
   BAD_DEBT_TELEGRAM_TOKEN: ${{ secrets.BAD_DEBT_TELEGRAM_TOKEN }}
-  BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
 
 jobs:
-  my_job:
+  bad_debt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,43 +22,87 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      ### Aave Bad Debt Triggers
+      - name: Run Aave V3 Mainnet
+        run: python bad-debt/bad-debt-trigger.py
+        env:
+          PROTOCOL: "Aave V3 Mainnet"
+          DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_aave%20v3.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
+      - name: Run Aave V3 Arbitrum
+        run: python bad-debt/bad-debt-trigger.py
+        env:
+          PROTOCOL: "Aave V3 Arbitrum"
+          DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/arbitrum_aave%20v3.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
+      - name: Run Aave V3 Polygon
+        run: python bad-debt/bad-debt-trigger.py
+        env:
+          PROTOCOL: "Aave V3 Polygon"
+          DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/polygon_aave%20v3.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
+      - name: Run Aave V3 Optimism
+        run: python bad-debt/bad-debt-trigger.py
+        env:
+          PROTOCOL: "Aave V3 Optimism"
+          DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/optimism_aave%20v3.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
+
+      ### Maker Bad Debt Trigger
+      - name: Run Maker
+        run: python bad-debt/bad-debt-trigger.py
+        env:
+          PROTOCOL: "Maker DAO"
+          DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_maker.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_MAKER }}
+
+      ### Compound Bad Debt Triggers
       - name: Run Comp V2 Mainnet
         run: python bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V2 Mainnet"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_compound.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
       - name: Run Comp V3 WETH Mainnet
         run: python bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V3 WETH Mainnet"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_compound%20v3_WETH.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
       - name: Run Comp V3 USDC Mainnet
         run: python bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V3 USDC Mainnet"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_compound%20v3_USDC.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
       - name: Run Comp V3 USDC Arbitrum
         run: python bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V3 USDC Arbitrum"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/arbitrum_compound%20v3_USDC.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
       - name: Run Comp V3 USDCe Arbitrum
         run: python bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V3 USDCe Arbitrum"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/arbitrum_compound%20v3_USDCe.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
       - name: Run Comp V3 USDCe Polygon
         run: python bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V3 USDCe Polygon"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/polygon_compound%20v3_USDCe.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
       - name: Run Comp V3 WETH Base
         run: python bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V3 WETH Base"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/base_compound%20v3_WETH.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
       - name: Run Comp V3 USDbC Base
         run: python bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V3 USDbC Base"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/base_compound%20v3_USDbC.json"
+          BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
