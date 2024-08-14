@@ -48,7 +48,7 @@ def send_telegram_message(message):
     params = {"chat_id": chat_id, "text": message}
     response = requests.get(url, params=params)
     if response.status_code != 200:
-        print(f"Failed to send message: {response.status_code} - {response.text}")
+        raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
 
 def print_stuff(total_debt, net_room, total_idle, strategy_name, underlying_token_decimals, chain_name):
 

@@ -112,7 +112,7 @@ def send_telegram_message(message):
     response = requests.get(url, params=params)
 
     if response.status_code != 200:
-        print(f"Failed to send message: {response.status_code} - {response.text}")
+        raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
 
 def main():
     arbitrum_subgraph_id = "2ufoztRpybsgogPVW6j9NTn1JmBWFYPKbP7pAabizADU"
