@@ -49,13 +49,10 @@ def fetch_high_risk_silo_positions(subgraph_id):
         if 'errors' in response:
             # don't send message or raise exception because graph is reliable
             return high_risk_positions
-            # send_telegram_message(f"GraphQL errors: {json.dumps(response['errors'], indent=2)}")
-            # raise Exception("GraphQL query failed")
         if 'data' not in response:
             # don't send message or raise exception because graph is reliable
-            return high_risk_positions
             # send_telegram_message(f"Unexpected response: {json.dumps(response, indent=2)}")
-            # raise Exception("Unexpected response")
+            return high_risk_positions
 
         new_positions = response['data']['siloPositions']
         if not new_positions:
