@@ -34,7 +34,7 @@ def send_telegram_message(message):
     params = {"chat_id": chat_id, "text": message}
     response = requests.get(url, params=params)
     if response.status_code != 200:
-        print(f"Failed to send message: {response.status_code} - {response.text}")
+        raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
 
 
 def check_steth_validator_rate():
