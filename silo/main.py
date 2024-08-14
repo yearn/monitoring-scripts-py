@@ -25,9 +25,7 @@ def fetch_high_risk_silo_positions(subgraph_id):
         skip: $skip,
         where: { riskFactor_gt: "1", isActive: true }
       ) {
-        id
         totalBorrowValue
-        totalCollateralValue
         totalLiquidationThresholdValue
         riskFactor
         silo {
@@ -47,18 +45,20 @@ def fetch_high_risk_silo_positions(subgraph_id):
             "first": first,
             "skip": skip
         }
-        try:
-            response = run_query(query, variables, subgraph_id)
-            if 'errors' in response:
-                send_telegram_message(f"GraphQL errors: {json.dumps(response['errors'], indent=2)}")
+        response = run_query(query, variables, subgraph_id)
+        if 'errors' in response:
+            # don't send message or raise exception because graph is reliable
+            return high_risk_positions
+        if 'data' not in response:
+            # don't send message or raise exception because graph is reliable
+            # send_telegram_message(f"Unexpected response: {json.dumps(response, indent=2)}")
+            return high_risk_positions
 
-            new_positions = response['data']['siloPositions']
-            high_risk_positions.extend(new_positions)
-            skip += len(new_positions)
-
-        except Exception as e:
-            send_telegram_message(f"An error occurred: {str(e)}")
-
+        new_positions = response['data']['siloPositions']
+        if not new_positions:
+            break
+        high_risk_positions.extend(new_positions)
+        skip += len(new_positions)
     return high_risk_positions
 
 # Function to calculate total bad debt
@@ -89,7 +89,7 @@ def process_silo(subgraph_id, network_name):
     # Base beep bop message
     message = "🚨 **Bad Debt Report** 🚨\n"
     message += f"⛓️ Silo on {network_name}\n"
-
+    has_bad_debt = False
     for silo_id, bad_debt in total_bad_debts.items():
         if bad_debt > 0:
             has_bad_debt = True
