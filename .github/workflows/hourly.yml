@@ -49,18 +49,18 @@ jobs:
           brownie networks modify optimism-main host=$PROVIDER_URL_OPTIMISM
           brownie networks modify polygon-main host=$PROVIDER_URL
       - name: Run Aave script
-        run: cd aave && python main.py && cd ..
+        run: python aave/main.py
       - name: Run Spark script
-        run: cd spark && python main.py && cd ..
+        run: python spark/main.py
       - name: Run Compound script
-        run: cd compound && python main.py && cd ..
+        run: python compound/main.py
       - name: Run Lido Matic script
-        run: cd lido/stmatic && python main.py && cd ../..
+        run: python lido/stmatic/main.py
       - name: Run Lido Ethereum script
-        run: cd lido/steth && python main.py && cd ../..
+        run: python lido/steth/main.py
       - name: Run Stargate script
-        run: cd stargate && python main.py && cd ../..
+        run: python stargate/main.py
       - name: Run Safe script
-        run: cd safe && python main.py && cd ..
+        run: python safe/main.py
 #      - name: Run Silo Bad Debt script
-#        run: cd silo && python main.py && cd ..
+#        run: python main.py

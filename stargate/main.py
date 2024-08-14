@@ -1,22 +1,20 @@
 from web3 import Web3, constants
 from dotenv import load_dotenv
-import os
-import json
-import requests
+import os, json, requests
 
 load_dotenv()
 
 provider_url_polygon = os.getenv("PROVIDER_URL")
 provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
 
-with open("../common-abi/Strategy.json") as f:
+with open("common-abi/Strategy.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_strategy = abi_data["result"]
     elif isinstance(abi_data, list):
         abi_strategy = abi_data
 
-with open("../common-abi/ERC20.json") as f:
+with open("common-abi/ERC20.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_erc20 = abi_data["result"]
@@ -92,12 +90,12 @@ def process_assets(chain_name, addresses, provider_url):
 
         total_assets = strategy.functions.totalAssets().call()
         total_debt = total_assets - total_idle
-    
+
         if (total_debt * (1 + buffer) > net_room):
             strategy_name = strategy.functions.name().call()
             underlying_token_decimals = strategy.functions.decimals().call()
             print_stuff(int(total_debt), int(net_room), int(total_idle), strategy_name, int(underlying_token_decimals), chain_name)
-            
+
 def main():
     print("Processing Polygon assets...")
     process_assets("Polygon", polygon_addresses, provider_url_polygon)

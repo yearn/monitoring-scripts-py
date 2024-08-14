@@ -1,8 +1,6 @@
-from web3 import Web3, constants
+from web3 import Web3
 from dotenv import load_dotenv
-import os
-import json
-import requests
+import os, json, requests
 
 load_dotenv()
 
@@ -11,7 +9,7 @@ provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
 provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
 provider_url_op = os.getenv("PROVIDER_URL_OPTIMISM")
 
-with open("./abi/CTokenV3.json") as f:
+with open("compound/abi/CTokenV3.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_ctoken = abi_data["result"]
@@ -22,12 +20,12 @@ polygon_addresses = [
     "0xF25212E676D1F7F89Cd72fFEe66158f541246445",
     "cUSDC.Ev3",
     "0xaeB318360f27748Acb200CE616E389A6C9409a07",
-    "cUSDTv3" 
+    "cUSDTv3"
     # Add more pairs as needed
 ]
 
 mainnet_addresses = [
-    "0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840",  
+    "0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840",
     "cUSDTv3",
     "0xc3d688B66703497DAA19211EEdff47f25384cdc3",
     "cUSDCv3",
@@ -92,12 +90,12 @@ def process_assets(chain_name, addresses, provider_url):
         ur = int(ctoken.functions.getUtilization().call())
         ur = ur / 1e18 # unscale it, it will be some number like 0.7, 0.8
         print_stuff(chain_name, ctoken_name, ur)
-    
+
 # Main function
 def main():
     print("Processing Polygon assets...")
     process_assets("Polygon", polygon_addresses, provider_url_polygon)
-    
+
     print("Processing Mainnet assets...")
     process_assets("Mainnet", mainnet_addresses, provider_url_mainnet)
 

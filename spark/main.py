@@ -1,14 +1,12 @@
-from web3 import Web3, constants
+from web3 import Web3
 from dotenv import load_dotenv
-import os
-import json
-import requests
+import os, json, requests
 
 load_dotenv()
 
 provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
 
-with open("../aave/abi/AToken.json") as f:
+with open("aave/abi/AToken.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_atoken = abi_data["result"]
@@ -85,7 +83,7 @@ def process_assets(chain_name, addresses, provider_url):
         print_stuff(chain_name, token_name, ur)
 
 # Main function
-def main():    
+def main():
     print("Processing Mainnet assets...")
     process_assets("Mainnet", mainnet_addresses, provider_url_mainnet)
 

@@ -1,8 +1,6 @@
-from web3 import Web3, constants
+from web3 import Web3
 from dotenv import load_dotenv
-import os
-import json
-import requests
+import os, json, requests
 
 load_dotenv()
 
@@ -10,14 +8,14 @@ peg_threshold = 0.05 # 5% used
 provider_url = os.getenv("PROVIDER_URL_MAINNET")
 w3 = Web3(Web3.HTTPProvider(provider_url))
 
-with open("./abi/CurvePool.json") as f:
+with open("lido/steth/abi/CurvePool.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_curve_pool = abi_data["result"]
     elif isinstance(abi_data, list):
         abi_curve_pool = abi_data
 
-with open("./abi/Steth.json") as f:
+with open("lido/steth/abi/Steth.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_steth = abi_data["result"]
@@ -49,9 +47,9 @@ def check_steth_crv_pool_rate(amount_in):
         swap_res = curve_pool.functions.get_dy(1, 0, int(amount_in)).call()
         return swap_res
     except Exception as e:
-        error_message = f"Error calling get_dy in curve pool: {e}"        
+        error_message = f"Error calling get_dy in curve pool: {e}"
         send_telegram_message(error_message)
-        
+
 def check_peg(validator_rate, curve_rate):
     if curve_rate == 0:
         return False

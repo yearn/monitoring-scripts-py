@@ -1,8 +1,6 @@
 from web3 import Web3
 from dotenv import load_dotenv
-import os
-import json
-import requests
+import os, json, requests
 
 load_dotenv()
 
@@ -12,7 +10,7 @@ provider_url_polygon = os.getenv("PROVIDER_URL")
 w3 = Web3(Web3.HTTPProvider(provider_url))
 w3_polygon = Web3(Web3.HTTPProvider(provider_url_polygon))
 
-with open("./abi/StMatic.json") as f:
+with open("lido/stmatic/abi/StMatic.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_stmatic = abi_data["result"]
@@ -21,14 +19,14 @@ with open("./abi/StMatic.json") as f:
 
 stmatic = w3.eth.contract(address="0x9ee91F9f426fA633d227f7a9b000E28b9dfd8599", abi=abi_stmatic)
 
-with open("../../common-abi/BalancerQuery.json") as f:
+with open("common-abi/BalancerQuery.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_bq = abi_data["result"]
     elif isinstance(abi_data, list):
         abi_bq = abi_data
 
-with open("../../common-abi/BalancerVault.json") as f:
+with open("common-abi/BalancerVault.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_bv = abi_data["result"]
