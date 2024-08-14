@@ -3,14 +3,13 @@ name: Bad Debt Triggers
 on:
   schedule:
     - cron: "15 * * * *"
-  workflow_dispatch:
 
 env:
   DEBT_THRESHOLD_RATIO: "0.1" # 0.1% debt threshold
   BAD_DEBT_TELEGRAM_TOKEN: ${{ secrets.BAD_DEBT_TELEGRAM_TOKEN }}
 
 jobs:
-  my_job:
+  bad_debt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
