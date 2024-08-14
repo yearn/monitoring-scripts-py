@@ -1,8 +1,6 @@
-from web3 import Web3, constants
+from web3 import Web3
 from dotenv import load_dotenv
-import os
-import json
-import requests
+import os, json, requests
 
 load_dotenv()
 
@@ -11,7 +9,7 @@ provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
 provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
 provider_url_op = os.getenv("PROVIDER_URL_OPTIMISM")
 
-with open("./abi/AToken.json") as f:
+with open("aave/abi/AToken.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_atoken = abi_data["result"]
@@ -19,7 +17,7 @@ with open("./abi/AToken.json") as f:
         abi_atoken = abi_data
 
 polygon_addresses = [
-    "0x1a13F4Ca1d028320A707D99520AbFefca3998b7F",  # ausdc.e 
+    "0x1a13F4Ca1d028320A707D99520AbFefca3998b7F",  # ausdc.e
     "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",  # usdc.e
     "0xA4D94019934D8333Ef880ABFFbF2FDd611C762BD", # ausdc
     "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", # usdc
@@ -129,7 +127,7 @@ def process_assets(chain_name, addresses, provider_url):
 def main():
     print("Processing Polygon assets...")
     process_assets("Mainnet", polygon_addresses, provider_url_polygon)
-    
+
     print("Processing Mainnet assets...")
     process_assets("Polygon", mainnet_addresses, provider_url_mainnet)
 
