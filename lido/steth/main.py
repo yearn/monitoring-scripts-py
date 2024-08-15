@@ -28,6 +28,7 @@ curve_pool = w3.eth.contract(address="0xDC24316b9AE028F1497c275EB9192a3Ea0f67022
 
 
 def send_telegram_message(message):
+    print(f"Sending telegram message:\n{message}")
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN_LIDO")
     chat_id = os.getenv("TELEGRAM_CHAT_ID_LIDO")
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
@@ -60,7 +61,7 @@ def check_peg(validator_rate, curve_rate):
 
 def main():
     validator_rate_unscaled = check_steth_validator_rate() #  for 1 stETH in not 18 decimals
-    first_message = f"🔄 1 stETH is: {validator_rate_unscaled:.5f} ETH in Lido"
+    message = f"🔄 1 stETH is: {validator_rate_unscaled:.5f} ETH in Lido\n"
 
     amounts = [1e18, 100e18, 1000e18]
 
@@ -70,9 +71,7 @@ def main():
         if curve_rate is not None and check_peg(validator_rate_scaled, curve_rate):
             human_readable_amount = amount / 1e18
             human_readable_result = curve_rate / 1e18
-            message = f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
-            print(message)
-            send_telegram_message(first_message)
+            message += f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
             send_telegram_message(message)
 
 if __name__ == "__main__":

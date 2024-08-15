@@ -9,6 +9,7 @@ provider_url = os.getenv("PROVIDER_URL_MAINNET")
 provider_url_polygon = os.getenv("PROVIDER_URL")
 w3 = Web3(Web3.HTTPProvider(provider_url))
 w3_polygon = Web3(Web3.HTTPProvider(provider_url_polygon))
+ASSET_BONDS_EXCEEDED = "GYR#357" # https://github.com/gyrostable/gyro-pools/blob/24060707809123e1ffd222eba99a5694e4b074c7/tests/geclp/util.py#L419
 
 with open("lido/stmatic/abi/StMatic.json") as f:
     abi_data = json.load(f)
@@ -55,6 +56,7 @@ fund_management = {
 }
 
 def send_telegram_message(message):
+    print(f"Sending telegram message:\n{message}")
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN_LIDO")
     chat_id = os.getenv("TELEGRAM_CHAT_ID_LIDO")
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
@@ -68,21 +70,26 @@ def query_swap(single_swap, fund_management):
         swap_res = balancer_query.functions.querySwap(single_swap, fund_management).call()
         return swap_res
     except Exception as e:
-        error_message = f"Error calling query in balancer pool: {e}"
-        print(error_message)
-        send_telegram_message(error_message)
+        message = ""
+        if ASSET_BONDS_EXCEEDED in str(e):
+            message = f"⚠️ Asset bonds exceeded in balancer pool ⚠️ \n"
+        else:
+            message = f"Error calling query in balancer pool: {e}\n"
+
+        # get the balances in the pool in case of error
         try:
             amounts = balancer_vault.functions.getPoolTokens(balancer_pool_id).call()[1]
-            balance_message = (
-                f"MATIC balance in the balancer pool: {int(amounts[0] / 1e18)}\n"
-                f"stMATIC balance in the balancer pool: {int(amounts[1] / 1e18)}"
+            matic_balance = amounts[0] / 1e18
+            stmatic_balance = amounts[1] / 1e18
+            total_balance = matic_balance + stmatic_balance
+            matic_percentage = round(matic_balance / total_balance * 100, 2)
+            message += (
+                f"MATIC balance in the balancer pool: {int(matic_balance)} ({matic_percentage}%)\n"
+                f"stMATIC balance in the balancer pool: {int(stmatic_balance)} ({100 - matic_percentage}%)\n"
             )
-            print(balance_message)
-            send_telegram_message(balance_message)
         except Exception as e:
-            error_message_2 = f"Error querying balances in pool: {e}"
-            print(error_message_2)
-            send_telegram_message(error_message_2)
+            message += f"Error querying balances in pool: {e}"
+        send_telegram_message(message)
 
 def check_peg(validator_rate, balancer_rate):
     if balancer_rate == 0:
@@ -95,7 +102,7 @@ def check_peg(validator_rate, balancer_rate):
 def main():
     validator_rate = int(stmatic.functions.convertStMaticToMatic(10**18).call()[0])
     human_readable_res = validator_rate / 1e18
-    first_message = f"🔄 1 StMATIC is: {human_readable_res:.5f} MATIC in Lido"
+    message = f"🔄 1 StMATIC is: {human_readable_res:.5f} MATIC in Lido\n"
 
     # 1 stMATIC, 1000 stMATIC, 100K stMATIC
     # spot price, med amount, big amount
@@ -109,9 +116,7 @@ def main():
         if balancer_rate is not None and check_peg(validator_rate, balancer_rate):
             human_readable_amount = amount / 1e18
             human_readable_result = balancer_rate / 1e18
-            message = f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
-            print(message)
-            send_telegram_message(first_message)
+            message += f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
             send_telegram_message(message)
 
 if __name__ == "__main__":
