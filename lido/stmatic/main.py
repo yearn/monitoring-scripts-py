@@ -113,7 +113,11 @@ def main():
         single_swap['amount'] = int(amount)
         validator_rate = human_readable_res * amount
         balancer_rate = query_swap(single_swap, fund_management)
-        if balancer_rate is not None and check_peg(validator_rate, balancer_rate):
+        if balancer_rate is None:
+            # break the loop if there is no rate
+            # if the first amount is without rate others are also
+            break
+        if check_peg(validator_rate, balancer_rate):
             human_readable_amount = amount / 1e18
             human_readable_result = balancer_rate / 1e18
             message += f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
