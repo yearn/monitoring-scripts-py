@@ -123,6 +123,8 @@ def main():
         ("SILO", "mainnet", "0xE8e8041cB5E3158A0829A19E014CA1cf91098554"),
         ("SILO", "optimism-main", "0x468CD12aa9e9fe4301DB146B0f7037831B52382d"),
         ("SILO", "arbitrum-main", "0x865A1DA42d512d8854c7b0599c962F67F5A5A9d9"),
+        {"LIDO", "mainnet", "0x73b047fe6337183A454c5217241D780a932777bD"}, # https://docs.lido.fi/multisigs/emergency-brakes/#12-emergency-brakes-ethereum
+        {"LIDO", "mainnet", "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C"}, # https://docs.lido.fi/multisigs/emergency-brakes/#11-gateseal-committee -> expires on 1 April 2025.
         # TEST: yearn ms in mainnet 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52
     ]
 
