@@ -125,6 +125,8 @@ def main():
         ["SILO", "arbitrum-main", "0x865A1DA42d512d8854c7b0599c962F67F5A5A9d9"],
         ["LIDO", "mainnet", "0x73b047fe6337183A454c5217241D780a932777bD"], # https://docs.lido.fi/multisigs/emergency-brakes/#12-emergency-brakes-ethereum
         ["LIDO", "mainnet", "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C"], # https://docs.lido.fi/multisigs/emergency-brakes/#11-gateseal-committee -> expires on 1 April 2025.
+        ["PENDLE", "mainnet", "0x8119EC16F0573B7dAc7C0CB94EB504FB32456ee1"],
+        ["PENDLE", "arbitrum-main", "0x7877AdFaDEd756f3248a0EBfe8Ac2E2eF87b75Ac"],
         # TEST: yearn ms in mainnet 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52
     ]
 
