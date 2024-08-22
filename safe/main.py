@@ -97,6 +97,7 @@ def main():
         ("SILO", "mainnet", "0xE8e8041cB5E3158A0829A19E014CA1cf91098554"), # TEST: yearn ms in mainnet 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52
         ("SILO", "optimism-main", "0x468CD12aa9e9fe4301DB146B0f7037831B52382d"),
         ("SILO", "arbitrum-main", "0x865A1DA42d512d8854c7b0599c962F67F5A5A9d9"),
+        ("PENDLE", "mainnet", "0x8119EC16F0573B7dAc7C0CB94EB504FB32456ee1"),
     ]
 
     # loop all
