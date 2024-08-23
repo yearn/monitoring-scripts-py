@@ -64,5 +64,7 @@ jobs:
         run: python stargate/main.py
       - name: Run Safe script
         run: python safe/main.py
+      - name: Run Silo Utilization script
+        run: python silo/ur_sniff.py
 #      - name: Run Silo Bad Debt script
 #        run: python main.py
