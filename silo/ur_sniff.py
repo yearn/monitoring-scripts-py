@@ -4,10 +4,13 @@ import os, json, requests
 
 load_dotenv()
 
+# TODO: Add different threshold UR's for each asset
+THRESHOLD_UR = 0.90
+
 provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
 provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
 
-with open("./abi/SiloLens.json") as f:
+with open("silo/abi/SiloLens.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_sl = abi_data["result"]
@@ -15,16 +18,11 @@ with open("./abi/SiloLens.json") as f:
         abi_sl = abi_data
 
 arbitrum_addresses_usdce = [
-    "0xA8897b4552c075e884BDB8e7b704eB10DB29BF0D", # first is silo
-    "Silo WSTETH-USDC.e", # second is name
-    "0x69eC552BE56E6505703f0C861c40039e5702037A",
-    "Silo WBTC-USDC.e",
+    ["Silo WSTETH-USDC.e", "0xA8897b4552c075e884BDB8e7b704eB10DB29BF0D"],
+    ["Silo WBTC-USDC.e", "0x69eC552BE56E6505703f0C861c40039e5702037A"],
 ]
 arbitrum_silo_lens_address = "0xBDb843c7a7e48Dc543424474d7Aa63b61B5D9536"
 arbitrum_usdce_address = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
-
-# TODO: Add different threshold UR's for each asset
-THRESHOLD_UR = 0.90
 
 # Build contract function
 def build_contract(address, provider_url):
@@ -55,10 +53,7 @@ def print_stuff(chain_name, token_name, ur):
 # Function to process assets for a specific network
 def process_assets(chain_name, values, silo_lens_address, quote_address, provider_url):
     silo_lens = build_contract(silo_lens_address, provider_url)
-    for i in range(0, len(values), 2):
-        silo_address = values[i] # first is silo address
-        silo_name = values[i + 1] # second is name of silo
-
+    for silo_name, silo_address in arbitrum_addresses_usdce:
         ur = silo_lens.functions.getUtilization(silo_address, quote_address).call()
         human_readable_ur = (ur / 1e18)
         print_stuff(chain_name, silo_name, human_readable_ur)
