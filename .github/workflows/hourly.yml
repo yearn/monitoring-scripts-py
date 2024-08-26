@@ -52,16 +52,18 @@ jobs:
           brownie networks modify polygon-main host=$PROVIDER_URL
       - name: Run Aave script
         run: python aave/main.py
-      - name: Run Spark script
-        run: python spark/main.py
+      # Skip running Spark script until there are some funds in vaults
+      # - name: Run Spark script
+      #   run: python spark/main.py
       - name: Run Compound script
         run: python compound/main.py
       - name: Run Lido Matic script
         run: python lido/stmatic/main.py
       - name: Run Lido Ethereum script
         run: python lido/steth/main.py
-      - name: Run Stargate script
-        run: python stargate/main.py
+      # Skip running Stargate script until there are some funds in vaults
+      # - name: Run Stargate script
+      #   run: python stargate/main.py
       - name: Run Safe script
         run: python safe/main.py
       - name: Run Silo Utilization script
