@@ -128,10 +128,10 @@ def process_assets(chain_name, addresses, provider_url):
 # Main function
 def main():
     print("Processing Polygon assets...")
-    process_assets("Mainnet", polygon_addresses, provider_url_polygon)
+    process_assets("Polygon", polygon_addresses, provider_url_polygon)
 
     print("Processing Mainnet assets...")
-    process_assets("Polygon", mainnet_addresses, provider_url_mainnet)
+    process_assets("Mainnet", mainnet_addresses, provider_url_mainnet)
 
     print("Processing Arbitrum assets...")
     process_assets("Arbitrum", arbitrum_addresses, provider_url_arb)
