@@ -4,80 +4,46 @@ def send_telegram_message(message):
     print(f"Sending message: {message}")
 
 def check_positions():
-    block_number = 20643640
     first = 100  # Number of items to fetch per request
     skip = 0     # Start with the first set of results
 
+    # Silo ID's to monitor
+    silo_ids = [
+        "0xea9961280b48fe521ece83f6cd8a7e9b2c4ffc2e", # PENDLE, there is bad debt so here for test purposes
+        # add here 
+    ]
+    silo_ids_string = ','.join([f'"{silo_id}"' for silo_id in silo_ids])
+
     while True:
         query = f"""
-            fragment positionFields on Position {{
-              marketAsset: market {{
-                inputToken {{
-                  id
-                }}
-              }}
-              snapshots(first: 1, orderBy: blockNumber, orderDirection: desc) {{
-                blockNumber
-                hash
-              }}
-            }}
-
             query QueryPositions {{
               siloPositions(
                 first: {first},
                 skip: {skip},
                 where: {{
-                  dTokenBalance_gt: 0,
-                  silo_: {{id_not_in: [""]}}
+                  silo_: {{id_in: [{silo_ids_string}]}},
+                  riskFactor_gt: 1.0, # >1.0 means insolvent, very close to this value would mean "about to be liqed"
+                  riskScore_gt: 0.000001, # 50K is usually around 50k$ so a good value, imo
+                  totalBorrowValue_gt: 0
                 }},
                 orderBy: riskFactor,
                 orderDirection: desc,
               ) {{
-                id
                 account {{
                   id
                 }}
                 silo {{
                   id
                   name
-                  baseAsset {{
-                    id
-                  }}
-                  bridgeAsset {{
-                    id
-                  }}
                   marketAssets: market {{
                     inputToken {{
-                      id
                       symbol
-                      decimals
-                      lastPriceUSD
                     }}
-                    liquidationThreshold
                   }}
                 }}
-                totalCollateralValue
                 totalBorrowValue
                 riskFactor
                 riskScore
-                collateralPositions: positions(where: {{ sTokenBalance_gt: 0 }}) {{
-                  sTokenBalance
-                  sToken {{
-                    derivativeConversion
-                  }}
-                  ...positionFields
-                }}
-                collateralOnlyPositions: positions(where: {{ spTokenBalance_gt: 0 }}) {{
-                  spTokenBalance
-                  ...positionFields
-                }}
-                debtPositions: positions(where: {{ dTokenBalance_gt: 0 }}) {{
-                  dTokenBalance
-                  dToken {{
-                    derivativeConversion
-                  }}
-                  ...positionFields
-                }}
               }}
             }}
         """
@@ -93,7 +59,6 @@ def check_positions():
         )
 
         response_data = response.json()
-        # print(response_data)
 
         # Check if there are any positions returned
         positions = response_data["data"]["siloPositions"]
@@ -102,34 +67,32 @@ def check_positions():
 
         # Process each position
         for position in positions:
-            risk_factor = float(position["riskFactor"])
-            risk_score = float(position["riskScore"])
+            wallet_address = position["account"]["id"]
+            input_token_symbol = position["silo"]["marketAssets"][0]["inputToken"]["symbol"]
+            silo_name = position["silo"]["name"]
+            silo_id = position["silo"]["id"]
+            risk_factor = position["riskFactor"]
+            risk_score = position["riskScore"]
+            total_borrow_value = position["totalBorrowValue"]
 
-            if risk_factor > 0.95 and risk_score > 150_000:
-                wallet_address = position["account"]["id"]
-                input_token_symbol = position["silo"]["marketAssets"][0]["inputToken"][
-                    "symbol"
-                ]
-                silo_name = position["silo"]["name"]
-                total_borrow_value = position["totalBorrowValue"]
-
-                message = f"""
+            message = f"""
 High Risk Position Detected!
 Wallet Address: {wallet_address}
 Input Token Symbol: {input_token_symbol}
 Silo Name: {silo_name}
+Silo ID: {silo_id}
 Risk Factor: {risk_factor}
 Risk Score: {risk_score}
 Total Borrow Value: {total_borrow_value}
 """             
-                print(message)
-                # send_telegram_message(message)
+            #print(message)
+            send_telegram_message(message)
 
         # Increment the skip value to fetch the next set of results
         skip += first
 
 def main():
-    print("Checking positions: ")
+    print("Checking positions in Arbitrum: ")
     check_positions()
 
 if __name__ == "__main__":
