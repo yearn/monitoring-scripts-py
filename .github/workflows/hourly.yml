@@ -52,6 +52,8 @@ jobs:
           brownie networks modify polygon-main host=$PROVIDER_URL
       - name: Run Aave script
         run: python aave/main.py
+      - name: Run Aave Proposals script
+        run: python aave/proposals.py
       - name: Run Spark script
         run: python spark/main.py
       - name: Run Compound script
