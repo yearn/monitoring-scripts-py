@@ -6,8 +6,8 @@ load_dotenv()
 api_key = os.getenv("GRAPH_API_KEY")
 
 def send_telegram_message(message):
-    bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_SILO")
-    chat_id = os.getenv(f"TELEGRAM_CHAT_ID_SILO")
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_SILO")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID_SILO")
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     params = {"chat_id": chat_id, "text": message}
@@ -39,7 +39,7 @@ def check_positions():
                 skip: {skip},
                 where: {{
                   silo_: {{id_in: [{silo_ids_string}]}},
-                  riskFactor_gt: 0.7, # >1.0 means insolvent, very close to this value would mean "about to be liqed"
+                  riskFactor_gt: 0.7, # >1.0 means insolvent, very close to this value would mean "about to be liquidated"
                   riskScore_gt: 50000, # 50K is usually around 50k$ so a good value, imo
                   totalBorrowValue_gt: 0
                 }},
