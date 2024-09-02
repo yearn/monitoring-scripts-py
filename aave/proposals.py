@@ -91,7 +91,7 @@ def handle_governance_proposals():
         message += (
             f"📕 Title: {proposal['proposalMetadata']['title']}\n"
             f"🆔 ID: {proposal['id']}\n"
-            f"🕒 Submitted at: {timestamp}\n"
+            f"🕒 Queued at: {timestamp}\n"
             f"🔗 Link to Proposal: {aave_url + proposal['id']}\n\n"
         )
 
@@ -99,7 +99,7 @@ def handle_governance_proposals():
         print("No proposals found in the last hour")
         return
 
-    message = "🖋️ Aave Governance Proposals 🖋️\n" + message
+    message = "🖋️ Queued Aave Governance Proposals 🖋️\n" + message
     send_telegram_message(message, "AAVE")
 
 
