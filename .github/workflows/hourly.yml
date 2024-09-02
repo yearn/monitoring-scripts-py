@@ -56,6 +56,8 @@ jobs:
         run: python spark/main.py
       - name: Run Compound script
         run: python compound/main.py
+      - name: Run Compound Proposals script
+        run: python compound/proposals.py
       - name: Run Lido Matic script
         run: python lido/stmatic/main.py
       - name: Run Lido Ethereum script
