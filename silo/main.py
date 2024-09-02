@@ -1,7 +1,19 @@
 import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+api_key = os.getenv("GRAPH_API_KEY")
 
 def send_telegram_message(message):
-    print(f"Sending message: {message}")
+    bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_SILO")
+    chat_id = os.getenv(f"TELEGRAM_CHAT_ID_SILO")
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    params = {"chat_id": chat_id, "text": message}
+    response = requests.get(url, params=params)
+    if response.status_code != 200:
+        raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
 
 def check_positions():
     first = 100  # Number of items to fetch per request
@@ -10,6 +22,11 @@ def check_positions():
     # Silo ID's to monitor
     silo_ids = [
         "0xea9961280b48fe521ece83f6cd8a7e9b2c4ffc2e", # PENDLE, there is bad debt so here for test purposes
+        "0x7bec832FF8060cD396645Ccd51E9E9B0E5d8c6e4", # weETH
+        "0x4a2bd8dcc2539e19cb97DF98EF5afC4d069d9e4C", # ezETH
+        "0x69eC552BE56E6505703f0C861c40039e5702037A", # WBTC
+        "0xA8897b4552c075e884BDB8e7b704eB10DB29BF0D", # wstETH
+        "0x601B76d37a2e06E971d3D63Cf16f41A44E306013", # uniETH
         # add here 
     ]
     silo_ids_string = ','.join([f'"{silo_id}"' for silo_id in silo_ids])
@@ -22,8 +39,8 @@ def check_positions():
                 skip: {skip},
                 where: {{
                   silo_: {{id_in: [{silo_ids_string}]}},
-                  riskFactor_gt: 1.0, # >1.0 means insolvent, very close to this value would mean "about to be liqed"
-                  riskScore_gt: 0.000001, # 50K is usually around 50k$ so a good value, imo
+                  riskFactor_gt: 0.7, # >1.0 means insolvent, very close to this value would mean "about to be liqed"
+                  riskScore_gt: 50000, # 50K is usually around 50k$ so a good value, imo
                   totalBorrowValue_gt: 0
                 }},
                 orderBy: riskFactor,
@@ -54,7 +71,7 @@ def check_positions():
         }
 
         response = requests.post(
-            "https://gateway-arbitrum.network.thegraph.com/api/8647ff8b021f8561ae98e65f752b4489/subgraphs/id/2ufoztRpybsgogPVW6j9NTn1JmBWFYPKbP7pAabizADU",
+            f"https://gateway-arbitrum.network.thegraph.com/api/{api_key}/subgraphs/id/2ufoztRpybsgogPVW6j9NTn1JmBWFYPKbP7pAabizADU",
             json=json_data,
         )
 
@@ -85,7 +102,7 @@ Risk Factor: {risk_factor}
 Risk Score: {risk_score}
 Total Borrow Value: {total_borrow_value}
 """             
-            #print(message)
+            print(message)
             send_telegram_message(message)
 
         # Increment the skip value to fetch the next set of results
