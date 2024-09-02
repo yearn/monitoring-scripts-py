@@ -39,8 +39,8 @@ def fetch_and_filter_compound_proposals():
             )
         send_telegram_message(message, "COMP")
     except requests.RequestException as e:
-        print(f"An error occurred while fetching data: {e}")
-        return None
+        message = f"Failed to fetch compound proposals: {e}"
+        send_telegram_message(message, "COMP")
 
 def send_telegram_message(message, protocol):
     print(f"Sending telegram message:\n{message}")
