@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 load_dotenv()
 
 SAFE_WEBSITE_URL="https://app.safe.global/transactions/queue?safe="
+# sync this value with workflow file multi-sig-checker.yml
+INTERVAL_CHECK = 960  # 15 minutes + 1m buffer
 
 safe_address_network_prefix = {
     "mainnet": "eth",
@@ -60,10 +62,10 @@ def get_pending_transactions_after_last_executed(safe_address, network_name):
 def get_safe_url(safe_address, network_name):
     return f"{SAFE_WEBSITE_URL}{safe_address_network_prefix[network_name]}:{safe_address}"
 
-def is_submitted_in_last_hour(submission_date):
+def is_submitted_in_interval(submission_date):
     submission_date = datetime.fromisoformat(submission_date.replace("Z", "+00:00"))
     current_date = datetime.now(timezone.utc)
-    return (current_date - submission_date).total_seconds() < 3600
+    return (current_date - submission_date).total_seconds() < INTERVAL_CHECK # 15 minutes
 
 def check_for_pending_transactions(safe_address, network_name, protocol):
     pending_transactions = get_pending_transactions_after_last_executed(safe_address, network_name)
@@ -74,7 +76,7 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
             # Skip if the transaction was submitted more than hour ago because the script is running every hour
             # and we don't want to send duplicate messages
             submission_date = tx['submissionDate']
-            if not is_submitted_in_last_hour(submission_date):
+            if not is_submitted_in_interval(submission_date):
                 print(f"Skipping safe address: {safe_address} tx nonce: {tx['nonce']} as it was submitted in the last hour.")
                 continue
 
