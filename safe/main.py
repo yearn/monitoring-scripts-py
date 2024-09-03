@@ -83,7 +83,8 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
             target_contract = tx['to']
             calldata = tx['data']
             try:
-                res = Contract.from_explorer(target_contract).decode_input(calldata)
+                # take only the name of the function
+                res = Contract.from_explorer(target_contract).decode_input(calldata)[0]
                 function_details = f"Function Call Details: {res}"
             except Exception as e:
                 function_details = f"Error decoding input: {e}"
