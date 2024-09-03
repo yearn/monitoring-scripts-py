@@ -6,6 +6,10 @@ on:
   workflow_dispatch:
 
 env:
+  PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+  PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
+  PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
+  PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
   TELEGRAM_BOT_TOKEN_AAVE: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
   TELEGRAM_CHAT_ID_AAVE: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
   TELEGRAM_BOT_TOKEN_COMP: ${{ secrets.TELEGRAM_BOT_TOKEN_COMP }}
@@ -20,6 +24,10 @@ env:
   TELEGRAM_CHAT_ID_SPARK: ${{ secrets.TELEGRAM_CHAT_ID_SPARK }}
   TELEGRAM_BOT_TOKEN_PENDLE: ${{ secrets.TELEGRAM_BOT_TOKEN_PENDLE }}
   TELEGRAM_CHAT_ID_PENDLE: ${{ secrets.TELEGRAM_CHAT_ID_PENDLE }}
+  ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
+  POLYGONSCAN_TOKEN: ${{ secrets.POLYGONSCAN_TOKEN }}
+  OPTIMISMSCAN_TOKEN: ${{ secrets.OPTIMISMSCAN_TOKEN }}
+  ARBISCAN_TOKEN: ${{ secrets.ARBISCAN_TOKEN }}
 
 jobs:
   multisig_checker:
@@ -35,5 +43,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      - name: Modify Brownie host
+        run: |
+          brownie networks modify mainnet host=$PROVIDER_URL_MAINNET
+          brownie networks modify arbitrum-main host=$PROVIDER_URL_ARBITRUM
+          brownie networks modify optimism-main host=$PROVIDER_URL_OPTIMISM
+          brownie networks modify polygon-main host=$PROVIDER_URL
       - name: Run Safe script
         run: python safe/main.py
