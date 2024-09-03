@@ -39,7 +39,7 @@ def check_positions():
                 skip: {skip},
                 where: {{
                   silo_: {{id_in: [{silo_ids_string}]}},
-                  riskFactor_gt: 0.7, # >1.0 means insolvent, very close to this value would mean "about to be liquidated"
+                  riskFactor_gt: 0.9, # >1.0 means insolvent, very close to this value would mean "about to be liquidated"
                   riskScore_gt: 50000, # 50K is usually around 50k$ so a good value, imo
                   totalBorrowValue_gt: 0
                 }},
