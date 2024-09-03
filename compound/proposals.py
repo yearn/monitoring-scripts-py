@@ -30,7 +30,7 @@ def fetch_and_filter_compound_proposals():
             print("No new proposals found")
             return None
 
-        message = "🚨 **Compound Governance Proposals** 🚨\n"
+        message = "🖋️ Compound Governance Proposals 🖋️\n"
         for proposal in queued_proposals:
             link = proposal_url + str(proposal['id'])
             message += (
