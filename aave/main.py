@@ -77,6 +77,7 @@ optimism_addresses = [
 
 # TODO: Add different threshold UR's for each asset
 THRESHOLD_UR = 0.93
+THRESHOLD_UR_NOTIFICATION = 0.99
 
 # Build contract function
 def build_contract(address, provider_url):
@@ -84,11 +85,11 @@ def build_contract(address, provider_url):
     contract = w3.eth.contract(address=address, abi=abi_atoken)
     return contract
 
-def send_telegram_message(message):
+def send_telegram_message(message, disable_notification):
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN_AAVE")
     chat_id = os.getenv("TELEGRAM_CHAT_ID_AAVE")
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message}
+    params = {"chat_id": chat_id, "text": message, "disable_notification": disable_notification}
     response = requests.get(url, params=params)
     if response.status_code != 200:
         raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
@@ -101,8 +102,11 @@ def print_stuff(chain_name, token_name, ur):
             f"📊 Utilization rate: {ur:.2%}\n"
             f"🌐 Chain: {chain_name}"
         )
+        disable_notification = True
+        if ur > THRESHOLD_UR_NOTIFICATION:
+            disable_notification = False
         print(message)
-        send_telegram_message(message)
+        send_telegram_message(message, disable_notification)
 
 # Function to process assets for a specific network
 def process_assets(chain_name, addresses, provider_url):
