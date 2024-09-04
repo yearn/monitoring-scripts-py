@@ -1,5 +1,4 @@
 import requests, os
-from brownie import Contract, network
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 
@@ -71,23 +70,15 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
     pending_transactions = get_pending_transactions_after_last_executed(safe_address, network_name)
 
     if pending_transactions:
-        network.connect(network_name)
         for tx in pending_transactions:
             # Skip if the transaction was submitted more than hour ago because the script is running every hour
             # and we don't want to send duplicate messages
             submission_date = tx['submissionDate']
             if not is_submitted_in_interval(submission_date):
-                print(f"Skipping safe address: {safe_address} tx nonce: {tx['nonce']} as it was submitted in the last hour.")
+                print(f"Skipping safe address: {safe_address} tx nonce: {tx['nonce']} is already reported.")
                 continue
 
             target_contract = tx['to']
-            calldata = tx['data']
-            try:
-                # take only the name of the function
-                res = Contract.from_explorer(target_contract).decode_input(calldata)[0]
-                function_details = f"Function Call Details: {res}"
-            except Exception as e:
-                function_details = f"Error decoding input: {e}"
             message = (
                 "🚨 **PENDING TX DETECTED** 🚨\n"
                 f"🔐 **Safe Address:** {safe_address}\n"
@@ -95,10 +86,8 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
                 f"📜 **Target Contract Address:** {target_contract}\n"
                 f"💰 **Value:** {tx['value']}\n"
                 f"📅 **Submission Date:** {tx['submissionDate']}\n"
-                f"🔍 **Function Call Details:** {function_details}"
             )
             send_telegram_message(message, protocol)
-        network.disconnect()
     else:
         print("No pending transactions found with higher nonce than the last executed transaction.")
 
