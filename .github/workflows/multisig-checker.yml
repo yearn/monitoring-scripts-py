@@ -1,15 +1,11 @@
-name: Monitoring Scripts
+name: Monitor Safe Multisigs
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0/15 * * * *"
   workflow_dispatch:
 
 env:
-  PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
-  PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
-  PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
-  PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
   TELEGRAM_BOT_TOKEN_AAVE: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
   TELEGRAM_CHAT_ID_AAVE: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
   TELEGRAM_BOT_TOKEN_COMP: ${{ secrets.TELEGRAM_BOT_TOKEN_COMP }}
@@ -24,14 +20,9 @@ env:
   TELEGRAM_CHAT_ID_SPARK: ${{ secrets.TELEGRAM_CHAT_ID_SPARK }}
   TELEGRAM_BOT_TOKEN_PENDLE: ${{ secrets.TELEGRAM_BOT_TOKEN_PENDLE }}
   TELEGRAM_CHAT_ID_PENDLE: ${{ secrets.TELEGRAM_CHAT_ID_PENDLE }}
-  GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
-  ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
-  POLYGONSCAN_TOKEN: ${{ secrets.POLYGONSCAN_TOKEN }}
-  OPTIMISMSCAN_TOKEN: ${{ secrets.OPTIMISMSCAN_TOKEN }}
-  ARBISCAN_TOKEN: ${{ secrets.ARBISCAN_TOKEN }}
 
 jobs:
-  my_job:
+  multisig_checker:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,23 +35,5 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Run Aave script
-        run: python aave/main.py
-      - name: Run Aave Proposals script
-        run: python aave/proposals.py
-      - name: Run Spark script
-        run: python spark/main.py
-      - name: Run Compound script
-        run: python compound/main.py
-      - name: Run Compound Proposals script
-        run: python compound/proposals.py
-      # - name: Run Lido Matic script
-      #   run: python lido/stmatic/main.py
-      - name: Run Lido Ethereum script
-        run: python lido/steth/main.py
-      # - name: Run Stargate script
-      #   run: python stargate/main.py
-      - name: Run Silo Utilization script
-        run: python silo/ur_sniff.py
-#      - name: Run Silo Bad Debt script
-#        run: python main.py
+      - name: Run Safe script
+        run: python safe/main.py

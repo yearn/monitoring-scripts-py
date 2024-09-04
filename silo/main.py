@@ -5,12 +5,12 @@ from dotenv import load_dotenv
 load_dotenv()
 api_key = os.getenv("GRAPH_API_KEY")
 
-def send_telegram_message(message):
+def send_telegram_message(message, disable_notification):
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN_SILO")
     chat_id = os.getenv("TELEGRAM_CHAT_ID_SILO")
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message}
+    params = {"chat_id": chat_id, "text": message, "disable_notification": disable_notification}
     response = requests.get(url, params=params)
     if response.status_code != 200:
         raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
@@ -27,7 +27,7 @@ def check_positions():
         "0x69eC552BE56E6505703f0C861c40039e5702037A", # WBTC
         "0xA8897b4552c075e884BDB8e7b704eB10DB29BF0D", # wstETH
         "0x601B76d37a2e06E971d3D63Cf16f41A44E306013", # uniETH
-        # add here 
+        # add here
     ]
     silo_ids_string = ','.join([f'"{silo_id}"' for silo_id in silo_ids])
 
@@ -101,9 +101,10 @@ Silo ID: {silo_id}
 Risk Factor: {risk_factor}
 Risk Score: {risk_score}
 Total Borrow Value: {total_borrow_value}
-"""             
+"""
+            disable_notification = True if (risk_factor < 1) else False
             print(message)
-            send_telegram_message(message)
+            send_telegram_message(message, disable_notification)
 
         # Increment the skip value to fetch the next set of results
         skip += first

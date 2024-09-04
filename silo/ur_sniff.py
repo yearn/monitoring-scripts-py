@@ -6,6 +6,7 @@ load_dotenv()
 
 # TODO: Add different threshold UR's for each asset
 THRESHOLD_UR = 0.90
+THRESHOLD_UR_NOTIFICATION = 0.98
 
 provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
 provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
@@ -30,11 +31,11 @@ def build_contract(address, provider_url):
     contract = w3.eth.contract(address=address, abi=abi_sl)
     return contract
 
-def send_telegram_message(message):
+def send_telegram_message(message, disable_notification):
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN_SILO")
     chat_id = os.getenv("TELEGRAM_CHAT_ID_SILO")
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message}
+    params = {"chat_id": chat_id, "text": message, "disable_notification": disable_notification}
     response = requests.get(url, params=params)
     if response.status_code != 200:
         raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
@@ -47,13 +48,16 @@ def print_stuff(chain_name, token_name, ur):
             f"📊 Utilization rate: {ur:.2%}\n"
             f"🌐 Chain: {chain_name}"
         )
+        disable_notification = True
+        if ur > THRESHOLD_UR_NOTIFICATION:
+            disable_notification = False
         print(message)
         send_telegram_message(message)
 
 # Function to process assets for a specific network
 def process_assets(chain_name, values, silo_lens_address, quote_address, provider_url):
     silo_lens = build_contract(silo_lens_address, provider_url)
-    for silo_name, silo_address in arbitrum_addresses_usdce:
+    for silo_name, silo_address in values:
         ur = silo_lens.functions.getUtilization(silo_address, quote_address).call()
         human_readable_ur = (ur / 1e18)
         print_stuff(chain_name, silo_name, human_readable_ur)

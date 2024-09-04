@@ -1,11 +1,12 @@
 import requests, os
-from brownie import Contract, network
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 
 load_dotenv()
 
 SAFE_WEBSITE_URL="https://app.safe.global/transactions/queue?safe="
+# sync this value with workflow file multi-sig-checker.yml
+INTERVAL_CHECK = 960  # 15 minutes + 1m buffer
 
 safe_address_network_prefix = {
     "mainnet": "eth",
@@ -60,31 +61,24 @@ def get_pending_transactions_after_last_executed(safe_address, network_name):
 def get_safe_url(safe_address, network_name):
     return f"{SAFE_WEBSITE_URL}{safe_address_network_prefix[network_name]}:{safe_address}"
 
-def is_submitted_in_last_hour(submission_date):
+def is_submitted_in_interval(submission_date):
     submission_date = datetime.fromisoformat(submission_date.replace("Z", "+00:00"))
     current_date = datetime.now(timezone.utc)
-    return (current_date - submission_date).total_seconds() < 3600
+    return (current_date - submission_date).total_seconds() < INTERVAL_CHECK # 15 minutes
 
 def check_for_pending_transactions(safe_address, network_name, protocol):
     pending_transactions = get_pending_transactions_after_last_executed(safe_address, network_name)
 
     if pending_transactions:
-        network.connect(network_name)
         for tx in pending_transactions:
             # Skip if the transaction was submitted more than hour ago because the script is running every hour
             # and we don't want to send duplicate messages
             submission_date = tx['submissionDate']
-            if not is_submitted_in_last_hour(submission_date):
-                print(f"Skipping safe address: {safe_address} tx nonce: {tx['nonce']} as it was submitted in the last hour.")
+            if not is_submitted_in_interval(submission_date):
+                print(f"Skipping safe address: {safe_address} tx nonce: {tx['nonce']} is already reported.")
                 continue
 
             target_contract = tx['to']
-            calldata = tx['data']
-            try:
-                res = Contract.from_explorer(target_contract).decode_input(calldata)
-                function_details = f"Function Call Details: {res}"
-            except Exception as e:
-                function_details = f"Error decoding input: {e}"
             message = (
                 "🚨 **PENDING TX DETECTED** 🚨\n"
                 f"🔐 **Safe Address:** {safe_address}\n"
@@ -92,10 +86,8 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
                 f"📜 **Target Contract Address:** {target_contract}\n"
                 f"💰 **Value:** {tx['value']}\n"
                 f"📅 **Submission Date:** {tx['submissionDate']}\n"
-                f"🔍 **Function Call Details:** {function_details}"
             )
             send_telegram_message(message, protocol)
-        network.disconnect()
     else:
         print("No pending transactions found with higher nonce than the last executed transaction.")
 
