@@ -1,5 +1,4 @@
 import os, requests, datetime, locale
-import asyncio, telegram
 
 url = os.environ["DATA_URL"]
 response = requests.get(url)
@@ -31,12 +30,15 @@ if response.status_code == 200:
     if (
         threshold > 0 and total_bad_debt / 10**decimals > threshold
     ) or ratio_of_bad_debt > threshold_ratio:
-        bot = telegram.Bot(token=os.environ["BAD_DEBT_TELEGRAM_TOKEN"])
-        chat_ids = os.environ["BAD_DEBT_TELEGRAM_CHAT_ID"].split(",")
-        print(f"Sending Telegram message")
-        for chat_id in chat_ids:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(bot.send_message(chat_id=chat_id, text=message))
+        print("Sending telegram message...")
+        bot_token = os.getenv("BAD_DEBT_TELEGRAM_TOKEN")
+        chat_id = os.getenv("BAD_DEBT_TELEGRAM_CHAT_ID")
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        params = {"chat_id": chat_id, "text": message}
+        response = requests.get(url, params=params)
+        if response.status_code != 200:
+            raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
+
 else:
     print(f"Request failed with status code {response.status_code}")
+    raise Exception(f"Request failed with status code {response.status_code}")
