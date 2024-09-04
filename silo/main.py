@@ -93,16 +93,18 @@ def check_positions():
             total_borrow_value = position["totalBorrowValue"]
 
             message = f"""
-High Risk Position Detected!
-Wallet Address: {wallet_address}
-Input Token Symbol: {input_token_symbol}
-Silo Name: {silo_name}
-Silo ID: {silo_id}
-Risk Factor: {risk_factor}
-Risk Score: {risk_score}
-Total Borrow Value: {total_borrow_value}
-"""
-            disable_notification = True if (risk_factor < 1) else False
+            High Risk Position Detected!
+            Wallet Address: {wallet_address}
+            Input Token Symbol: {input_token_symbol}
+            Silo Name: {silo_name}
+            Silo ID: {silo_id}
+            Risk Factor: {risk_factor}
+            Risk Score: {risk_score}
+            Total Borrow Value: {total_borrow_value}
+            """
+            disable_notification = True
+            if float(risk_factor) > 1:
+                disable_notification = False
             print(message)
             send_telegram_message(message, disable_notification)
 
