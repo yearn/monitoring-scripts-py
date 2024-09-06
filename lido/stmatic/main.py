@@ -37,7 +37,7 @@ with open("common-abi/BalancerVault.json") as f:
 balancer_query = w3_polygon.eth.contract(address="0xE39B5e3B6D74016b2F6A9673D7d7493B6DF549d5", abi=abi_bq)
 balancer_vault = w3_polygon.eth.contract(address="0xBA12222222228d8Ba445958a75a0704d566BF2C8", abi=abi_bv)
 
-balancer_pool_id = "0xf0ad209e2e969eaaa8c882aac71f02d8a047d5c2000200000000000000000b49"
+balancer_pool_id = "0x8159462d255c1d24915cb51ec361f700174cd99400000000000000000000075d"
 
 single_swap_template = {
     "poolId": balancer_pool_id, # gyroscope concentraded pool
