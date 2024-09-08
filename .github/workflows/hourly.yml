@@ -44,6 +44,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # restore file from cache
+      - name: Get Phrase cache file
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: cache-id.txt
+          key: cache-id-v1-${{ runner.os }}-${{ hashFiles('cache-id.txt') }}
+          restore-keys: |
+            cache-id-v1-${{ runner.os }}-
+
       - name: Run Aave script
         run: python aave/main.py
       - name: Run Aave Proposals script
@@ -64,3 +75,12 @@ jobs:
         run: python silo/ur_sniff.py
       - name: Run Silo Bad Debt script
         run: python silo/main.py
+
+      # save file to cache
+      - name: Cache cache-id.txt
+        if: always()
+        id: cache-save
+        uses: actions/cache/save@v4
+        with:
+          path: cache-id.txt
+          key: cache-id-v1-${{ runner.os }}-${{ hashFiles('cache-id.txt') }}

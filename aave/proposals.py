@@ -1,8 +1,45 @@
 import requests, os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
+
+filename = os.getenv('FILENAME', 'cache-id.txt')
+PROTOCOL = "aave"
+
+# TODO: extract these 2 functions to a common file
+def get_last_queued_id_from_file(protocol):
+    if not os.path.exists(filename):
+        return 0
+    else:
+        with open(filename, "r") as f:
+            # read line by line in format "protocol:proposal_id"
+            lines = f.readlines()
+            for line in lines:
+                protocol_name, proposal_id = line.strip().split(":")
+                if protocol_name == protocol:
+                    return int(proposal_id)
+    return 0
+
+
+def write_last_queued_id_to_file(protocol, last_id):
+    # check if the proposal ud is already in the file, then update the id else append
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            lines = f.readlines()
+            for i, line in enumerate(lines):
+                protocol_name, _ = line.strip().split(":")
+                if protocol_name == protocol:
+                    lines[i] = f"{protocol}:{last_id}\n"
+                    break
+            else:
+                lines.append(f"{protocol}:{last_id}\n")
+        with open(filename, "w") as f:
+            f.writelines(lines)
+    else:
+        lines = [f"{protocol}:{last_id}\n"]
+        with open(filename, "w") as f:
+            f.writelines(lines)
 
 
 def run_query(query, variables):
@@ -53,13 +90,6 @@ def fetch_queued_proposals():
     return proposals
 
 
-def is_submitted_in_last_hour(timestamp):
-    now = datetime.now(timezone.utc)
-    submission_date = datetime.fromtimestamp(timestamp, timezone.utc)
-    one_hour_ago = now - timedelta(hours=1.2)
-    return one_hour_ago <= submission_date <= now
-
-
 def send_telegram_message(message, protocol):
     print(f"Sending telegram message:\n{message}")
     bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_{protocol.upper()}")
@@ -80,10 +110,12 @@ def handle_governance_proposals():
 
     aave_url = "https://app.aave.com/governance/v3/proposal/?proposalId="
     message = ""
+    last_sent_id = get_last_queued_id_from_file(PROTOCOL)
     for proposal in proposals:
         timestamp = int(proposal['transactions']['active']['timestamp'])
-        if not is_submitted_in_last_hour(timestamp):
-            print(f"Skipping proposal: {proposal['id']} as it was submitted more than an hour ago.")
+        proposal_id = int(proposal['id'])
+        if proposal_id <= last_sent_id:
+            print(f"Proposal: {proposal['id']} already reported")
             continue
 
         date_time = datetime.fromtimestamp(timestamp)
@@ -101,7 +133,7 @@ def handle_governance_proposals():
 
     message = "🖋️ Queued Aave Governance Proposals 🖋️\n" + message
     send_telegram_message(message, "AAVE")
-
+    write_last_queued_id_to_file(PROTOCOL, proposals[-1]['id'])
 
 if __name__ == "__main__":
     handle_governance_proposals()

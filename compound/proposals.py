@@ -1,30 +1,68 @@
 import requests, os
-from datetime import datetime, timedelta
+
+filename = os.getenv('FILENAME', 'cache-id.txt')
+PROTOCOL = "comp"
+
+# TODO: extract these 2 functions to a common file
+def get_last_queued_id_from_file(protocol):
+    if not os.path.exists(filename):
+        return 0
+    else:
+        with open(filename, "r") as f:
+            # read line by line in format "protocol:proposal_id"
+            lines = f.readlines()
+            for line in lines:
+                protocol_name, proposal_id = line.strip().split(":")
+                if protocol_name == protocol:
+                    return int(proposal_id)
+    return 0
+
+
+def write_last_queued_id_to_file(protocol, last_id):
+    # check if the proposal ud is already in the file, then update the id else append
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            lines = f.readlines()
+            for i, line in enumerate(lines):
+                protocol_name, _ = line.strip().split(":")
+                if protocol_name == protocol:
+                    lines[i] = f"{protocol}:{last_id}\n"
+                    break
+            else:
+                lines.append(f"{protocol}:{last_id}\n")
+        with open(filename, "w") as f:
+            f.writelines(lines)
+    else:
+        lines = [f"{protocol}:{last_id}\n"]
+        with open(filename, "w") as f:
+            f.writelines(lines)
+
 
 def fetch_and_filter_compound_proposals():
-    url = "https://v3-api.compound.finance/governance/mainnet/all/proposals?page_size=5&page_number=1&with_detail=false"
+    url = "https://v3-api.compound.finance/governance/mainnet/all/proposals?page_size=10&page_number=1&with_detail=false"
     proposal_url = "https://compound.finance/governance/proposals/"
 
     try:
         response = requests.get(url)
         response.raise_for_status()  # Raises an HTTPError for bad responses
         data = response.json()
-
-        now = datetime.now()
-        # leave buffer of 12 minutes for GH actions
-        one_hour_ago = now - timedelta(hours=1.2)
         queued_proposals = []
+        last_reported_id = get_last_queued_id_from_file(PROTOCOL)
 
-        for proposal in data.get('proposals', []):
+        # comp backend returns proposals in descending order by id
+        for proposal in reversed(data.get('proposals', [])):
             states = proposal.get('states', [])
             for state in reversed(states):
                 match state['state']:
                     case 'executed':
                         break # skip executed proposals
                     case 'queued':
-                        start_time = datetime.fromtimestamp(state['start_time'])
-                        if one_hour_ago <= start_time <= now:
+                        proposal_id = int(proposal['id'])
+                        if proposal_id > last_reported_id:
                             queued_proposals.append(proposal)
+                        else:
+                            print("Proposal with id", proposal_id, "already sent")
+                        break # exit loop after finding queued state
 
         if queued_proposals.__len__() == 0:
             print("No new proposals found")
@@ -38,6 +76,8 @@ def fetch_and_filter_compound_proposals():
                 f"🔗 Link to Proposal: {link}\n\n"
             )
         send_telegram_message(message, "COMP")
+        # write last sent queued proposal id to file
+        write_last_queued_id_to_file(PROTOCOL, queued_proposals[-1]['id'])
     except requests.RequestException as e:
         message = f"Failed to fetch compound proposals: {e}"
         send_telegram_message(message, "COMP")
