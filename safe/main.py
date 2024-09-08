@@ -1,12 +1,11 @@
 import requests, os
 from dotenv import load_dotenv
-from datetime import datetime, timezone
 
 load_dotenv()
 
 SAFE_WEBSITE_URL="https://app.safe.global/transactions/queue?safe="
-# sync this value with workflow file multi-sig-checker.yml
-INTERVAL_CHECK = 960  # 15 minutes + 1m buffer
+# format of the data: "address:nonce"
+filename = os.getenv('FILENAME', 'nonces.txt')
 
 safe_address_network_prefix = {
     "mainnet": "eth",
@@ -23,6 +22,7 @@ safe_apis = {
     "polygon-main": "https://safe-transaction-polygon.safe.global",
     # "optim-yearn": "https://safe-transaction-optimism.safe.global",
 }
+
 
 def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
     base_url = safe_apis[network_name] + "/api/v1"
@@ -44,11 +44,13 @@ def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
         print(f"Error: {response.status_code}")
         return None
 
+
 def get_last_executed_nonce(safe_address, network_name):
     executed_txs = get_safe_transactions(safe_address, network_name, executed=True, limit=1)
     if executed_txs:
         return executed_txs[0]['nonce']
     return -1  # Return -1 if no executed transactions found
+
 
 def get_pending_transactions_after_last_executed(safe_address, network_name):
     last_executed_nonce = get_last_executed_nonce(safe_address, network_name)
@@ -58,36 +60,69 @@ def get_pending_transactions_after_last_executed(safe_address, network_name):
         return [tx for tx in pending_txs if tx['nonce'] > last_executed_nonce]
     return []
 
+
 def get_safe_url(safe_address, network_name):
     return f"{SAFE_WEBSITE_URL}{safe_address_network_prefix[network_name]}:{safe_address}"
 
-def is_submitted_in_interval(submission_date):
-    submission_date = datetime.fromisoformat(submission_date.replace("Z", "+00:00"))
-    current_date = datetime.now(timezone.utc)
-    return (current_date - submission_date).total_seconds() < INTERVAL_CHECK # 15 minutes
+
+def get_last_executed_nonce_from_file(safe_address):
+    if not os.path.exists(filename):
+        return 0
+    else:
+        with open(filename, "r") as f:
+            # read line by line in format "address:nonce"
+            lines = f.readlines()
+            for line in reversed(lines):
+                address, nonce = line.strip().split(":")
+                if address == safe_address:
+                    return int(nonce)
+    return 0
+
+def write_last_executed_nonce_to_file(safe_address, nonce):
+    # check if the address is already in the file, then update the nonce else append
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            lines = f.readlines()
+            for i, line in enumerate(lines):
+                address, _ = line.strip().split(":")
+                if address == safe_address:
+                    lines[i] = f"{safe_address}:{nonce}\n"
+                    break
+            else:
+                lines.append(f"{safe_address}:{nonce}\n")
+        with open(filename, "w") as f:
+            f.writelines(lines)
+    else:
+        lines = [f"{safe_address}:{nonce}\n"]
+        with open(filename, "w") as f:
+            f.writelines(lines)
+
 
 def check_for_pending_transactions(safe_address, network_name, protocol):
     pending_transactions = get_pending_transactions_after_last_executed(safe_address, network_name)
 
     if pending_transactions:
         for tx in pending_transactions:
-            # Skip if the transaction was submitted more than hour ago because the script is running every hour
-            # and we don't want to send duplicate messages
-            submission_date = tx['submissionDate']
-            if not is_submitted_in_interval(submission_date):
-                print(f"Skipping safe address: {safe_address} tx nonce: {tx['nonce']} is already reported.")
+            nonce = int(tx['nonce'])
+            # skip tx if the nonce is already processed
+            if nonce <= get_last_executed_nonce_from_file(safe_address):
+                print(f"Skipping tx with nonce {nonce} as it is already processed.")
                 continue
 
             target_contract = tx['to']
             message = (
-                "🚨 **PENDING TX DETECTED** 🚨\n"
-                f"🔐 **Safe Address:** {safe_address}\n"
-                f"🔗 **Safe URL:** {get_safe_url(safe_address, network_name)}\n"
-                f"📜 **Target Contract Address:** {target_contract}\n"
-                f"💰 **Value:** {tx['value']}\n"
-                f"📅 **Submission Date:** {tx['submissionDate']}\n"
+                "🚨 QUEUED TX DETECTED 🚨\n"
+                f"🅿️ Protocol: {protocol}\n"
+                f"🔐 Safe Address: {safe_address}\n"
+                f"🔗 Safe URL: {get_safe_url(safe_address, network_name)}\n"
+                f"📜 Target Contract Address: {target_contract}\n"
+                f"💰 Value: {tx['value']}\n"
+                f"📅 Submission Date: {tx['submissionDate']}\n"
             )
             send_telegram_message(message, protocol)
+
+            # write the last executed nonce to file
+            write_last_executed_nonce_to_file(safe_address, nonce)
     else:
         print("No pending transactions found with higher nonce than the last executed transaction.")
 
