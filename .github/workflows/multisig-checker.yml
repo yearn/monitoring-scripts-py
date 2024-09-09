@@ -37,11 +37,11 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       # restore file from cache
-      - name: Get Phrase cache file
+      - name: Get nonces.txt from cache
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
-          path: ${{ env.FILENAME }}
+          path: nonces.txt
           key: nonces-v1-${{ runner.os }}-${{ hashFiles(env.FILENAME) }}
           restore-keys: |
             nonces-v1-${{ runner.os }}-
@@ -55,5 +55,5 @@ jobs:
         id: cache-save
         uses: actions/cache/save@v4
         with:
-          path: ${{ env.FILENAME }}
+          path: nonces.txt
           key: nonces-v1-${{ runner.os }}-${{ hashFiles(env.FILENAME) }}
