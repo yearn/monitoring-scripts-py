@@ -42,7 +42,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: nonces.txt
-          key: nonces-v1-${{ runner.os }}-${{ hashFiles(env.FILENAME) }}
+          key: nonces-v1-${{ runner.os }}-${{ hashFiles('nonces.txt') }}
           restore-keys: |
             nonces-v1-${{ runner.os }}-
 
@@ -56,4 +56,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: nonces.txt
-          key: nonces-v1-${{ runner.os }}-${{ hashFiles(env.FILENAME) }}
+          key: nonces-v1-${{ runner.os }}-${{ hashFiles('nonces.txt') }}
