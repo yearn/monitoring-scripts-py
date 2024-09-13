@@ -60,15 +60,16 @@ def run_query(query, variables):
 
 def fetch_queued_proposals():
     # state: 3 is queued state: https://github.com/bgd-labs/aave-governance-v3/blob/0c14d60ac89d7a9f79d0a1f77de5c99c3ba1201f/src/interfaces/IGovernanceCore.sol#L75
+    # queued state is transferred to active state when it's executed, few seconds later so we need to check state 4
     query = """
         {
-            proposals(where:{state:3}) {
-                id
+            proposals(where:{state:4, proposalId_gt:160}) { # 160 is the last reported proposal
+                proposalId
                 proposalMetadata{
                     title
                 }
                 transactions{
-                    queued{
+                    executed{
                         timestamp
                     }
                 }
@@ -112,19 +113,19 @@ def handle_governance_proposals():
     message = ""
     last_sent_id = get_last_queued_id_from_file(PROTOCOL)
     for proposal in proposals:
-        timestamp = int(proposal['transactions']['active']['timestamp'])
-        proposal_id = int(proposal['id'])
+        timestamp = int(proposal['transactions']['executed']['timestamp'])
+        proposal_id = int(proposal['proposalId'])
         if proposal_id <= last_sent_id:
-            print(f"Proposal: {proposal['id']} already reported")
+            print(f"Proposal: {proposal['proposalId']} already reported")
             continue
 
         date_time = datetime.fromtimestamp(timestamp)
         timestamp = date_time.strftime("%Y-%m-%d %H:%M:%S")
         message += (
             f"📕 Title: {proposal['proposalMetadata']['title']}\n"
-            f"🆔 ID: {proposal['id']}\n"
+            f"🆔 ID: {proposal['proposalId']}\n"
             f"🕒 Queued at: {timestamp}\n"
-            f"🔗 Link to Proposal: {aave_url + proposal['id']}\n\n"
+            f"🔗 Link to Proposal: {aave_url + proposal['proposalId']}\n\n"
         )
 
     if not message:
@@ -133,7 +134,7 @@ def handle_governance_proposals():
 
     message = "🖋️ Queued Aave Governance Proposals 🖋️\n" + message
     send_telegram_message(message, "AAVE")
-    write_last_queued_id_to_file(PROTOCOL, proposals[-1]['id'])
+    write_last_queued_id_to_file(PROTOCOL, proposals[-1]['proposalId'])
 
 if __name__ == "__main__":
     handle_governance_proposals()
