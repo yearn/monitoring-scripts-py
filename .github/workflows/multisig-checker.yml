@@ -35,5 +35,25 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # restore file from cache
+      - name: Get nonces.txt from cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: nonces.txt
+          key: nonces-v2-${{ runner.os }}-${{ hashFiles('nonces.txt') }}
+          restore-keys: |
+            nonces-v2-${{ runner.os }}-
+
       - name: Run Safe script
         run: python safe/main.py
+
+      # save file to cache
+      - name: Cache nonces.txt
+        if: always()
+        id: cache-save
+        uses: actions/cache/save@v4
+        with:
+          path: nonces.txt
+          key: nonces-v2-${{ runner.os }}-${{ hashFiles('nonces.txt') }}
