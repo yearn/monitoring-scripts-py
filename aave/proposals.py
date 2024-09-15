@@ -63,7 +63,7 @@ def fetch_queued_proposals():
     # queued state is transferred to active state when it's executed, few seconds later so we need to check state 4
     query = """
         {
-            proposals(where:{state:4, proposalId_gt:160}) { # 160 is the last reported proposal
+            proposals(where:{state:4, proposalId_gt:162}) { # 162 is the last reported proposal
                 proposalId
                 proposalMetadata{
                     title
