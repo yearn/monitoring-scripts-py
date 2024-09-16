@@ -2,7 +2,7 @@ name: Monitor Safe Multisigs
 
 on:
   schedule:
-    - cron: "0/15 * * * *"
+    - cron: "0/10 * * * *"
   workflow_dispatch:
 
 env:
@@ -20,6 +20,8 @@ env:
   TELEGRAM_CHAT_ID_SPARK: ${{ secrets.TELEGRAM_CHAT_ID_SPARK }}
   TELEGRAM_BOT_TOKEN_PENDLE: ${{ secrets.TELEGRAM_BOT_TOKEN_PENDLE }}
   TELEGRAM_CHAT_ID_PENDLE: ${{ secrets.TELEGRAM_CHAT_ID_PENDLE }}
+  TELEGRAM_BOT_TOKEN_EULER: ${{ secrets.TELEGRAM_BOT_TOKEN_EULER }}
+  TELEGRAM_CHAT_ID_EULER: ${{ secrets.TELEGRAM_CHAT_ID_EULER }}
 
 jobs:
   multisig_checker:
