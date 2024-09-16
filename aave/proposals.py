@@ -1,8 +1,45 @@
 import requests, os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
+
+filename = os.getenv('FILENAME', 'cache-id.txt')
+PROTOCOL = "aave"
+
+# TODO: extract these 2 functions to a common file
+def get_last_queued_id_from_file(protocol):
+    if not os.path.exists(filename):
+        return 0
+    else:
+        with open(filename, "r") as f:
+            # read line by line in format "protocol:proposal_id"
+            lines = f.readlines()
+            for line in lines:
+                protocol_name, proposal_id = line.strip().split(":")
+                if protocol_name == protocol:
+                    return int(proposal_id)
+    return 0
+
+
+def write_last_queued_id_to_file(protocol, last_id):
+    # check if the proposal ud is already in the file, then update the id else append
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            lines = f.readlines()
+            for i, line in enumerate(lines):
+                protocol_name, _ = line.strip().split(":")
+                if protocol_name == protocol:
+                    lines[i] = f"{protocol}:{last_id}\n"
+                    break
+            else:
+                lines.append(f"{protocol}:{last_id}\n")
+        with open(filename, "w") as f:
+            f.writelines(lines)
+    else:
+        lines = [f"{protocol}:{last_id}\n"]
+        with open(filename, "w") as f:
+            f.writelines(lines)
 
 
 def run_query(query, variables):
@@ -23,15 +60,16 @@ def run_query(query, variables):
 
 def fetch_queued_proposals():
     # state: 3 is queued state: https://github.com/bgd-labs/aave-governance-v3/blob/0c14d60ac89d7a9f79d0a1f77de5c99c3ba1201f/src/interfaces/IGovernanceCore.sol#L75
+    # queued state is transferred to active state when it's executed, few seconds later so we need to check state 4
     query = """
         {
-            proposals(where:{state:3}) {
-                id
+            proposals(where:{state:4, proposalId_gt:162}) { # 162 is the last reported proposal
+                proposalId
                 proposalMetadata{
                     title
                 }
                 transactions{
-                    queued{
+                    executed{
                         timestamp
                     }
                 }
@@ -51,13 +89,6 @@ def fetch_queued_proposals():
 
     proposals = response['data']['proposals']
     return proposals
-
-
-def is_submitted_in_last_hour(timestamp):
-    now = datetime.now(timezone.utc)
-    submission_date = datetime.fromtimestamp(timestamp, timezone.utc)
-    one_hour_ago = now - timedelta(hours=1.2)
-    return one_hour_ago <= submission_date <= now
 
 
 def send_telegram_message(message, protocol):
@@ -80,19 +111,21 @@ def handle_governance_proposals():
 
     aave_url = "https://app.aave.com/governance/v3/proposal/?proposalId="
     message = ""
+    last_sent_id = get_last_queued_id_from_file(PROTOCOL)
     for proposal in proposals:
-        timestamp = int(proposal['transactions']['active']['timestamp'])
-        if not is_submitted_in_last_hour(timestamp):
-            print(f"Skipping proposal: {proposal['id']} as it was submitted more than an hour ago.")
+        timestamp = int(proposal['transactions']['executed']['timestamp'])
+        proposal_id = int(proposal['proposalId'])
+        if proposal_id <= last_sent_id:
+            print(f"Proposal: {proposal['proposalId']} already reported")
             continue
 
         date_time = datetime.fromtimestamp(timestamp)
         timestamp = date_time.strftime("%Y-%m-%d %H:%M:%S")
         message += (
             f"📕 Title: {proposal['proposalMetadata']['title']}\n"
-            f"🆔 ID: {proposal['id']}\n"
+            f"🆔 ID: {proposal['proposalId']}\n"
             f"🕒 Queued at: {timestamp}\n"
-            f"🔗 Link to Proposal: {aave_url + proposal['id']}\n\n"
+            f"🔗 Link to Proposal: {aave_url + proposal['proposalId']}\n\n"
         )
 
     if not message:
@@ -101,7 +134,7 @@ def handle_governance_proposals():
 
     message = "🖋️ Queued Aave Governance Proposals 🖋️\n" + message
     send_telegram_message(message, "AAVE")
-
+    write_last_queued_id_to_file(PROTOCOL, proposals[-1]['proposalId'])
 
 if __name__ == "__main__":
     handle_governance_proposals()
