@@ -164,3 +164,5 @@ Additionally, other contracts like vePENDLE, PENDLE, RewardDistributor, and Voti
 
     Mainnet Safe Multisig: 0x8119EC16F0573B7dAc7C0CB94EB504FB32456ee1
     Arbitrum Safe Multisig: 0x7877AdFaDEd756f3248a0EBfe8Ac2E2eF87b75Ac
+
+The owner of SY contracts was changed to [governance proxy contract](https://etherscan.io/address/0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e) with additional guardian role that can only pause SY contracts. Governance proxy contract owner is multisig defined above.
