@@ -2,6 +2,7 @@ import requests, os
 
 filename = os.getenv('FILENAME', 'cache-id.txt')
 PROTOCOL = "comp"
+max_length_summary = 500
 
 # TODO: extract these 2 functions to a common file
 def get_last_queued_id_from_file(protocol):
@@ -36,6 +37,25 @@ def write_last_queued_id_to_file(protocol, last_id):
         lines = [f"{protocol}:{last_id}\n"]
         with open(filename, "w") as f:
             f.writelines(lines)
+
+
+def extract_summary_from_description(description):
+    # Extract the summary part
+    summary_start = description.find("# Summary")
+    if summary_start == -1:
+        summary_start = description.find("## Proposal summary")
+    motivation_start = description.find("# Motivation")
+    if motivation_start == -1:
+        motivation_start = description.find("## Proposal Action")
+    summary = ""
+    if summary_start != -1 and motivation_start != -1:
+        summary_start = description.find("\n", summary_start)
+        summary = description[summary_start:motivation_start].strip()
+        summary = summary.replace('\n\n', '\n')
+        # Truncate the summary if it exceeds max_length
+        if len(summary) > max_length_summary:
+            summary = summary[:max_length_summary].rsplit(' ', 1)[0] + '...'
+    return summary
 
 
 def fetch_and_filter_compound_proposals():
@@ -73,8 +93,12 @@ def fetch_and_filter_compound_proposals():
             link = proposal_url + str(proposal['id'])
             message += (
                 f"📗 Title: {proposal['title']}\n"
-                f"🔗 Link to Proposal: {link}\n\n"
+                f"🔗 Link to Proposal: {link}\n"
             )
+            description = extract_summary_from_description(proposal['description'])
+            if len(description) > 0:
+                message += f"📝 Description: {description}\n\n"
+
         send_telegram_message(message, "COMP")
         # write last sent queued proposal id to file
         write_last_queued_id_to_file(PROTOCOL, queued_proposals[-1]['id'])
