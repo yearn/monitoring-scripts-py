@@ -145,10 +145,10 @@ def main():
     all_safe_addresses = [
         ["STARGATE", "mainnet", "0x65bb797c2B9830d891D87288F029ed8dACc19705"],
         ["STARGATE", "polygon-main", "0x47290DE56E71DC6f46C26e50776fe86cc8b21656"],
-        ["STARGATE", "optimism-main", "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43"],
+        # ["STARGATE", "optimism-main", "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43"],
         ["STARGATE", "arbitrum-main", "0x9CD50907aeb5D16F29Bddf7e1aBb10018Ee8717d"],
         ["SILO", "mainnet", "0xE8e8041cB5E3158A0829A19E014CA1cf91098554"],
-        ["SILO", "optimism-main", "0x468CD12aa9e9fe4301DB146B0f7037831B52382d"],
+        # ["SILO", "optimism-main", "0x468CD12aa9e9fe4301DB146B0f7037831B52382d"],
         ["SILO", "arbitrum-main", "0x865A1DA42d512d8854c7b0599c962F67F5A5A9d9"],
         ["LIDO", "mainnet", "0x73b047fe6337183A454c5217241D780a932777bD"], # https://docs.lido.fi/multisigs/emergency-brakes/#12-emergency-brakes-ethereum
         ["LIDO", "mainnet", "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C"], # https://docs.lido.fi/multisigs/emergency-brakes/#11-gateseal-committee -> expires on 1 April 2025.
