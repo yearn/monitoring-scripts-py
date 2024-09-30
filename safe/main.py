@@ -1,11 +1,17 @@
-import requests, os
+import requests, os, sys
 from dotenv import load_dotenv
+
+# Add the path to the sys.path to import the specific.py file
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath("safe/specific.py"))))
+from safe.specific import handle_pendle
 
 load_dotenv()
 
 SAFE_WEBSITE_URL="https://app.safe.global/transactions/queue?safe="
 # format of the data: "address:nonce"
 filename = os.getenv('FILENAME', 'nonces.txt')
+provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
+provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
 
 safe_address_network_prefix = {
     "mainnet": "eth",
@@ -119,8 +125,16 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
                 f"💰 Value: {tx['value']}\n"
                 f"📅 Submission Date: {tx['submissionDate']}\n"
             )
-            send_telegram_message(message, protocol)
 
+            # pendle uses specific owner of the contracts where we need to decode the data
+            if protocol == "PENDLE":
+                hex_data = tx['data']
+                if network_name == "mainnet":
+                    message += handle_pendle(provider_url_mainnet,hex_data)
+                elif network_name == "arbitrum-main":
+                    message += handle_pendle(provider_url_arb,hex_data)
+
+            send_telegram_message(message, protocol)
             # write the last executed nonce to file
             write_last_executed_nonce_to_file(safe_address, nonce)
     else:
@@ -131,6 +145,10 @@ def run_for_network(network_name, safe_address, protocol):
 
 def send_telegram_message(message, protocol):
     print(f"Sending telegram message:\n{message}")
+    max_message_length = 4096
+    if len(message) > max_message_length:
+        message = message[:max_message_length - 3] + '...'
+
     bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_{protocol.upper()}")
     chat_id = os.getenv(f"TELEGRAM_CHAT_ID_{protocol.upper()}")
 
