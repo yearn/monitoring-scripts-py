@@ -64,12 +64,14 @@ def handle_pendle(provider_url, hex_encoded_data: str) -> str:
     # Remove '0x' prefix if present
     if not hex_encoded_data.startswith(aggreate_function_signature):
         print("Invalid input data")
+        return ""
 
     hex_encoded_data = hex_encoded_data.removeprefix(aggreate_function_signature)
     parsed_calls = parse_input_parameters(hex_encoded_data)
 
     number_of_calls = len(parsed_calls)
     if number_of_calls == 0:
+        print("No function calls found")
         return ""
 
     message = "-" * 20

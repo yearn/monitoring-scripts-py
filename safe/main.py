@@ -129,10 +129,13 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
             # pendle uses specific owner of the contracts where we need to decode the data
             if protocol == "PENDLE":
                 hex_data = tx['data']
-                if network_name == "mainnet":
-                    message += handle_pendle(provider_url_mainnet,hex_data)
-                elif network_name == "arbitrum-main":
-                    message += handle_pendle(provider_url_arb,hex_data)
+                try:
+                    if network_name == "mainnet":
+                        message += handle_pendle(provider_url_mainnet,hex_data)
+                    elif network_name == "arbitrum-main":
+                        message += handle_pendle(provider_url_arb,hex_data)
+                except Exception as e:
+                    print(f"Cannot decode Pendle aggregate calls: {e}")
 
             send_telegram_message(message, protocol)
             # write the last executed nonce to file
