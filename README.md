@@ -38,7 +38,7 @@ Tenderly alert for queueing tx to [Timelock contract on Mainnet](https://dashboa
 
 This Timelock contract covers **Mainnet and all other chains**. Each protocol contract is controlled by the [Timelock contract](https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925#code). For more info see the [governance docs](https://docs.compound.finance/governance/). Delay is [2 days](https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925#readContract).
 
-Additionally, Github actions bot runs every 15 min and fetches queued proposals using Compound API: https://github.com/tapired/monitoring-scripts-py/blob/main/aave/proposals.py
+Additionally, Github actions bot runs every hour and fetches queued proposals using Compound API: https://github.com/tapired/monitoring-scripts-py/blob/main/aave/proposals.py
 
 ## Maker DAO
 
