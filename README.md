@@ -1,6 +1,6 @@
 # SAM Tools
 
-The list monitoring tools for the following protocols
+The list of monitoring tools for the following protocols
 
 ## Aave V3
 
@@ -15,14 +15,12 @@ Github actions run hourly and send telegram message if there is a market  with u
 ### Governance
 
 Tenderly alert for [queueing proposal to Aave Governance contract](https://dashboard.tenderly.co/yearn/sam/alerts/rules/eae36bdd-b44c-45d5-acf7-b013238e32c0).
-Proposal can be executed immediately because the cooldown period is [set to 0](https://etherscan.io/address/0x9aee0b04504cef83a65ac3f0e838d0593bcb2bc7#readProxyContract#F3). After the proposal is executed, payload is queued to Payload Controller which has min execution delay [set to 1 day](https://etherscan.io/address/0xdabad81af85554e9ae636395611c58f7ec1aaec5#readProxyContract#F6).
-Every payload that is executed on any network is first queue to proposal on mainnet. Monitoring just proposal queue on mainnet enables to get notification for future updates on all networks.
+Proposal can be executed immediately because the cooldown period is [set to 0](https://etherscan.io/address/0x9aee0b04504cef83a65ac3f0e838d0593bcb2bc7#readProxyContract#F3). After the proposal is executed, the payload is queued to Payload Controller which has min execution delay [set to 1 day](https://etherscan.io/address/0xdabad81af85554e9ae636395611c58f7ec1aaec5#readProxyContract#F6).
+Every payload that is executed on any network is the first queue to proposal on the mainnet. Monitoring just the proposal queue on the mainnet enables to get notification for future updates on all networks.
 
-Additionaly, Github actions bot is runs every hour and fetches queued proposal using The Graph data: https://github.com/tapired/monitoring-scripts-py/blob/main/aave/proposals.py
+Additionally, Github actions bot runs every hour and fetches queued proposals using The Graph data: https://github.com/tapired/monitoring-scripts-py/blob/main/aave/proposals.py
 
 Think about monitoring guardians multisigs: https://docs.aave.com/governance/master/aave-guardians
-
-Possible improvements: when the propals is [added to the queue](https://dashboard.tenderly.co/yearn/sam/tx/mainnet/0x662ab1ccab1c94a02fe35ef9b9aada1c86250dbdc6483d6a9c557a5f744b8788?trace=0.2.4.1.2.0.0.2.0.16.1) it contains param `proposalId` which can be referenced to the [governance website](https://app.aave.com/governance/v3/proposal/?proposalId=149). Using `proposalId` we could scrape the website, get the Simple Summary and send it in telegram message. Check if it is possible to utilize Tenderly [webhooks](https://docs.tenderly.co/alerts/tutorials-and-quickstarts/how-to-use-webhooks-for-alerting) or [web3-actions](https://docs.tenderly.co/web3-actions/intro-to-web3-actions).
 
 ## Compound V3
 
@@ -40,7 +38,7 @@ Tenderly alert for queueing tx to [Timelock contract on Mainnet](https://dashboa
 
 This Timelock contract covers **Mainnet and all other chains**. Each protocol contract is controlled by the [Timelock contract](https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925#code). For more info see the [governance docs](https://docs.compound.finance/governance/). Delay is [2 days](https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925#readContract).
 
-Additionally, Github actions bot is runs every 15 min and fetches queued proposal using Compound API: https://github.com/tapired/monitoring-scripts-py/blob/main/aave/proposals.py
+Additionally, Github actions bot runs every hour and fetches queued proposals using Compound API: https://github.com/tapired/monitoring-scripts-py/blob/main/aave/proposals.py
 
 ## Maker DAO
 
@@ -50,20 +48,20 @@ Additionally, Github actions bot is runs every 15 min and fetches queued proposa
 
 ### Governance
 
-Tenderly alert for function [`plot()` called in DSPause](https://dashboard.tenderly.co/yearn/sam/alerts/rules/6c4b81c9-3130-4b3c-9356-15c9abc7b918) that schedules the plan (tx) that can be executed after a delay. A plan can be executed by anyone. A similar concept to Timelock controller. Minimum delay is set to [16 hours](https://etherscan.io/address/0xbe286431454714f511008713973d3b053a2d38f3#readContract#F2). Scheduled tx (spell) will only be executed Monday through Friday between 14:00 and 21:00 UTC.
+Tenderly alert for function [`plot()` called in DSPause](https://dashboard.tenderly.co/yearn/sam/alerts/rules/6c4b81c9-3130-4b3c-9356-15c9abc7b918) that schedules the plan (tx) that can be executed after a delay. A plan can be executed by anyone. A similar concept to Timelock controller. The minimum delay is set to [16 hours](https://etherscan.io/address/0xbe286431454714f511008713973d3b053a2d38f3#readContract#F2). Scheduled tx (spell) will only be executed Monday through Friday between 14:00 and 21:00 UTC.
 
 [PauseProxy](https://etherscan.io/address/0xbe8e3e3618f7474f8cb1d074a26affef007e98fb) controls [PSM USDC](https://etherscan.io/address/0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A#readContract#F9), it can update the DAI/USDC rate by calling the function `file()`. Its [owner is DSPause contract](https://etherscan.io/address/0xbe8e3e3618f7474f8cb1d074a26affef007e98fb#readContract#F1), any update is covered with Tenderly alert specified above.
 
 Upgradeable [sUSDS](https://etherscan.io/address/0xa3931d71877c0e7a3148cb7eb4463524fec27fbd) contract owner is also [set](https://etherscan.io/tx/0x4d4a0396ac55bd2113fe630efe9db0330043508e19ed93d8bb3973a5dda3727e#eventlog) to DSPause contract. This is the some for upgradeable token [USDS](https://etherscan.io/address/0xdC035D45d973E3EC169d2276DDab16f1e407384F), tx owner [set](https://etherscan.io/tx/0x3c9a2a60285c972bf103d29ffe97503b25c5dbcb130f2bd862749a69ec21098c#eventlog).
 
-To get the proposal data from received alert:
+To get the proposal data from the received alert:
 
 1. see the tx from alert on [Tenderly](https://dashboard.tenderly.co/yearn/sam/tx/mainnet/0x4d84206c92894f4c4b5865d9c85f42105e5655d4a9415f799867a67ea3686c39)
 2. get [DssSpell address](https://dashboard.tenderly.co/yearn/sam/tx/mainnet/0x4d84206c92894f4c4b5865d9c85f42105e5655d4a9415f799867a67ea3686c39?trace=0.1)
 3. check proposals on [Maker DAO voting site](https://vote.makerdao.com/executive)
 4. [match proposal with spell address](https://vote.makerdao.com/executive/template-executive-vote-lite-psm-usdc-a-phase-2-setup-august-22-2024) with DssSpell address from tx
 
-Tenderly alert for [EOA wallet pocket](https://dashboard.tenderly.co/yearn/sam/alerts/rules/3fd3aa9f-5679-4f9d-8d58-a11c0439bd17) which holds USDC funds for PSM. It could remove approval to Maker LitePSM and break sUSDC strategy.
+Tenderly alert for [EOA wallet pocket](https://dashboard.tenderly.co/yearn/sam/alerts/rules/3fd3aa9f-5679-4f9d-8d58-a11c0439bd17) which holds USDC funds for PSM. It could remove approval for Maker LitePSM and break sUSDC strategy.
 
 [Governance DSPause module docs](https://docs.makerdao.com/smart-contract-modules/governance-module/pause-detailed-documentation).
 
@@ -71,9 +69,9 @@ Tenderly alert for [EOA wallet pocket](https://dashboard.tenderly.co/yearn/sam/a
 
 ### Governance
 
-Tenderly alerts will send telegram message when there transactions made by:
+Tenderly alerts will send telegram message when there are transactions made by:
 
-- [Lido DAO voting](https://dashboard.tenderly.co/yearn/sam/alerts/rules/8e577a18-92b2-4cab-86b8-53c7c3025a00) which start the voting process. Alert is triggered on event emitted `StartVote` to cover both `newVote()` functions for starting voting process. Voted transactions(script) can be forwarded to [Lido DAO Aragon Agent](https://etherscan.io/address/0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c) for execution. Aragon Agent contract can update following proxies:
+- [Lido DAO voting](https://dashboard.tenderly.co/yearn/sam/alerts/rules/8e577a18-92b2-4cab-86b8-53c7c3025a00) which start the voting process. The alert is triggered on event emitted `StartVote` to cover both `newVote()` functions for starting the voting process. Voted transactions(script) can be forwarded to [Lido DAO Aragon Agent](https://etherscan.io/address/0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c) for execution. Aragon Agent contract can update the following proxies:
     - [Locator proxy](https://etherscan.io/address/0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb#readContract#F1) - is the universal address book for the Lido protocol. All addresses are embedded into the implementation's bytecode as immutables for gas efficiency, allowing one to update them along with a proxy implementation. [Docs](https://docs.lido.fi/contracts/lido-locator)
     - [Staking router proxy](https://etherscan.io/address/0xFdDf38947aFB03C621C71b06C9C70bce73f12999#readContract#F1) - is a top-level controller contract for staking modules. Used to maintain a registry of staking modules, allocating stake to modules, and distribute protocol fees. [Docs](https://docs.lido.fi/contracts/staking-router)
     - [Withdrawal queue ERC721 proxy](https://etherscan.io/address/0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1#readContract#F1) - A FIFO queue for stETH withdrawal requests and an unstETH NFT implementation representing the position in the queue. [Docs](https://docs.lido.fi/contracts/withdrawal-queue-erc721/).
@@ -87,7 +85,7 @@ Not monitoring [Easy track voting](https://docs.lido.fi/guides/easy-track-guide/
 
 - Node Operators increasing staking limits
 - Funds being allocated to LEGO program
-- Funds being allocated into reward programs
+- Funds being allocated to reward programs
 
 ### Exchange rates
 
@@ -102,7 +100,7 @@ Sending telegram message if the exchange rate on DEX is above [defined threshold
 
 ### Withdraw amount
 
-Github bot that triggers every hour to check the amount of withdroom room. Telegram message is sent if the withdroom below the amount deposited by the stategy.
+Github bot that triggers every hour to check the amount of withdroom room. Telegram message is sent if the withdroom below the amount deposited by the strategy.
 Setup for:
 
 - Polygon:
@@ -119,7 +117,7 @@ Setup for:
 
 ### Governance
 
-Stargate contracts are controlled by a Safe Multisig (3/6). Github actions run hourly and send telegram message when there is queued transaction in Safe Multisig.
+Stargate contracts are controlled by a Safe Multisig (3/6). Github actions run hourly and send telegram message when there is a queued transaction in Safe Multisig.
 
 These multisigs have the ability to add or remove bridge assets, configure bridge parameters and STG emissions, adjust pool parameters such as deposit fees when minting liquidity on Stargate pools, and execute emergency functions in bridge contracts.
 
@@ -167,4 +165,4 @@ Additionally, other contracts like vePENDLE, PENDLE, RewardDistributor, and Voti
     Mainnet Safe Multisig: 0x8119EC16F0573B7dAc7C0CB94EB504FB32456ee1
     Arbitrum Safe Multisig: 0x7877AdFaDEd756f3248a0EBfe8Ac2E2eF87b75Ac
 
-The owner of SY contracts was changed to [governance proxy contract](https://etherscan.io/address/0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e) with additional guardian role that can only pause SY contracts. Governance proxy contract owner is multisig defined above.
+The owner of SY contracts was changed to [governance proxy contract](https://etherscan.io/address/0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e) with an additional guardian role that can only pause SY contracts. The governance proxy contract owner is multisig defined above.
