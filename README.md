@@ -54,6 +54,8 @@ Tenderly alert for function [`plot()` called in DSPause](https://dashboard.tende
 
 [PauseProxy](https://etherscan.io/address/0xbe8e3e3618f7474f8cb1d074a26affef007e98fb) controls [PSM USDC](https://etherscan.io/address/0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A#readContract#F9), it can update the DAI/USDC rate by calling the function `file()`. Its [owner is DSPause contract](https://etherscan.io/address/0xbe8e3e3618f7474f8cb1d074a26affef007e98fb#readContract#F1), any update is covered with Tenderly alert specified above.
 
+Upgradeable [sUSDS](https://etherscan.io/address/0xa3931d71877c0e7a3148cb7eb4463524fec27fbd) contract owner is also [set](https://etherscan.io/tx/0x4d4a0396ac55bd2113fe630efe9db0330043508e19ed93d8bb3973a5dda3727e#eventlog) to DSPause contract. This is the some for upgradeable token [USDS](https://etherscan.io/address/0xdC035D45d973E3EC169d2276DDab16f1e407384F), tx owner [set](https://etherscan.io/tx/0x3c9a2a60285c972bf103d29ffe97503b25c5dbcb130f2bd862749a69ec21098c#eventlog).
+
 To get the proposal data from received alert:
 
 1. see the tx from alert on [Tenderly](https://dashboard.tenderly.co/yearn/sam/tx/mainnet/0x4d84206c92894f4c4b5865d9c85f42105e5655d4a9415f799867a67ea3686c39)
