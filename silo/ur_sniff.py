@@ -53,7 +53,7 @@ def print_stuff(chain_name, token_name, ur):
         if ur > THRESHOLD_UR_NOTIFICATION:
             disable_notification = False
         print(message)
-        send_telegram_message(message)
+        send_telegram_message(message, disable_notification)
 
 # Function to process assets for a specific network
 def process_assets(chain_name, values, silo_lens_address, quote_address, provider_url):
