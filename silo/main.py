@@ -27,6 +27,7 @@ def check_positions():
         "0x69eC552BE56E6505703f0C861c40039e5702037A", # WBTC
         "0xA8897b4552c075e884BDB8e7b704eB10DB29BF0D", # wstETH
         "0x601B76d37a2e06E971d3D63Cf16f41A44E306013", # uniETH
+        "0x0696E6808EE11a5750733a3d821F9bB847E584FB", # ARB
         # add here
     ]
     silo_ids_string = ','.join([f'"{silo_id}"' for silo_id in silo_ids])
