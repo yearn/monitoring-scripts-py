@@ -21,6 +21,7 @@ with open("silo/abi/SiloLens.json") as f:
 arbitrum_addresses_usdce = [
     ["Silo WSTETH-USDC.e", "0xA8897b4552c075e884BDB8e7b704eB10DB29BF0D"],
     ["Silo WBTC-USDC.e", "0x69eC552BE56E6505703f0C861c40039e5702037A"],
+    ["Silo ARB-USDC.E", "0x0696E6808EE11a5750733a3d821F9bB847E584FB"],
 ]
 arbitrum_silo_lens_address = "0xBDb843c7a7e48Dc543424474d7Aa63b61B5D9536"
 arbitrum_usdce_address = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
