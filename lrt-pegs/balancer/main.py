@@ -25,6 +25,7 @@ balancer_vault = w3_mainnet.eth.contract(address="0xBA12222222228d8Ba445958a75a0
 ids = [
     # name, pool id, index of lrt, is BPT token an underlying token of the balancer pool?
     ("Renzo ezETH-WETH 50-50 Pool", "0x596192bb6e41802428ac943d2f1476c1af25cc0e000000000000000000000659", 1, True),
+    ("Kelp rsETH-WETH 50-50 Pool", "0x58aadfb1afac0ad7fca1148f3cde6aedf5236b6d00000000000000000000067f", 1, True),
     # Add more pool names and IDs here as needed in the future
 ]
 
