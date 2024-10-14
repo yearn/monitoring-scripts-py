@@ -10,7 +10,7 @@ The list of monitoring tools for the following protocols
 
 ### Utilization
 
-Github actions run hourly and send telegram message if there is a market  with utilization above `93%`. [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/aave/main.py).
+Github actions run hourly and send telegram message if there is a market with utilization above `93%`. [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/aave/main.py).
 
 ### Governance
 
@@ -30,7 +30,7 @@ Think about monitoring guardians multisigs: https://docs.aave.com/governance/mas
 
 ### Utilization
 
-Github actions run hourly and send telegram message if there is a market  with utilization above `93%`. [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/compound/main.py).
+Github actions run hourly and send telegram message if there is a market with utilization above `93%`. [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/compound/main.py).
 
 ### Governance
 
@@ -72,9 +72,9 @@ Tenderly alert for [EOA wallet pocket](https://dashboard.tenderly.co/yearn/sam/a
 Tenderly alerts will send telegram message when there are transactions made by:
 
 - [Lido DAO voting](https://dashboard.tenderly.co/yearn/sam/alerts/rules/8e577a18-92b2-4cab-86b8-53c7c3025a00) which start the voting process. The alert is triggered on event emitted `StartVote` to cover both `newVote()` functions for starting the voting process. Voted transactions(script) can be forwarded to [Lido DAO Aragon Agent](https://etherscan.io/address/0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c) for execution. Aragon Agent contract can update the following proxies:
-    - [Locator proxy](https://etherscan.io/address/0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb#readContract#F1) - is the universal address book for the Lido protocol. All addresses are embedded into the implementation's bytecode as immutables for gas efficiency, allowing one to update them along with a proxy implementation. [Docs](https://docs.lido.fi/contracts/lido-locator)
-    - [Staking router proxy](https://etherscan.io/address/0xFdDf38947aFB03C621C71b06C9C70bce73f12999#readContract#F1) - is a top-level controller contract for staking modules. Used to maintain a registry of staking modules, allocating stake to modules, and distribute protocol fees. [Docs](https://docs.lido.fi/contracts/staking-router)
-    - [Withdrawal queue ERC721 proxy](https://etherscan.io/address/0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1#readContract#F1) - A FIFO queue for stETH withdrawal requests and an unstETH NFT implementation representing the position in the queue. [Docs](https://docs.lido.fi/contracts/withdrawal-queue-erc721/).
+  - [Locator proxy](https://etherscan.io/address/0xC1d0b3DE6792Bf6b4b37EccdcC24e45978Cfd2Eb#readContract#F1) - is the universal address book for the Lido protocol. All addresses are embedded into the implementation's bytecode as immutables for gas efficiency, allowing one to update them along with a proxy implementation. [Docs](https://docs.lido.fi/contracts/lido-locator)
+  - [Staking router proxy](https://etherscan.io/address/0xFdDf38947aFB03C621C71b06C9C70bce73f12999#readContract#F1) - is a top-level controller contract for staking modules. Used to maintain a registry of staking modules, allocating stake to modules, and distribute protocol fees. [Docs](https://docs.lido.fi/contracts/staking-router)
+  - [Withdrawal queue ERC721 proxy](https://etherscan.io/address/0x889edC2eDab5f40e902b864aD4d7AdE8E412F9B1#readContract#F1) - A FIFO queue for stETH withdrawal requests and an unstETH NFT implementation representing the position in the queue. [Docs](https://docs.lido.fi/contracts/withdrawal-queue-erc721/).
 
 Monitor Safe multisig for [Emergency Brakes functions](https://docs.lido.fi/multisigs/emergency-brakes/):
 
@@ -104,12 +104,12 @@ Github bot that triggers every hour to check the amount of withdroom room. Teleg
 Setup for:
 
 - Polygon:
-    - yearn-V3-Stargate-DAI
-    - yearn-V3-Stargate-USDT
-    - yearn-V3-Stargate-USDC
+  - yearn-V3-Stargate-DAI
+  - yearn-V3-Stargate-USDT
+  - yearn-V3-Stargate-USDC
 - Arbitrum:
-    - yearn-V3-Stargate-USDT
-    - yearn-V3-Stargate-USDC.E
+  - yearn-V3-Stargate-USDT
+  - yearn-V3-Stargate-USDC.E
 
 [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/stargate/main.py)
 
@@ -150,7 +150,7 @@ Currently, there is a [Timelock contract](0xe1F03b7B0eBf84e9B9f62a1dB40f1Efb8FaA
 
 ### Utilization
 
-Github actions run hourly and send telegram message if there is a market  with utilization above 95%. [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/spark/main.py).
+Github actions run hourly and send telegram message if there is a market with utilization above 95%. [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/spark/main.py).
 
 Possible improvements: add bad debt to risk dao and trigger telegram bot if there is some. Add governance part after the End Game.
 
@@ -166,3 +166,9 @@ Additionally, other contracts like vePENDLE, PENDLE, RewardDistributor, and Voti
     Arbitrum Safe Multisig: 0x7877AdFaDEd756f3248a0EBfe8Ac2E2eF87b75Ac
 
 The owner of SY contracts was changed to [governance proxy contract](https://etherscan.io/address/0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e) with an additional guardian role that can only pause SY contracts. The governance proxy contract owner is multisig defined above.
+
+## LRT Pegs
+
+### Exchange rates
+
+Checks the main liquidity pools of LRTs to detect depegging, such as the ezETH-WETH and rsETH-WETH pools in Balancer. The bot monitors pool balances and sends a message if they become skewed.
