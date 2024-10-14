@@ -24,6 +24,8 @@ env:
   TELEGRAM_CHAT_ID_SPARK: ${{ secrets.TELEGRAM_CHAT_ID_SPARK }}
   TELEGRAM_BOT_TOKEN_PENDLE: ${{ secrets.TELEGRAM_BOT_TOKEN_PENDLE }}
   TELEGRAM_CHAT_ID_PENDLE: ${{ secrets.TELEGRAM_CHAT_ID_PENDLE }}
+  TELEGRAM_BOT_TOKEN_PEGS: ${{ secrets.TELEGRAM_BOT_TOKEN_PEGS }}
+  TELEGRAM_CHAT_ID_PEGS: ${{ secrets.TELEGRAM_CHAT_ID_PEGS }}
   GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
   ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
   POLYGONSCAN_TOKEN: ${{ secrets.POLYGONSCAN_TOKEN }}
@@ -75,6 +77,8 @@ jobs:
         run: python silo/ur_sniff.py
       - name: Run Silo Bad Debt script
         run: python silo/main.py
+      - name: Run LRT Peg Checker Balancer
+        run: python lrt-pegs/balancer/main.py
 
       # save file to cache
       - name: Cache cache-id.txt
