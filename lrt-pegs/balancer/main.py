@@ -4,14 +4,13 @@ import os, json, requests
 
 load_dotenv()
 
-peg_threshold = 0.05 # 5%
 provider_url = os.getenv("PROVIDER_URL_MAINNET")
 w3 = Web3(Web3.HTTPProvider(provider_url))
 w3_mainnet = Web3(Web3.HTTPProvider(provider_url))
 
 ASSET_BONDS_EXCEEDED = "GYR#357" # https://github.com/gyrostable/gyro-pools/blob/24060707809123e1ffd222eba99a5694e4b074c7/tests/geclp/util.py#L419
 
-PEG_THRESHOLD = 1
+PEG_THRESHOLD = 70
 
 with open("common-abi/BalancerVault.json") as f:
     abi_data = json.load(f)
@@ -51,7 +50,7 @@ def check_peg(pool_name, pool_id, idx_lrt, is_nested):
 
     percentage = (balances[idx_lrt] / total) * 100
     if percentage > PEG_THRESHOLD:
-        message = f"🚨 Balancer Alert! {pool_name} ratio is {percentage:.2f}% 🚀 Exceeds threshold! ⚠️"
+        message = f"🚨 Balancer Alert! {pool_name} ratio is {percentage:.2f}% 🚀 "
         send_telegram_message(message)
         print(message)
 
