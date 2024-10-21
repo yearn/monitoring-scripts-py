@@ -1,0 +1,711 @@
+[
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_asset",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_market",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_oracle",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_GOV",
+                "type": "address"
+            },
+            {
+                "internalType": "string",
+                "name": "_name",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "stateMutability": "nonpayable",
+        "type": "fallback"
+    },
+    {
+        "inputs": [],
+        "name": "GOV",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "PT",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "SY",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "allowed",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_owner",
+                "type": "address"
+            }
+        ],
+        "name": "availableDepositLimit",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "availableWithdrawLimit",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "balanceOfAsset",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "balanceOfPT",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "bufferSlippageBPS",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "deployFunds",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "depositLimit",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "doHealthCheck",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "freeFunds",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "harvestAndReport",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "_totalAssets",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "isExpired",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "lossLimitRatio",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_expectedAssetAmountOut",
+                "type": "uint256"
+            }
+        ],
+        "name": "manualWithdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "market",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "open",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "oracleDuration",
+        "outputs": [
+            {
+                "internalType": "uint32",
+                "name": "",
+                "type": "uint32"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "profitLimitRatio",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_market",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_minAssetAmountOut",
+                "type": "uint256"
+            }
+        ],
+        "name": "rolloverMaturity",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "routerParams",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "guessMin",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "guessMax",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "guessOffchain",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "maxIteration",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "eps",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_address",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "_allowed",
+                "type": "bool"
+            }
+        ],
+        "name": "setAllowed",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_bufferSlippageBPS",
+                "type": "uint256"
+            }
+        ],
+        "name": "setBufferSlippageBPS",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_depositLimit",
+                "type": "uint256"
+            }
+        ],
+        "name": "setDepositLimit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bool",
+                "name": "_doHealthCheck",
+                "type": "bool"
+            }
+        ],
+        "name": "setDoHealthCheck",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_newLossLimitRatio",
+                "type": "uint256"
+            }
+        ],
+        "name": "setLossLimitRatio",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bool",
+                "name": "_open",
+                "type": "bool"
+            }
+        ],
+        "name": "setOpen",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint32",
+                "name": "_oracleDuration",
+                "type": "uint32"
+            }
+        ],
+        "name": "setOracleDuration",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_newProfitLimitRatio",
+                "type": "uint256"
+            }
+        ],
+        "name": "setProfitLimitRatio",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_guessMin",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_guessMax",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_maxIteration",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_eps",
+                "type": "uint256"
+            }
+        ],
+        "name": "setRouterParams",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_swapSlippageBPS",
+                "type": "uint256"
+            }
+        ],
+        "name": "setSwapSlippageBPS",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint128",
+                "name": "_depositTrigger",
+                "type": "uint128"
+            },
+            {
+                "internalType": "uint48",
+                "name": "_maxTendBaseFee",
+                "type": "uint48"
+            },
+            {
+                "internalType": "uint40",
+                "name": "_minDepositInterval",
+                "type": "uint40"
+            }
+        ],
+        "name": "setTendTriggerParams",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint128",
+                "name": "_minAssetAmountToPT",
+                "type": "uint128"
+            },
+            {
+                "internalType": "uint128",
+                "name": "_maxSingleTrade",
+                "type": "uint128"
+            }
+        ],
+        "name": "setTradeParams",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "shutdownWithdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "swapSlippageBPS",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_token",
+                "type": "address"
+            }
+        ],
+        "name": "sweep",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_totalIdle",
+                "type": "uint256"
+            }
+        ],
+        "name": "tendThis",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "tendTrigger",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            },
+            {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "tendTriggerParams",
+        "outputs": [
+            {
+                "internalType": "uint128",
+                "name": "depositTrigger",
+                "type": "uint128"
+            },
+            {
+                "internalType": "uint48",
+                "name": "maxTendBaseFee",
+                "type": "uint48"
+            },
+            {
+                "internalType": "uint40",
+                "name": "minDepositInterval",
+                "type": "uint40"
+            },
+            {
+                "internalType": "uint40",
+                "name": "lastDeposit",
+                "type": "uint40"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "tokenizedStrategyAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "tradeParams",
+        "outputs": [
+            {
+                "internalType": "uint128",
+                "name": "minAssetAmountToPT",
+                "type": "uint128"
+            },
+            {
+                "internalType": "uint128",
+                "name": "maxSingleTrade",
+                "type": "uint128"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+	{
+		"inputs": [],
+		"name": "totalAssets",
+		"outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]
