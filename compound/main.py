@@ -71,7 +71,7 @@ def send_telegram_message(message, disable_notification):
     if response.status_code != 200:
         raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
 
-THRESHOLD_UR = 0.93
+THRESHOLD_UR = 0.96
 THRESHOLD_UR_NOTIFICATION = 0.99
 def print_stuff(chain_name, token_name, ur):
     if ur > THRESHOLD_UR:

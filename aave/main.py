@@ -76,7 +76,7 @@ optimism_addresses = [
 ]
 
 # TODO: Add different threshold UR's for each asset
-THRESHOLD_UR = 0.93
+THRESHOLD_UR = 0.96
 THRESHOLD_UR_NOTIFICATION = 0.99
 
 # Build contract function
