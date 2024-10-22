@@ -20,7 +20,7 @@ Every payload that is executed on any network is the first queue to proposal on 
 
 Additionally, Github actions bot runs every hour and fetches queued proposals using The Graph data: https://github.com/tapired/monitoring-scripts-py/blob/main/aave/proposals.py
 
-Think about monitoring guardians multisigs: https://docs.aave.com/governance/master/aave-guardians
+Monitoring Safe multisigs of Protocol emergency Guardian and Governance emergency Guardian. Link with [address](https://app.aave.com/governance/v3/proposal/?proposalId=184) and [explanation](https://governance.aave.com/t/arfc-renewal-of-aave-guardian-2024/17523).
 
 ## Compound V3
 
