@@ -10,7 +10,7 @@ The list of monitoring tools for the following protocols
 
 ### Utilization
 
-Github actions run hourly and send telegram message if there is a market with utilization above `93%`. [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/aave/main.py).
+Github actions run hourly and send telegram message if there is a market with utilization above `96%`. [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/aave/main.py).
 
 ### Governance
 
@@ -30,7 +30,7 @@ Think about monitoring guardians multisigs: https://docs.aave.com/governance/mas
 
 ### Utilization
 
-Github actions run hourly and send telegram message if there is a market with utilization above `93%`. [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/compound/main.py).
+Github actions run hourly and send telegram message if there is a market with utilization above `96%`. [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/compound/main.py).
 
 ### Governance
 
@@ -39,6 +39,12 @@ Tenderly alert for queueing tx to [Timelock contract on Mainnet](https://dashboa
 This Timelock contract covers **Mainnet and all other chains**. Each protocol contract is controlled by the [Timelock contract](https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925#code). For more info see the [governance docs](https://docs.compound.finance/governance/). Delay is [2 days](https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925#readContract).
 
 Additionally, Github actions bot runs every hour and fetches queued proposals using Compound API: https://github.com/tapired/monitoring-scripts-py/blob/main/aave/proposals.py
+
+## Euler
+
+### Governance
+
+Github actions bot that check every hour if there are queued transactions in [Safe Multisig (4/7)](https://app.safe.global/transactions/queue?safe=eth%3A0xcAD001c30E96765aC90307669d578219D4fb1DCe). Sends telegram message for new queued transactions.
 
 ## Maker DAO
 
@@ -113,7 +119,7 @@ Setup for:
 
 [Python script code](https://github.com/tapired/monitoring-scripts-py/blob/main/stargate/main.py)
 
-==@todo telegram messages are sent too often. Think about changing the rule to use portion of withdrawable funds, if there is less that 20% withdrawable, send message?==
+This bot is suspended because Stargate strategies are not active or have minimal amounts.
 
 ### Governance
 
