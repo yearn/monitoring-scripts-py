@@ -176,6 +176,12 @@ def main():
         ["PENDLE", "mainnet", "0x8119EC16F0573B7dAc7C0CB94EB504FB32456ee1"],
         ["PENDLE", "arbitrum-main", "0x7877AdFaDEd756f3248a0EBfe8Ac2E2eF87b75Ac"],
         ["EULER", "mainnet", "0xcAD001c30E96765aC90307669d578219D4fb1DCe"],
+        ["AAVE", "mainnet", "0x2CFe3ec4d5a6811f4B8067F0DE7e47DfA938Aa30"], # aave Protocol Guardian Safe: https://app.aave.com/governance/v3/proposal/?proposalId=184
+        ["AAVE", "polygon-main", "0xCb45E82419baeBCC9bA8b1e5c7858e48A3B26Ea6"],
+        ["AAVE", "arbitrum-main", "0xCb45E82419baeBCC9bA8b1e5c7858e48A3B26Ea6"],
+        ["AAVE", "mainnet", "0xCe52ab41C40575B072A18C9700091Ccbe4A06710"], # aave Governance Guardian Safe
+        ["AAVE", "polygon-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
+        ["AAVE", "arbitrum-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
         # TEST: yearn ms in mainnet 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52
     ]
 
