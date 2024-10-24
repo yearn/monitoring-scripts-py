@@ -22,6 +22,10 @@ Additionally, Github actions bot runs every hour and fetches queued proposals us
 
 Monitoring Safe multisigs of Protocol emergency Guardian and Governance emergency Guardian. Link with [address](https://app.aave.com/governance/v3/proposal/?proposalId=184) and [explanation](https://governance.aave.com/t/arfc-renewal-of-aave-guardian-2024/17523).
 
+### External Monitoring
+
+ChaosLabs has a public Telegram group with alerts for Aave V3: https://community.chaoslabs.xyz/aave/risk/alerts
+
 ## Compound V3
 
 ### Bad Debt
