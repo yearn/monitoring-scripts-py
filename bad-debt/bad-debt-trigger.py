@@ -37,7 +37,9 @@ if response.status_code == 200:
         params = {"chat_id": chat_id, "text": message}
         response = requests.get(url, params=params)
         if response.status_code != 200:
-            raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
+            raise Exception(
+                f"Failed to send telegram message: {response.status_code} - {response.text}"
+            )
 
 else:
     print(f"Request failed with status code {response.status_code}")

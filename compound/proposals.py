@@ -1,8 +1,9 @@
 import requests, os
 
-filename = os.getenv('FILENAME', 'cache-id.txt')
+filename = os.getenv("FILENAME", "cache-id.txt")
 PROTOCOL = "comp"
 max_length_summary = 500
+
 
 # TODO: extract these 2 functions to a common file
 def get_last_queued_id_from_file(protocol):
@@ -51,10 +52,10 @@ def extract_summary_from_description(description):
     if summary_start != -1 and motivation_start != -1:
         summary_start = description.find("\n", summary_start)
         summary = description[summary_start:motivation_start].strip()
-        summary = summary.replace('\n\n', '\n')
+        summary = summary.replace("\n\n", "\n")
         # Truncate the summary if it exceeds max_length
         if len(summary) > max_length_summary:
-            summary = summary[:max_length_summary].rsplit(' ', 1)[0] + '...'
+            summary = summary[:max_length_summary].rsplit(" ", 1)[0] + "..."
     return summary
 
 
@@ -70,19 +71,19 @@ def fetch_and_filter_compound_proposals():
         last_reported_id = get_last_queued_id_from_file(PROTOCOL)
 
         # comp backend returns proposals in descending order by id
-        for proposal in reversed(data.get('proposals', [])):
-            states = proposal.get('states', [])
+        for proposal in reversed(data.get("proposals", [])):
+            states = proposal.get("states", [])
             for state in reversed(states):
-                match state['state']:
-                    case 'executed':
-                        break # skip executed proposals
-                    case 'queued':
-                        proposal_id = int(proposal['id'])
+                match state["state"]:
+                    case "executed":
+                        break  # skip executed proposals
+                    case "queued":
+                        proposal_id = int(proposal["id"])
                         if proposal_id > last_reported_id:
                             queued_proposals.append(proposal)
                         else:
                             print("Proposal with id", proposal_id, "already sent")
-                        break # exit loop after finding queued state
+                        break  # exit loop after finding queued state
 
         if queued_proposals.__len__() == 0:
             print("No new proposals found")
@@ -90,21 +91,21 @@ def fetch_and_filter_compound_proposals():
 
         message = "🖋️ Compound Governance Proposals 🖋️\n"
         for proposal in queued_proposals:
-            link = proposal_url + str(proposal['id'])
+            link = proposal_url + str(proposal["id"])
             message += (
-                f"📗 Title: {proposal['title']}\n"
-                f"🔗 Link to Proposal: {link}\n"
+                f"📗 Title: {proposal['title']}\n" f"🔗 Link to Proposal: {link}\n"
             )
-            description = extract_summary_from_description(proposal['description'])
+            description = extract_summary_from_description(proposal["description"])
             if len(description) > 0:
                 message += f"📝 Description: {description}\n\n"
 
         send_telegram_message(message, "COMP")
         # write last sent queued proposal id to file
-        write_last_queued_id_to_file(PROTOCOL, queued_proposals[-1]['id'])
+        write_last_queued_id_to_file(PROTOCOL, queued_proposals[-1]["id"])
     except requests.RequestException as e:
         message = f"Failed to fetch compound proposals: {e}"
         send_telegram_message(message, "COMP")
+
 
 def send_telegram_message(message, protocol):
     print(f"Sending telegram message:\n{message}")
@@ -115,7 +116,10 @@ def send_telegram_message(message, protocol):
     params = {"chat_id": chat_id, "text": message}
     response = requests.get(url, params=params)
     if response.status_code != 200:
-        raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
+        raise Exception(
+            f"Failed to send telegram message: {response.status_code} - {response.text}"
+        )
+
 
 if __name__ == "__main__":
     fetch_and_filter_compound_proposals()

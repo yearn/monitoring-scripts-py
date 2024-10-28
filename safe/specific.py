@@ -4,6 +4,7 @@ from web3 import Web3
 from typing import List, Tuple
 import json
 
+
 class Call:
     def __init__(self, target: str, value: int, call_data: bytes):
         self.target = target
@@ -13,34 +14,33 @@ class Call:
     def __str__(self):
         return f"Call(target={self.target}, value={self.value}, call_data={self.call_data.hex()})"
 
+
 def parse_input_parameters(hex_data: str) -> List[Call]:
     # Remove '0x' prefix if present
-    hex_data = hex_data.removeprefix('0x')
+    hex_data = hex_data.removeprefix("0x")
     # Convert hex string to bytes
     data = bytes.fromhex(hex_data)
     # Decode the array of Call structs
-    decoded = decode(['(address,uint256,bytes)[]'], data)[0]
+    decoded = decode(["(address,uint256,bytes)[]"], data)[0]
 
     calls = []
     for call_tuple in decoded:
         target, value, call_data = call_tuple
-        calls.append(Call(
-            to_checksum_address(target),
-            value,
-            call_data
-        ))
+        calls.append(Call(to_checksum_address(target), value, call_data))
     return calls
 
 
 def get_contract_name(w3: Web3, address: str) -> str:
-   # ABI for the name() function
-    name_abi = [{
-        "constant": True,
-        "inputs": [],
-        "name": "name",
-        "outputs": [{"name": "", "type": "string"}],
-        "type": "function"
-    }]
+    # ABI for the name() function
+    name_abi = [
+        {
+            "constant": True,
+            "inputs": [],
+            "name": "name",
+            "outputs": [{"name": "", "type": "string"}],
+            "type": "function",
+        }
+    ]
 
     contract = w3.eth.contract(address=address, abi=name_abi)
     try:
@@ -87,6 +87,7 @@ def handle_pendle(provider_url, hex_encoded_data: str) -> str:
         message += f"\nFunction Selector: {function_selector}"
         message += f"\nDecoded Parameters: {json.dumps(params, indent=2)}"
     return message
+
 
 # if __name__ == "__main__":
 #     # Example usage

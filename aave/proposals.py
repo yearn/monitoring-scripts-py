@@ -4,8 +4,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-filename = os.getenv('FILENAME', 'cache-id.txt')
+filename = os.getenv("FILENAME", "cache-id.txt")
 PROTOCOL = "aave"
+
 
 # TODO: extract these 2 functions to a common file
 def get_last_queued_id_from_file(protocol):
@@ -47,15 +48,14 @@ def run_query(query, variables):
     subgraph_id = "A7QMszgomC9cnnfpAcqZVLr2DffvkGNfimD8iUSMiurK"
     url = f"https://gateway-arbitrum.network.thegraph.com/api/{api_key}/subgraphs/id/{subgraph_id}"
     headers = {"Content-Type": "application/json"}
-    request_body = {
-        'query': query,
-        'variables': variables
-    }
+    request_body = {"query": query, "variables": variables}
     response = requests.post(url, json=request_body, headers=headers)
     if response.status_code == 200:
         return response.json()
     else:
-        raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
+        raise Exception(
+            f"Query failed with status code {response.status_code}: {response.text}"
+        )
 
 
 def fetch_queued_proposals():
@@ -78,16 +78,13 @@ def fetch_queued_proposals():
     """
 
     # get only last 10 proposals
-    variables = {
-        "first": 10,
-        "skip": 0
-    }
+    variables = {"first": 10, "skip": 0}
     response = run_query(query, variables)
-    if 'errors' in response:
+    if "errors" in response:
         # don't send message or raise exception because graph is reliable
         raise Exception(f"Query failed: {response['errors']}")
 
-    proposals = response['data']['proposals']
+    proposals = response["data"]["proposals"]
     return proposals
 
 
@@ -100,7 +97,9 @@ def send_telegram_message(message, protocol):
     params = {"chat_id": chat_id, "text": message}
     response = requests.get(url, params=params)
     if response.status_code != 200:
-        raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
+        raise Exception(
+            f"Failed to send telegram message: {response.status_code} - {response.text}"
+        )
 
 
 def handle_governance_proposals():
@@ -113,8 +112,8 @@ def handle_governance_proposals():
     message = ""
     last_sent_id = get_last_queued_id_from_file(PROTOCOL)
     for proposal in proposals:
-        timestamp = int(proposal['transactions']['executed']['timestamp'])
-        proposal_id = int(proposal['proposalId'])
+        timestamp = int(proposal["transactions"]["executed"]["timestamp"])
+        proposal_id = int(proposal["proposalId"])
         if proposal_id <= last_sent_id:
             print(f"Proposal: {proposal['proposalId']} already reported")
             continue
@@ -134,7 +133,8 @@ def handle_governance_proposals():
 
     message = "🖋️ Queued Aave Governance Proposals 🖋️\n" + message
     send_telegram_message(message, "AAVE")
-    write_last_queued_id_to_file(PROTOCOL, proposals[-1]['proposalId'])
+    write_last_queued_id_to_file(PROTOCOL, proposals[-1]["proposalId"])
+
 
 if __name__ == "__main__":
     handle_governance_proposals()

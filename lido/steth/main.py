@@ -4,7 +4,7 @@ import os, json, requests
 
 load_dotenv()
 
-peg_threshold = 0.05 # 5% used
+peg_threshold = 0.05  # 5% used
 provider_url = os.getenv("PROVIDER_URL_MAINNET")
 w3 = Web3(Web3.HTTPProvider(provider_url))
 
@@ -23,8 +23,12 @@ with open("lido/steth/abi/Steth.json") as f:
         abi_steth = abi_data
 
 
-steth = w3.eth.contract(address="0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", abi=abi_steth)
-curve_pool = w3.eth.contract(address="0xDC24316b9AE028F1497c275EB9192a3Ea0f67022", abi=abi_curve_pool)
+steth = w3.eth.contract(
+    address="0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", abi=abi_steth
+)
+curve_pool = w3.eth.contract(
+    address="0xDC24316b9AE028F1497c275EB9192a3Ea0f67022", abi=abi_curve_pool
+)
 
 
 def send_telegram_message(message):
@@ -35,13 +39,16 @@ def send_telegram_message(message):
     params = {"chat_id": chat_id, "text": message}
     response = requests.get(url, params=params)
     if response.status_code != 200:
-        raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
+        raise Exception(
+            f"Failed to send telegram message: {response.status_code} - {response.text}"
+        )
 
 
 def check_steth_validator_rate():
     ts = steth.functions.totalSupply().call()
     ta = steth.functions.getTotalPooledEther().call()
     return ta / ts
+
 
 def check_steth_crv_pool_rate(amount_in):
     try:
@@ -51,28 +58,33 @@ def check_steth_crv_pool_rate(amount_in):
         error_message = f"Error calling get_dy in curve pool: {e}"
         send_telegram_message(error_message)
 
+
 def check_peg(validator_rate, curve_rate):
     if curve_rate == 0:
         return False
     # Calculate the percentage difference
     difference = abs(validator_rate - curve_rate)
     percentage_diff = difference / validator_rate
-    return percentage_diff >= peg_threshold # 0.06 >= 0.05
+    return percentage_diff >= peg_threshold  # 0.06 >= 0.05
+
 
 def main():
-    validator_rate_unscaled = check_steth_validator_rate() #  for 1 stETH in not 18 decimals
+    validator_rate_unscaled = (
+        check_steth_validator_rate()
+    )  #  for 1 stETH in not 18 decimals
     message = f"🔄 1 stETH is: {validator_rate_unscaled:.5f} ETH in Lido\n"
 
     amounts = [1e18, 100e18, 1000e18]
 
     for amount in amounts:
-        curve_rate = check_steth_crv_pool_rate(amount) # in 18 decimals
+        curve_rate = check_steth_crv_pool_rate(amount)  # in 18 decimals
         validator_rate_scaled = validator_rate_unscaled * amount
         if curve_rate is not None and check_peg(validator_rate_scaled, curve_rate):
             human_readable_amount = amount / 1e18
             human_readable_result = curve_rate / 1e18
             message += f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
             send_telegram_message(message)
+
 
 if __name__ == "__main__":
     main()

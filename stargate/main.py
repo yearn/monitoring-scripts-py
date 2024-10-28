@@ -16,8 +16,8 @@ with open("common-abi/Strategy.json") as f:
 
 # Add only strategies that are used by Vaults
 polygon_strategies = [
-    "0x8BBa7AFd0f9B1b664C161EC31d812a8Ec15f7e1a", # stargate staker usdc.e strategy
-    "0x2c5d0c3DB75D2f8A4957c74BE09194a9271Cf28D", # stargate staker usdt strategy
+    "0x8BBa7AFd0f9B1b664C161EC31d812a8Ec15f7e1a",  # stargate staker usdc.e strategy
+    "0x2c5d0c3DB75D2f8A4957c74BE09194a9271Cf28D",  # stargate staker usdt strategy
     # Add more pairs as needed
 ]
 
@@ -27,6 +27,7 @@ arbitrum_strategies = [
 
 buffer = 0.1
 
+
 def send_telegram_message(message):
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN_STARGATE")
     chat_id = os.getenv("TELEGRAM_CHAT_ID_STARGATE")
@@ -34,9 +35,19 @@ def send_telegram_message(message):
     params = {"chat_id": chat_id, "text": message}
     response = requests.get(url, params=params)
     if response.status_code != 200:
-        raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
+        raise Exception(
+            f"Failed to send telegram message: {response.status_code} - {response.text}"
+        )
 
-def print_stuff(total_debt, net_room, total_idle, strategy_name, underlying_token_decimals, chain_name):
+
+def print_stuff(
+    total_debt,
+    net_room,
+    total_idle,
+    strategy_name,
+    underlying_token_decimals,
+    chain_name,
+):
 
     total_debt /= 10**underlying_token_decimals
     net_room /= 10**underlying_token_decimals
@@ -53,11 +64,13 @@ def print_stuff(total_debt, net_room, total_idle, strategy_name, underlying_toke
     print(message)
     send_telegram_message(message)
 
+
 # Wrap address to Strategy contract
 def wrap_address_to_contract(address, provider_url):
     w3 = Web3(Web3.HTTPProvider(provider_url))
     contract = w3.eth.contract(address=address, abi=abi_strategy)
     return contract
+
 
 # Function to process assets for a specific network
 def process_assets(chain_name, strategies, provider_url):
@@ -65,20 +78,32 @@ def process_assets(chain_name, strategies, provider_url):
     for strategy_address in strategies:
         # Build contracts
         strategy = wrap_address_to_contract(strategy_address, provider_url)
-        underlying_token = wrap_address_to_contract(strategy.functions.asset().call(), provider_url)
+        underlying_token = wrap_address_to_contract(
+            strategy.functions.asset().call(), provider_url
+        )
 
         # Get total supply and available balance
-        withdraw_room = strategy.functions.availableWithdrawLimit(constants.ADDRESS_ZERO).call()
+        withdraw_room = strategy.functions.availableWithdrawLimit(
+            constants.ADDRESS_ZERO
+        ).call()
         total_idle = underlying_token.functions.balanceOf(strategy.address).call()
         net_room = withdraw_room - total_idle
 
         total_assets = strategy.functions.totalAssets().call()
         total_debt = total_assets - total_idle
 
-        if (total_debt * (1 + buffer) > net_room):
+        if total_debt * (1 + buffer) > net_room:
             strategy_name = strategy.functions.name().call()
             underlying_token_decimals = strategy.functions.decimals().call()
-            print_stuff(int(total_debt), int(net_room), int(total_idle), strategy_name, int(underlying_token_decimals), chain_name)
+            print_stuff(
+                int(total_debt),
+                int(net_room),
+                int(total_idle),
+                strategy_name,
+                int(underlying_token_decimals),
+                chain_name,
+            )
+
 
 def main():
     print("Processing Polygon assets...")
