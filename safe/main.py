@@ -164,10 +164,6 @@ def send_telegram_message(message, protocol):
 def main():
     # combined addresses, add more addresses if needed
     all_safe_addresses = [
-        ["STARGATE", "mainnet", "0x65bb797c2B9830d891D87288F029ed8dACc19705"],
-        ["STARGATE", "polygon-main", "0x47290DE56E71DC6f46C26e50776fe86cc8b21656"],
-        # ["STARGATE", "optimism-main", "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43"],
-        ["STARGATE", "arbitrum-main", "0x9CD50907aeb5D16F29Bddf7e1aBb10018Ee8717d"],
         ["SILO", "mainnet", "0xE8e8041cB5E3158A0829A19E014CA1cf91098554"],
         # ["SILO", "optimism-main", "0x468CD12aa9e9fe4301DB146B0f7037831B52382d"],
         ["SILO", "arbitrum-main", "0x865A1DA42d512d8854c7b0599c962F67F5A5A9d9"],
@@ -182,6 +178,10 @@ def main():
         ["AAVE", "mainnet", "0xCe52ab41C40575B072A18C9700091Ccbe4A06710"], # aave Governance Guardian Safe
         ["AAVE", "polygon-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
         ["AAVE", "arbitrum-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
+        # ["STARGATE", "mainnet", "0x65bb797c2B9830d891D87288F029ed8dACc19705"], # no active stargate strategies
+        # ["STARGATE", "polygon-main", "0x47290DE56E71DC6f46C26e50776fe86cc8b21656"],
+        # ["STARGATE", "optimism-main", "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43"],
+        # ["STARGATE", "arbitrum-main", "0x9CD50907aeb5D16F29Bddf7e1aBb10018Ee8717d"],
         # TEST: yearn ms in mainnet 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52
     ]
 
