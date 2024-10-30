@@ -1,15 +1,11 @@
-import requests, os, sys
+import requests, os
 from dotenv import load_dotenv
-
-# Add the path to the sys.path to import the specific.py file
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath("safe/specific.py"))))
+from utils.cache import get_last_executed_nonce_from_file, write_last_executed_nonce_to_file
 from safe.specific import handle_pendle
 
 load_dotenv()
 
 SAFE_WEBSITE_URL = "https://app.safe.global/transactions/queue?safe="
-# format of the data: "address:nonce"
-filename = os.getenv("FILENAME", "nonces.txt")
 provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
 provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
 
@@ -70,40 +66,6 @@ def get_safe_url(safe_address, network_name):
     return (
         f"{SAFE_WEBSITE_URL}{safe_address_network_prefix[network_name]}:{safe_address}"
     )
-
-
-def get_last_executed_nonce_from_file(safe_address):
-    if not os.path.exists(filename):
-        return 0
-    else:
-        with open(filename, "r") as f:
-            # read line by line in format "address:nonce"
-            lines = f.readlines()
-            for line in reversed(lines):
-                address, nonce = line.strip().split(":")
-                if address == safe_address:
-                    return int(nonce)
-    return 0
-
-
-def write_last_executed_nonce_to_file(safe_address, nonce):
-    # check if the address is already in the file, then update the nonce else append
-    if os.path.exists(filename):
-        with open(filename, "r") as f:
-            lines = f.readlines()
-            for i, line in enumerate(lines):
-                address, _ = line.strip().split(":")
-                if address == safe_address:
-                    lines[i] = f"{safe_address}:{nonce}\n"
-                    break
-            else:
-                lines.append(f"{safe_address}:{nonce}\n")
-        with open(filename, "w") as f:
-            f.writelines(lines)
-    else:
-        lines = [f"{safe_address}:{nonce}\n"]
-        with open(filename, "w") as f:
-            f.writelines(lines)
 
 
 def check_for_pending_transactions(safe_address, network_name, protocol):
