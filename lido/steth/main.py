@@ -1,9 +1,11 @@
 from web3 import Web3
 from dotenv import load_dotenv
-import os, json, requests
+import os, json
+from utils.telegram import send_telegram_message
 
 load_dotenv()
 
+PROTOCOL = "LIDO"
 peg_threshold = 0.05  # 5% used
 provider_url = os.getenv("PROVIDER_URL_MAINNET")
 w3 = Web3(Web3.HTTPProvider(provider_url))
@@ -31,19 +33,6 @@ curve_pool = w3.eth.contract(
 )
 
 
-def send_telegram_message(message):
-    print(f"Sending telegram message:\n{message}")
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_LIDO")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID_LIDO")
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message}
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
-
-
 def check_steth_validator_rate():
     ts = steth.functions.totalSupply().call()
     ta = steth.functions.getTotalPooledEther().call()
@@ -56,7 +45,7 @@ def check_steth_crv_pool_rate(amount_in):
         return swap_res
     except Exception as e:
         error_message = f"Error calling get_dy in curve pool: {e}"
-        send_telegram_message(error_message)
+        send_telegram_message(error_message, PROTOCOL)
 
 
 def check_peg(validator_rate, curve_rate):
@@ -83,7 +72,7 @@ def main():
             human_readable_amount = amount / 1e18
             human_readable_result = curve_rate / 1e18
             message += f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
-            send_telegram_message(message)
+            send_telegram_message(message, PROTOCOL)
 
 
 if __name__ == "__main__":

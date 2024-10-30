@@ -1,26 +1,11 @@
 import requests
 import os
 from dotenv import load_dotenv
+from utils.telegram import send_telegram_message
 
 load_dotenv()
 api_key = os.getenv("GRAPH_API_KEY")
-
-
-def send_telegram_message(message, disable_notification):
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_SILO")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID_SILO")
-
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {
-        "chat_id": chat_id,
-        "text": message,
-        "disable_notification": disable_notification,
-    }
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
+PROTOCOL = "SILO"
 
 
 def check_positions():
@@ -116,8 +101,7 @@ def check_positions():
             disable_notification = True
             if float(risk_factor) > 1:
                 disable_notification = False
-            print(message)
-            send_telegram_message(message, disable_notification)
+            send_telegram_message(message, PROTOCOL, disable_notification)
 
         # Increment the skip value to fetch the next set of results
         skip += first

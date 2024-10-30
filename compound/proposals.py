@@ -1,7 +1,8 @@
 import requests, os
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
+from utils.telegram import send_telegram_message
 
-PROTOCOL = "comp"
+PROTOCOL = "comp"  # must be lower case
 max_length_summary = 500
 
 
@@ -64,12 +65,12 @@ def fetch_and_filter_compound_proposals():
             if len(description) > 0:
                 message += f"📝 Description: {description}\n\n"
 
-        send_telegram_message(message, "COMP")
+        send_telegram_message(message, PROTOCOL)
         # write last sent queued proposal id to file
         write_last_queued_id_to_file(PROTOCOL, queued_proposals[-1]["id"])
     except requests.RequestException as e:
         message = f"Failed to fetch compound proposals: {e}"
-        send_telegram_message(message, "COMP")
+        send_telegram_message(message, PROTOCOL)
 
 
 def send_telegram_message(message, protocol):
