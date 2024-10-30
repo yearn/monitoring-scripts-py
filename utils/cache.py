@@ -6,7 +6,6 @@ load_dotenv()
 filename = os.getenv("FILENAME", "cache-id.txt")
 
 
-# TODO: extract these 2 functions to a common file
 def get_last_queued_id_from_file(protocol):
     if not os.path.exists(filename):
         return 0
