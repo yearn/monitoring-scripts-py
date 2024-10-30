@@ -51,7 +51,7 @@ jobs:
             nonces-v2-${{ runner.os }}-
 
       - name: Run Safe script
-        run: python safe/main.py
+        run: python -m safe.main
 
       # save file to cache
       - name: Cache nonces.txt
