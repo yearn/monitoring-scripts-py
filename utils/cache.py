@@ -12,11 +12,14 @@ nonces_filename = os.getenv("NONCE_FILENAME", "nonces.txt")
 def get_last_queued_id_from_file(protocol):
     return get_last_value_for_key_from_file(cache_filename, protocol)
 
+
 def write_last_queued_id_to_file(protocol, proposal_id):
     write_last_value_to_file(cache_filename, protocol, proposal_id)
 
+
 def get_last_executed_nonce_from_file(safe_address):
     return get_last_value_for_key_from_file(nonces_filename, safe_address)
+
 
 def write_last_executed_nonce_to_file(safe_address, nonce):
     write_last_value_to_file(nonces_filename, safe_address, nonce)

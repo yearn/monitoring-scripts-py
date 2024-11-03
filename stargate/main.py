@@ -1,9 +1,11 @@
 from web3 import Web3, constants
 from dotenv import load_dotenv
-import os, json, requests
+import os, json
+from utils.telegram import send_telegram_message
 
 load_dotenv()
 
+PROTOCOL = "STARGATE"
 provider_url_polygon = os.getenv("PROVIDER_URL")
 provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
 
@@ -28,18 +30,6 @@ arbitrum_strategies = [
 buffer = 0.1
 
 
-def send_telegram_message(message):
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_STARGATE")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID_STARGATE")
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message}
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
-
-
 def print_stuff(
     total_debt,
     net_room,
@@ -61,8 +51,7 @@ def print_stuff(
         f"🔍 Strategy name: {strategy_name}\n"
         f"🌐 Chain: {chain_name}"
     )
-    print(message)
-    send_telegram_message(message)
+    send_telegram_message(message, PROTOCOL)
 
 
 # Wrap address to Strategy contract
