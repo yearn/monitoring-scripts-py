@@ -1,7 +1,7 @@
 import requests, os
 from datetime import datetime
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
-
+from utils.telegram import send_telegram_message
 
 PROTOCOL = "aave"
 
@@ -51,20 +51,6 @@ def fetch_queued_proposals():
     return proposals
 
 
-def send_telegram_message(message, protocol):
-    print(f"Sending telegram message:\n{message}")
-    bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_{protocol.upper()}")
-    chat_id = os.getenv(f"TELEGRAM_CHAT_ID_{protocol.upper()}")
-
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message}
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
-
-
 def handle_governance_proposals():
     proposals = fetch_queued_proposals()
     if not proposals:
@@ -95,7 +81,7 @@ def handle_governance_proposals():
         return
 
     message = "🖋️ Queued Aave Governance Proposals 🖋️\n" + message
-    send_telegram_message(message, "AAVE")
+    send_telegram_message(message, PROTOCOL)
     write_last_queued_id_to_file(PROTOCOL, proposals[-1]["proposalId"])
 
 

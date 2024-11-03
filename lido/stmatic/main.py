@@ -1,6 +1,7 @@
 from web3 import Web3
 from dotenv import load_dotenv
-import os, json, requests
+import os, json
+from utils.telegram import send_telegram_message
 
 load_dotenv()
 
@@ -10,6 +11,7 @@ provider_url_polygon = os.getenv("PROVIDER_URL")
 w3 = Web3(Web3.HTTPProvider(provider_url))
 w3_polygon = Web3(Web3.HTTPProvider(provider_url_polygon))
 ASSET_BONDS_EXCEEDED = "GYR#357"  # https://github.com/gyrostable/gyro-pools/blob/24060707809123e1ffd222eba99a5694e4b074c7/tests/geclp/util.py#L419
+PROTOCOL = "LIDO"
 
 with open("lido/stmatic/abi/StMatic.json") as f:
     abi_data = json.load(f)
@@ -62,19 +64,6 @@ fund_management = {
 }
 
 
-def send_telegram_message(message):
-    print(f"Sending telegram message:\n{message}")
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_LIDO")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID_LIDO")
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message, "disable_notification": True}
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
-
-
 def query_swap(single_swap, fund_management):
     try:
         swap_res = balancer_query.functions.querySwap(
@@ -101,7 +90,7 @@ def query_swap(single_swap, fund_management):
             )
         except Exception as e:
             message += f"Error querying balances in pool: {e}"
-        send_telegram_message(message)
+        send_telegram_message(message, PROTOCOL, True)  # disable notification
 
 
 def check_peg(validator_rate, balancer_rate):

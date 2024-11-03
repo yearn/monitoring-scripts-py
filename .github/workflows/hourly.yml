@@ -58,29 +58,29 @@ jobs:
             cache-id-v1-${{ runner.os }}-
 
       - name: Run Aave script
-        run: python aave/main.py
+        run: python -m aave.main
       - name: Run Aave Proposals script
         run: python -m aave.proposals
       - name: Run Spark script
-        run: python spark/main.py
+        run: python -m spark.main
       - name: Run Compound script
-        run: python compound/main.py
+        run: python -m compound.main
       - name: Run Compound Proposals script
         run: python -m compound.proposals
       - name: Run Lido Matic script
-        run: python lido/stmatic/main.py
+        run: python -m lido.stmatic.main
       - name: Run Lido Ethereum script
-        run: python lido/steth/main.py
+        run: python -m lido.steth.main
       # - name: Run Stargate script
-      #   run: python stargate/main.py
+      #   run: python -m stargate.main
       - name: Run Silo Utilization script
-        run: python silo/ur_sniff.py
+        run: python -m silo.ur_sniff
       # - name: Run Silo Bad Debt script
-      #   run: python silo/main.py
+      #   run: python -m silo.main
       - name: Run Pendle price script
-        run: python pendle/main.py
+        run: python -m pendle.main
       - name: Run LRT Peg Checker Balancer
-        run: python lrt-pegs/balancer/main.py
+        run: python -m lrt-pegs.balancer.main
 
       # save file to cache
       - name: Cache cache-id.txt

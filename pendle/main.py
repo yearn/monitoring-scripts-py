@@ -1,10 +1,12 @@
 from web3 import Web3
 from dotenv import load_dotenv
-import os, json, datetime, requests
+import os, json, datetime
+from utils.telegram import send_telegram_message
 
 # Constants
 DURATION = 1800  # 30 minutes
 THRESHOLD_RATIO = 0.95
+PROTOCOL = "PENDLE"
 
 # Load environment variables
 load_dotenv()
@@ -122,24 +124,7 @@ def get_data_for_chain(chain):
                     f"🕒 Expiry: {expiry}\n"
                     f"🏦 Vault: {name}"
                 )
-                print(message)
-                send_telegram_message(message, False)
-
-
-def send_telegram_message(message, disable_notification):
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_PENDLE")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID_PENDLE")
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {
-        "chat_id": chat_id,
-        "text": message,
-        "disable_notification": disable_notification,
-    }
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
+                send_telegram_message(message, PROTOCOL, False)
 
 
 def main():

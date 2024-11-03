@@ -1,6 +1,7 @@
 from web3 import Web3
 from dotenv import load_dotenv
-import os, json, requests
+import os, json
+from utils.telegram import send_telegram_message
 
 load_dotenv()
 
@@ -9,7 +10,7 @@ w3 = Web3(Web3.HTTPProvider(provider_url))
 w3_mainnet = Web3(Web3.HTTPProvider(provider_url))
 
 ASSET_BONDS_EXCEEDED = "GYR#357"  # https://github.com/gyrostable/gyro-pools/blob/24060707809123e1ffd222eba99a5694e4b074c7/tests/geclp/util.py#L419
-
+PROTOCOL = "PEGS"
 PEG_THRESHOLD = 70
 
 with open("common-abi/BalancerVault.json") as f:
@@ -41,19 +42,6 @@ ids = [
 ]
 
 
-def send_telegram_message(message):
-    # print(f"Sending telegram message:\n{message}")
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_PEGS")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID_PEGS")
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message}
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
-
-
 def check_peg(pool_name, pool_id, idx_lrt, is_nested):
     (_, balances, _) = balancer_vault.functions.getPoolTokens(pool_id).call()
 
@@ -66,8 +54,7 @@ def check_peg(pool_name, pool_id, idx_lrt, is_nested):
     percentage = (balances[idx_lrt] / total) * 100
     if percentage > PEG_THRESHOLD:
         message = f"🚨 Balancer Alert! {pool_name} ratio is {percentage:.2f}% 🚀 "
-        send_telegram_message(message)
-        print(message)
+        send_telegram_message(message, PROTOCOL, True)  # disable notification
 
 
 def main():

@@ -1,8 +1,13 @@
 from web3 import Web3
 from dotenv import load_dotenv
-import os, json, requests
+import os, json
+from utils.telegram import send_telegram_message
 
 load_dotenv()
+
+PROTOCOL = "comp"
+THRESHOLD_UR = 0.96
+THRESHOLD_UR_NOTIFICATION = 0.99
 
 provider_url_polygon = os.getenv("PROVIDER_URL")
 provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
@@ -64,26 +69,6 @@ def build_contract(address, provider_url):
     return contract
 
 
-def send_telegram_message(message, disable_notification):
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN_COMP")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID_COMP")
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {
-        "chat_id": chat_id,
-        "text": message,
-        "disable_notification": disable_notification,
-    }
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
-
-
-THRESHOLD_UR = 0.96
-THRESHOLD_UR_NOTIFICATION = 0.99
-
-
 def print_stuff(chain_name, token_name, ur):
     if ur > THRESHOLD_UR:
         message = (
@@ -95,8 +80,7 @@ def print_stuff(chain_name, token_name, ur):
         disable_notification = True
         if ur > THRESHOLD_UR_NOTIFICATION:
             disable_notification = False
-        print(message)
-        send_telegram_message(message, disable_notification)
+        send_telegram_message(message, PROTOCOL, disable_notification)
 
 
 def process_assets(chain_name, addresses, provider_url):

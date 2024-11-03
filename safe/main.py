@@ -1,6 +1,10 @@
 import requests, os
 from dotenv import load_dotenv
-from utils.cache import get_last_executed_nonce_from_file, write_last_executed_nonce_to_file
+from utils.cache import (
+    get_last_executed_nonce_from_file,
+    write_last_executed_nonce_to_file,
+)
+from utils.telegram import send_telegram_message
 from safe.specific import handle_pendle
 
 load_dotenv()
@@ -103,7 +107,9 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
                 except Exception as e:
                     print(f"Cannot decode Pendle aggregate calls: {e}")
 
-            send_telegram_message(message, protocol)
+            send_telegram_message(
+                message, protocol, False
+            )  # explicitly enable notification
             # write the last executed nonce to file
             write_last_executed_nonce_to_file(safe_address, nonce)
     else:
@@ -114,24 +120,6 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
 
 def run_for_network(network_name, safe_address, protocol):
     check_for_pending_transactions(safe_address, network_name, protocol)
-
-
-def send_telegram_message(message, protocol):
-    print(f"Sending telegram message:\n{message}")
-    max_message_length = 4096
-    if len(message) > max_message_length:
-        message = message[: max_message_length - 3] + "..."
-
-    bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_{protocol.upper()}")
-    chat_id = os.getenv(f"TELEGRAM_CHAT_ID_{protocol.upper()}")
-
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message}
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
 
 
 def main():
