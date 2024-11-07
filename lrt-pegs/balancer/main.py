@@ -11,7 +11,7 @@ w3_mainnet = Web3(Web3.HTTPProvider(provider_url))
 
 ASSET_BONDS_EXCEEDED = "GYR#357"  # https://github.com/gyrostable/gyro-pools/blob/24060707809123e1ffd222eba99a5694e4b074c7/tests/geclp/util.py#L419
 PROTOCOL = "PEGS"
-PEG_THRESHOLD = 70
+PEG_THRESHOLD = 80
 
 with open("common-abi/BalancerVault.json") as f:
     abi_data = json.load(f)
