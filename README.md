@@ -177,8 +177,26 @@ Additionally, other contracts like vePENDLE, PENDLE, RewardDistributor, and Voti
 
 The owner of SY contracts was changed to [governance proxy contract](https://etherscan.io/address/0x2aD631F72fB16d91c4953A7f4260A97C2fE2f31e) with an additional guardian role that can only pause SY contracts. The governance proxy contract owner is multisig defined above.
 
-## LRT Pegs
+## Moonwell
 
-### Exchange rates
+[Moonwell](https://moonwell.fi/) is Compound V2 fork.
 
-Checks the main liquidity pools of LRTs to detect depegging, such as the ezETH-WETH and rsETH-WETH pools in Balancer. The bot monitors pool balances and sends a message if they become skewed.
+### Bad Debt
+
+TODO: implement using this site: https://defirisk.intotheblock.com/metrics/base/moonwell or https://app.gauntlet.xyz/protocols/moonwell/markets/base/liquidations
+
+### Utilization
+
+TODO: check if it possible to use the data from this website: https://app.gauntlet.xyz/protocols/moonwell/markets/base
+
+### Governance
+
+Tenderly alert for queueing tx to [Timelock contract on Base](https://dashboard.tenderly.co/yearn/sam/alerts/rules/41361042-facb-4d5d-b4a5-ddd1323e0602).
+
+[Comptroller contract](https://docs.moonwell.fi/moonwell/developers/comptroller) which handles upgrades and config updates is controlled by the [Timelock contract](https://basescan.org/address/0xfbb21d0380bee3312b33c4353c8936a0f13ef26c#readProxyContract#F2). Delay is [1 day](https://basescan.org/address/0x8b621804a7637b781e2BbD58e256a591F2dF7d51#readContract#F10). The Timelock contract can be paused by the [owner](https://basescan.org/address/0x8b621804a7637b781e2BbD58e256a591F2dF7d51#readContract#F7), which is multisig monitored by our bot.
+
+TODO: Add API calls to get governance proposals.
+
+## LRTs
+
+Check the folder [lrt-pegs](./lrt-pegs/README.md) for monitoring tools for LRTs.
