@@ -6,7 +6,7 @@ from utils.telegram import send_telegram_message
 load_dotenv()
 
 # TODO: Add different threshold UR's for each asset
-THRESHOLD_UR = 0.90
+THRESHOLD_UR = 0.94
 THRESHOLD_UR_NOTIFICATION = 0.98
 PROTOCOL = "SILO"
 
