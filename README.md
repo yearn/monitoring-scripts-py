@@ -197,6 +197,10 @@ Tenderly alert for queueing tx to [Timelock contract on Base](https://dashboard.
 
 TODO: Add API calls to get governance proposals.
 
+## Morpho
+
+Check the folder [morpho](./morpho/README.md) for monitoring tools for Morpho.
+
 ## LRTs
 
 Check the folder [lrt-pegs](./lrt-pegs/README.md) for monitoring tools for LRTs.

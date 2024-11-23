@@ -81,6 +81,8 @@ jobs:
         run: python -m pendle.main
       - name: Run LRT Peg Checker Balancer
         run: python -m lrt-pegs.balancer.main
+      - name: Run Morpho Monitoring script
+        run: python -m morpho.main
 
       # save file to cache
       - name: Cache cache-id.txt
