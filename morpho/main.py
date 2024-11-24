@@ -10,7 +10,7 @@ from utils.cache import (
 # Load environment variables
 load_dotenv()
 
-PROTOCOL = "MORPHO"  # TODO: add env values for telegram for protocol MORPHO
+PROTOCOL = "TEST"  # TODO: add env values for telegram for protocol MORPHO
 # Provider URLs
 PROVIDER_URL_MAINNET = os.getenv("PROVIDER_URL_MAINNET")
 PROVIDER_URL_BASE = os.getenv(

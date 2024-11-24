@@ -1,0 +1,49 @@
+name: Monitoring Scripts
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+env:
+  PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
+  PROVIDER_URL_BASE: ${{ secrets.PROVIDER_URL_BASE }}
+  TELEGRAM_BOT_TOKEN_TEST: ${{ secrets.TELEGRAM_BOT_TOKEN_TEST }}
+  TELEGRAM_CHAT_ID_TEST: ${{ secrets.TELEGRAM_CHAT_ID_TEST }}
+
+jobs:
+  morpho:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip" # caching pip dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # restore file from cache
+      - name: Get Phrase cache file
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: cache-morpho.txt
+          key: cache-morpho-v1-${{ runner.os }}-${{ hashFiles('cache-morpho.txt') }}
+          restore-keys: |
+            cache-morpho-v1-${{ runner.os }}-
+
+      - name: Run Morpho Monitoring script
+        run: python -m morpho.main
+
+      # save file to cache
+      - name: Cache cache-morpho.txt
+        if: always()
+        id: cache-save
+        uses: actions/cache/save@v4
+        with:
+          path: cache-morpho.txt
+          key: cache-morpho-v1-${{ runner.os }}-${{ hashFiles('cache-morpho.txt') }}
