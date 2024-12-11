@@ -7,6 +7,8 @@ from utils.cache import (
     write_last_executed_morpho_to_file,
 )
 
+# TODO: need to bundle blockchain calls because we get reverts for too many calls
+
 # Load environment variables
 load_dotenv()
 
@@ -21,6 +23,11 @@ PROVIDER_URL_BASE = os.getenv(
 MAINNET_VAULTS = [
     ["Steakhouse USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"],
     ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D"],
+    ["Gantlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618"],
+    ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d"],
+    ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658"],
+    ["Gantlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458"],
+    ["Gantlet DAI Core", "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5"],
 ]
 BASE_VAULTS = [
     ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"],
@@ -128,7 +135,7 @@ def get_data_for_chain(chain):
 
 def main():
     get_data_for_chain("mainnet")
-    get_data_for_chain("base")
+    # get_data_for_chain("base")
 
 
 if __name__ == "__main__":
