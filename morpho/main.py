@@ -63,7 +63,8 @@ def check_markets_pending_cap(name, morpho_contract):
                 vault_address, market_type
             ):
                 send_telegram_message(
-                    f"Updating supply cap for market: {supply_markets} to higher value for vault {name}", PROTOCOL
+                    f"Updating supply cap for market: {supply_markets} to higher value for vault {name}",
+                    PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(
                     vault_address, market_type, pending_cap_timestamp
@@ -81,7 +82,8 @@ def check_markets_pending_cap(name, morpho_contract):
                 vault_address, market_type
             ):
                 send_telegram_message(
-                    f"Updating withdraw cap for market: {withdraw_market} to higher value for vault {name}", PROTOCOL
+                    f"Updating withdraw cap for market: {withdraw_market} to higher value for vault {name}",
+                    PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(
                     vault_address, market_type, pending_cap_timestamp

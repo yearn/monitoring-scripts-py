@@ -7,6 +7,7 @@ MARKET_URL = "https://app.morpho.org/market"
 PROTOCOL = "TEST"  # TODO: add env values for telegram for protocol MORPHO
 BAD_DEBT_RATIO = 0.1
 
+
 def get_morpho_markets():
     variables = {
         "wanted_markets": [
