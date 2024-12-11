@@ -13,6 +13,7 @@ from utils.cache import (
 load_dotenv()
 
 PROTOCOL = "MORPHO"  # TODO: add env values for telegram for protocol MORPHO
+MARKET_URL = "https://app.morpho.org/market"
 # Provider URLs
 PROVIDER_URL_MAINNET = os.getenv("PROVIDER_URL_MAINNET")
 PROVIDER_URL_BASE = os.getenv(
@@ -49,21 +50,27 @@ def load_abi(file_path):
 ABI_MORPHO = load_abi("morpho/abi/morpho.json")
 
 
-def check_markets_pending_cap(name, morpho_contract):
+def get_market_url(market_hex, chain):
+    market = Web3.to_hex(market_hex)
+    return f"{MARKET_URL}?id={market}&network={chain}"
+
+
+def check_markets_pending_cap(name, morpho_contract, chain):
     vault_address = morpho_contract.address
     length_of_supply_queue = morpho_contract.functions.supplyQueueLength().call()
     market_type = "supply"
     for i in range(length_of_supply_queue):
-        supply_markets = morpho_contract.functions.supplyQueue(i).call()
+        supply_market = morpho_contract.functions.supplyQueue(i).call()
         pending_cap_timestamp = morpho_contract.functions.pendingCap(
-            supply_markets
+            supply_market
         ).call()[1]
         if pending_cap_timestamp > 0:
             if pending_cap_timestamp > get_last_executed_morpho_from_file(
                 vault_address, market_type
             ):
+                market_url = get_market_url(supply_market, chain)
                 send_telegram_message(
-                    f"Updating supply cap for market: {supply_markets} to higher value for vault {name}",
+                    f"Updating supply cap to higher value for vault {name} for market: {market_url}",
                     PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(
@@ -81,8 +88,9 @@ def check_markets_pending_cap(name, morpho_contract):
             if pending_cap_timestamp > get_last_executed_morpho_from_file(
                 vault_address, market_type
             ):
+                market_url = get_market_url(withdraw_market, chain)
                 send_telegram_message(
-                    f"Updating withdraw cap for market: {withdraw_market} to higher value for vault {name}",
+                    f"Updating withdraw cap to higher value for vault {name} for market: {market_url}",
                     PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(
@@ -130,7 +138,7 @@ def get_data_for_chain(chain):
 
     for vault in vaults:
         morpho_contract = w3.eth.contract(address=vault[1], abi=ABI_MORPHO)
-        check_markets_pending_cap(vault[0], morpho_contract)
+        check_markets_pending_cap(vault[0], morpho_contract, chain)
         check_timelock(vault[0], morpho_contract)
         check_guardian(vault[0], morpho_contract)
 
