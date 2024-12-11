@@ -203,6 +203,10 @@ To get the proposal data from the received alert:
 
 TODO: Add API calls to get governance proposals.
 
+## Morpho
+
+Check the folder [morpho](./morpho/README.md) for monitoring tools for Morpho.
+
 ## LRTs
 
 Check the folder [lrt-pegs](./lrt-pegs/README.md) for monitoring tools for LRTs.
