@@ -159,6 +159,7 @@ def main():
         ["AAVE", "arbitrum-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
         ["MOONWELL", "base-main", "0x446342AF4F3bCD374276891C6bb3411bf2F8779E"], # admin of timelock controller
         ["MOONWELL", "base-main", "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38"], # pause guardian of comptroller contract
+        ["USD0", "mainnet", "0x6e9d65eC80D69b1f508560Bc7aeA5003db1f7FB7"], # USD0 protocol governance
         # no active stargate strategies
         # ["STARGATE", "mainnet", "0x65bb797c2B9830d891D87288F029ed8dACc19705"],
         # ["STARGATE", "polygon-main", "0x47290DE56E71DC6f46C26e50776fe86cc8b21656"],
