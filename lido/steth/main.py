@@ -10,7 +10,7 @@ peg_threshold = 0.05  # 5% used
 provider_url = os.getenv("PROVIDER_URL_MAINNET")
 w3 = Web3(Web3.HTTPProvider(provider_url))
 
-with open("lido/steth/abi/CurvePool.json") as f:
+with open("common-abi/CurvePool.json") as f:
     abi_data = json.load(f)
     if isinstance(abi_data, dict):
         abi_curve_pool = abi_data["result"]
