@@ -222,3 +222,7 @@ We are monitoring [ms address](safe/main.py#162).
 Usual maintains an insurance fund mechanism as part of its protocol treasury rather than utilizing a separate vault structure. The fund serves as a protective buffer against extreme market events and temporary collateral value fluctuations. The Protocol aims to maintain a minimum 30 basis points (bps) protective buffer at all times to ensure collateral security.
 
 Running daily script to check the collateral factor value.
+
+### USD0 Price Peg
+
+Running hourly script to check the peg of USD0. It uses Curve pool USD0/USDC to check the peg.
