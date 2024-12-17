@@ -7,18 +7,14 @@ from utils.cache import (
     write_last_executed_morpho_to_file,
 )
 
-# TODO: need to bundle blockchain calls because we get reverts for too many calls
-
 # Load environment variables
 load_dotenv()
 
-PROTOCOL = "MORPHO"  # TODO: add env values for telegram for protocol MORPHO
+PROTOCOL = "MORPHO"
 MARKET_URL = "https://app.morpho.org/market"
 # Provider URLs
 PROVIDER_URL_MAINNET = os.getenv("PROVIDER_URL_MAINNET")
-PROVIDER_URL_BASE = os.getenv(
-    "PROVIDER_URL_BASE"
-)  # TODO: add base provider URL to gh actions
+PROVIDER_URL_BASE = os.getenv("PROVIDER_URL_BASE")
 
 # format of the vault list item is: [name, address]
 MAINNET_VAULTS = [
@@ -55,15 +51,44 @@ def get_market_url(market_hex, chain):
     return f"{MARKET_URL}?id={market}&network={chain}"
 
 
-def check_markets_pending_cap(name, morpho_contract, chain):
+def check_markets_pending_cap(name, morpho_contract, chain, w3):
+    with w3.batch_requests() as batch:
+        batch.add(morpho_contract.functions.supplyQueueLength())
+        batch.add(morpho_contract.functions.withdrawQueueLength())
+
+        length_responses = batch.execute()
+        if len(length_responses) != 2:
+            raise ValueError(
+                "Expected 2 responses from batch, got: ", len(length_responses)
+            )
+        length_of_supply_queue = length_responses[0]
+        length_of_withdraw_queue = length_responses[1]
+
     vault_address = morpho_contract.address
-    length_of_supply_queue = morpho_contract.functions.supplyQueueLength().call()
+    with w3.batch_requests() as batch:
+        for i in range(length_of_supply_queue):
+            batch.add(morpho_contract.functions.supplyQueue(i))
+        for i in range(length_of_withdraw_queue):
+            batch.add(morpho_contract.functions.withdrawQueue(i))
+        market_responses = batch.execute()
+        if len(market_responses) != length_of_supply_queue + length_of_withdraw_queue:
+            raise ValueError(
+                "Expected 2 responses from batch, got: ", len(market_responses)
+            )
+
+    with w3.batch_requests() as batch:
+        for i in range(0, length_of_supply_queue):
+            batch.add(morpho_contract.functions.pendingCap(market_responses[i]))
+        for i in range(
+            length_of_supply_queue, length_of_supply_queue + length_of_withdraw_queue
+        ):
+            batch.add(morpho_contract.functions.pendingCap(market_responses[i]))
+        pending_cap_responses = batch.execute()
+
     market_type = "supply"
-    for i in range(length_of_supply_queue):
-        supply_market = morpho_contract.functions.supplyQueue(i).call()
-        pending_cap_timestamp = morpho_contract.functions.pendingCap(
-            supply_market
-        ).call()[1]
+    for i in range(0, length_of_supply_queue):
+        supply_market = market_responses[i]
+        pending_cap_timestamp = pending_cap_responses[i][1]  # [1] to get the timestamp
         if pending_cap_timestamp > 0:
             if pending_cap_timestamp > get_last_executed_morpho_from_file(
                 vault_address, market_type
@@ -77,13 +102,12 @@ def check_markets_pending_cap(name, morpho_contract, chain):
                     vault_address, market_type, pending_cap_timestamp
                 )
 
-    length_of_withdraw_queue = morpho_contract.functions.withdrawQueueLength().call()
     market_type = "withdraw"
-    for i in range(length_of_withdraw_queue):
-        withdraw_market = morpho_contract.functions.withdrawQueue(i).call()
-        pending_cap_timestamp = morpho_contract.functions.pendingCap(
-            withdraw_market
-        ).call()[1]
+    for i in range(
+        length_of_supply_queue, length_of_supply_queue + length_of_withdraw_queue
+    ):
+        withdraw_market = market_responses[i]
+        pending_cap_timestamp = pending_cap_responses[i][1]  # [1] to get the timestamp
         if pending_cap_timestamp > 0:
             if pending_cap_timestamp > get_last_executed_morpho_from_file(
                 vault_address, market_type
@@ -96,31 +120,34 @@ def check_markets_pending_cap(name, morpho_contract, chain):
                 write_last_executed_morpho_to_file(
                     vault_address, market_type, pending_cap_timestamp
                 )
-    # TODO: combine multiple messages into one
 
 
-def check_timelock(name, morpho_contract):
-    value_type = "timelock"
-    timelock = morpho_contract.functions.pendingTimelock().call()[1]
-    if timelock > get_last_executed_morpho_from_file(
-        morpho_contract.address, value_type
+def check_pending_role_change(name, morpho_contract, role_type, timestamp):
+    if timestamp > get_last_executed_morpho_from_file(
+        morpho_contract.address, role_type
     ):
-        send_telegram_message(f"Timelock is changing for vault {name}", PROTOCOL)
+        send_telegram_message(
+            f"{role_type.capitalize()} is changing for vault {name}", PROTOCOL
+        )
         write_last_executed_morpho_to_file(
-            morpho_contract.address, value_type, timelock
+            morpho_contract.address, role_type, timestamp
         )
 
 
-def check_guardian(name, morpho_contract):
-    value_type = "guardian"
-    guardian = morpho_contract.functions.pendingGuardian().call()[1]
-    if guardian > get_last_executed_morpho_from_file(
-        morpho_contract.address, value_type
-    ):
-        send_telegram_message(f"Guardian is changing for vault {name}", PROTOCOL)
-        write_last_executed_morpho_to_file(
-            morpho_contract.address, value_type, guardian
-        )
+def check_timelock_and_guardian(name, morpho_contract):
+    with morpho_contract.w3.batch_requests() as batch:
+        batch.add(morpho_contract.functions.pendingTimelock())
+        batch.add(morpho_contract.functions.pendingGuardian())
+        responses = batch.execute()
+        if len(responses) != 2:
+            raise ValueError("Expected 2 responses from batch, got: ", len(responses))
+
+        timelock = responses[0][1]  # [1] to get the timestamp
+        guardian = responses[1][1]  # [1] to get the timestamp
+
+    print(f"Timelock: {timelock}, Guardian: {guardian}")
+    check_pending_role_change(name, morpho_contract, "timelock", timelock)
+    check_pending_role_change(name, morpho_contract, "guardian", guardian)
 
 
 def get_data_for_chain(chain):
@@ -133,14 +160,16 @@ def get_data_for_chain(chain):
     else:
         raise ValueError("Invalid chain")
 
-    print(f"Processing {chain} assets...")
+    print(f"Processing Morpho Vaults on {chain} ...")
     print(f"Vaults: {vaults}")
 
     for vault in vaults:
+        # TODO: additional optimization is possible by combining marketes of all vaults into one list
+        # and then checking the pending caps for all markets in one batch request
+        # Also, a lot vaults have the same markets, so we can optimize by checking the markets only once
         morpho_contract = w3.eth.contract(address=vault[1], abi=ABI_MORPHO)
-        check_markets_pending_cap(vault[0], morpho_contract, chain)
-        check_timelock(vault[0], morpho_contract)
-        check_guardian(vault[0], morpho_contract)
+        check_markets_pending_cap(vault[0], morpho_contract, chain, w3)
+        check_timelock_and_guardian(vault[0], morpho_contract)
 
 
 def main():
