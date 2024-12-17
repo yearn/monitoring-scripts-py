@@ -12,6 +12,7 @@ load_dotenv()
 
 PROTOCOL = "MORPHO"
 MARKET_URL = "https://app.morpho.org/market"
+VAULT_URL = "https://app.morpho.org/vault"
 # Provider URLs
 PROVIDER_URL_MAINNET = os.getenv("PROVIDER_URL_MAINNET")
 PROVIDER_URL_BASE = os.getenv("PROVIDER_URL_BASE")
@@ -49,6 +50,14 @@ ABI_MORPHO = load_abi("morpho/abi/morpho.json")
 def get_market_url(market_hex, chain):
     market = Web3.to_hex(market_hex)
     return f"{MARKET_URL}?id={market}&network={chain}"
+
+
+def get_vault_url_by_name(vault_name, chain):
+    vaults = MAINNET_VAULTS if chain == "mainnet" else BASE_VAULTS
+    for name, address in vaults:
+        if name == vault_name:
+            return f"{VAULT_URL}?vault={address}&network={chain}"
+    return None
 
 
 def check_markets_pending_cap(name, morpho_contract, chain, w3):
@@ -94,8 +103,9 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 vault_address, market_type
             ):
                 market_url = get_market_url(supply_market, chain)
+                vault_url = get_vault_url_by_name(name, chain)
                 send_telegram_message(
-                    f"Updating supply cap to higher value for vault {name} for market: {market_url}",
+                    f"Updating supply cap to higher value for vault {name}({vault_url}) for market: {market_url}",
                     PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(
@@ -113,8 +123,9 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 vault_address, market_type
             ):
                 market_url = get_market_url(withdraw_market, chain)
+                vault_url = get_vault_url_by_name(name, chain)
                 send_telegram_message(
-                    f"Updating withdraw cap to higher value for vault {name} for market: {market_url}",
+                    f"Updating withdraw cap to higher value for vault {name}({vault_url}) for market: {market_url}",
                     PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(
@@ -145,7 +156,6 @@ def check_timelock_and_guardian(name, morpho_contract):
         timelock = responses[0][1]  # [1] to get the timestamp
         guardian = responses[1][1]  # [1] to get the timestamp
 
-    print(f"Timelock: {timelock}, Guardian: {guardian}")
     check_pending_role_change(name, morpho_contract, "timelock", timelock)
     check_pending_role_change(name, morpho_contract, "guardian", guardian)
 
@@ -166,7 +176,6 @@ def get_data_for_chain(chain):
     for vault in vaults:
         # TODO: additional optimization is possible by combining marketes of all vaults into one list
         # and then checking the pending caps for all markets in one batch request
-        # Also, a lot vaults have the same markets, so we can optimize by checking the markets only once
         morpho_contract = w3.eth.contract(address=vault[1], abi=ABI_MORPHO)
         check_markets_pending_cap(vault[0], morpho_contract, chain, w3)
         check_timelock_and_guardian(vault[0], morpho_contract)
