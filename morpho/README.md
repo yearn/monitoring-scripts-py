@@ -13,6 +13,7 @@ The scripts checks if there are any new value pending in timelock for a given va
 - Changing timelock value, minimal values is 1 day.
 - Changing guardian address.
 - Changing supply caps, only to higher value than the current one, for both supply and withdraw markets.
+- Removing of a market from the vault.
 
 ### How to add a new vault
 
