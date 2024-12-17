@@ -133,19 +133,21 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 )
 
 
-def check_pending_role_change(name, morpho_contract, role_type, timestamp):
+def check_pending_role_change(name, morpho_contract, role_type, timestamp, chain):
     if timestamp > get_last_executed_morpho_from_file(
         morpho_contract.address, role_type
     ):
+        vault_url = get_vault_url_by_name(name, chain)
         send_telegram_message(
-            f"{role_type.capitalize()} is changing for vault {name}", PROTOCOL
+            f"{role_type.capitalize()} is changing for vault {name}({vault_url})",
+            PROTOCOL,
         )
         write_last_executed_morpho_to_file(
             morpho_contract.address, role_type, timestamp
         )
 
 
-def check_timelock_and_guardian(name, morpho_contract):
+def check_timelock_and_guardian(name, morpho_contract, chain):
     with morpho_contract.w3.batch_requests() as batch:
         batch.add(morpho_contract.functions.pendingTimelock())
         batch.add(morpho_contract.functions.pendingGuardian())
@@ -156,8 +158,8 @@ def check_timelock_and_guardian(name, morpho_contract):
         timelock = responses[0][1]  # [1] to get the timestamp
         guardian = responses[1][1]  # [1] to get the timestamp
 
-    check_pending_role_change(name, morpho_contract, "timelock", timelock)
-    check_pending_role_change(name, morpho_contract, "guardian", guardian)
+    check_pending_role_change(name, morpho_contract, "timelock", timelock, chain)
+    check_pending_role_change(name, morpho_contract, "guardian", guardian, chain)
 
 
 def get_data_for_chain(chain):
@@ -178,7 +180,7 @@ def get_data_for_chain(chain):
         # and then checking the pending caps for all markets in one batch request
         morpho_contract = w3.eth.contract(address=vault[1], abi=ABI_MORPHO)
         check_markets_pending_cap(vault[0], morpho_contract, chain, w3)
-        check_timelock_and_guardian(vault[0], morpho_contract)
+        check_timelock_and_guardian(vault[0], morpho_contract, chain)
 
 
 def main():
