@@ -1,6 +1,7 @@
 from web3 import Web3
 from dotenv import load_dotenv
 import os, json
+from datetime import datetime
 from utils.telegram import send_telegram_message
 from utils.cache import (
     get_last_executed_morpho_from_file,
@@ -16,6 +17,9 @@ VAULT_URL = "https://app.morpho.org/vault"
 # Provider URLs
 PROVIDER_URL_MAINNET = os.getenv("PROVIDER_URL_MAINNET")
 PROVIDER_URL_BASE = os.getenv("PROVIDER_URL_BASE")
+
+PENDING_CAP_TYPE = "pending_cap"
+REMOVABLE_AT_TYPE = "removable_at"
 
 # format of the vault list item is: [name, address]
 MAINNET_VAULTS = [
@@ -47,8 +51,7 @@ def load_abi(file_path):
 ABI_MORPHO = load_abi("morpho/abi/morpho.json")
 
 
-def get_market_url(market_hex, chain):
-    market = Web3.to_hex(market_hex)
+def get_market_url(market, chain):
     return f"{MARKET_URL}?id={market}&network={chain}"
 
 
@@ -68,7 +71,8 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
         length_responses = batch.execute()
         if len(length_responses) != 2:
             raise ValueError(
-                "Expected 2 responses from batch, got: ", len(length_responses)
+                "Expected 2 responses from batch(supplyQueueLength+withdrawQueueLength), got: ",
+                len(length_responses),
             )
         length_of_supply_queue = length_responses[0]
         length_of_withdraw_queue = length_responses[1]
@@ -82,60 +86,86 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
         market_responses = batch.execute()
         if len(market_responses) != length_of_supply_queue + length_of_withdraw_queue:
             raise ValueError(
-                "Expected 2 responses from batch, got: ", len(market_responses)
+                "Expected ",
+                length_of_supply_queue + length_of_withdraw_queue,
+                " responses from batch(supplyQueue+withdrawQueue), got: ",
+                len(market_responses),
             )
 
+    markets = list(set(market_responses))
+
     with w3.batch_requests() as batch:
-        for i in range(0, length_of_supply_queue):
-            batch.add(morpho_contract.functions.pendingCap(market_responses[i]))
-        for i in range(
-            length_of_supply_queue, length_of_supply_queue + length_of_withdraw_queue
-        ):
-            batch.add(morpho_contract.functions.pendingCap(market_responses[i]))
-        pending_cap_responses = batch.execute()
+        for market in markets:
+            batch.add(morpho_contract.functions.pendingCap(market))
+            batch.add(morpho_contract.functions.config(market))
+        pending_cap_and_config_responses = batch.execute()
+        if len(pending_cap_and_config_responses) != len(markets) * 2:
+            raise ValueError(
+                "Expected ",
+                len(markets) * 2,
+                " responses from batch(pedningCap+config), got: ",
+                len(pending_cap_and_config_responses),
+            )
 
-    market_type = "supply"
-    for i in range(0, length_of_supply_queue):
-        supply_market = market_responses[i]
-        pending_cap_timestamp = pending_cap_responses[i][1]  # [1] to get the timestamp
+    for i in range(0, len(markets), 2):
+        market_id = markets[i]
+        market = Web3.to_hex(market_id)
+        pending_cap_timestamp = pending_cap_and_config_responses[i][
+            1
+        ]  # [1] to get the timestamp
+        config = pending_cap_and_config_responses[i + 1]
+        current_cap = config[0]
+
+        # generat urls
+        market_url = get_market_url(market, chain)
+        vault_url = get_vault_url_by_name(name, chain)
+
+        # pending_cap check
         if pending_cap_timestamp > 0:
             if pending_cap_timestamp > get_last_executed_morpho_from_file(
-                vault_address, market_type
+                vault_address, market, PENDING_CAP_TYPE
             ):
-                market_url = get_market_url(supply_market, chain)
-                vault_url = get_vault_url_by_name(name, chain)
+                pending_cap_value = pending_cap_and_config_responses[i][
+                    0
+                ]  # [0] to get the value
+                difference_in_percentage = (
+                    (pending_cap_value - current_cap) / current_cap
+                ) * 100
+                time = datetime.fromtimestamp(pending_cap_timestamp).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
                 send_telegram_message(
-                    f"Updating supply cap to higher value for vault {name}({vault_url}) for market: {market_url}",
+                    f"Updating cap to new cap {pending_cap_value}, current cap {current_cap}, difference: {difference_in_percentage:.2f}%. \nFor vault {name}({vault_url}) for market: {market_url}. Queued for {time}",
                     PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(
-                    vault_address, market_type, pending_cap_timestamp
+                    vault_address, market, PENDING_CAP_TYPE, pending_cap_timestamp
                 )
 
-    market_type = "withdraw"
-    for i in range(
-        length_of_supply_queue, length_of_supply_queue + length_of_withdraw_queue
-    ):
-        withdraw_market = market_responses[i]
-        pending_cap_timestamp = pending_cap_responses[i][1]  # [1] to get the timestamp
-        if pending_cap_timestamp > 0:
-            if pending_cap_timestamp > get_last_executed_morpho_from_file(
-                vault_address, market_type
+        # removable_at check
+        removable_at = config[2]
+        if removable_at > 0:
+            if removable_at > get_last_executed_morpho_from_file(
+                vault_address, market, REMOVABLE_AT_TYPE
             ):
-                market_url = get_market_url(withdraw_market, chain)
-                vault_url = get_vault_url_by_name(name, chain)
+                time = datetime.fromtimestamp(removable_at).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
                 send_telegram_message(
-                    f"Updating withdraw cap to higher value for vault {name}({vault_url}) for market: {market_url}",
+                    f"Vault {name}({vault_url}) queued to remove market: {market_url} at {time}",
                     PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(
-                    vault_address, market_type, pending_cap_timestamp
+                    vault_address, market, REMOVABLE_AT_TYPE, removable_at
                 )
 
 
 def check_pending_role_change(name, morpho_contract, role_type, timestamp, chain):
+    market_id = (
+        ""  # use empty string for all markets because the value is used per vault
+    )
     if timestamp > get_last_executed_morpho_from_file(
-        morpho_contract.address, role_type
+        morpho_contract.address, market_id, role_type
     ):
         vault_url = get_vault_url_by_name(name, chain)
         send_telegram_message(
@@ -143,7 +173,7 @@ def check_pending_role_change(name, morpho_contract, role_type, timestamp, chain
             PROTOCOL,
         )
         write_last_executed_morpho_to_file(
-            morpho_contract.address, role_type, timestamp
+            morpho_contract.address, market_id, role_type, timestamp
         )
 
 
