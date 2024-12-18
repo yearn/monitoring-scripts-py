@@ -53,7 +53,9 @@ def main():
         # Execute all calls at once
         responses = batch.execute()
         if len(responses) != len(ids):
-            raise ValueError(f"Expected {len(ids)} responses from batch, got: {len(responses)}")
+            raise ValueError(
+                f"Expected {len(ids)} responses from batch, got: {len(responses)}"
+            )
 
     # Process results outside the batch
     for (pool_name, pool_id, idx_lrt, is_nested), response in zip(ids, responses):

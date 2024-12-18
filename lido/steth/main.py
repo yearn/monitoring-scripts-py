@@ -50,15 +50,6 @@ def check_steth_validator_rate():
         return ta / ts
 
 
-def check_steth_crv_pool_rate(amount_in):
-    try:
-        swap_res = curve_pool.functions.get_dy(1, 0, int(amount_in)).call()
-        return swap_res
-    except Exception as e:
-        error_message = f"Error calling get_dy in curve pool: {e}"
-        send_telegram_message(error_message, PROTOCOL)
-
-
 def check_peg(validator_rate, curve_rate):
     if curve_rate == 0:
         return False
@@ -75,7 +66,6 @@ def main():
     amounts = [1e18, 100e18, 1000e18]
 
     # Create batch request
-    batch_requests = []
     with w3.batch_requests() as batch:
         # Add all curve pool requests to the batch
         for amount in amounts:
