@@ -11,6 +11,8 @@ def send_telegram_message(message, protocol, disable_notification=False):
         message = message[: max_message_length - 3] + "..."
 
     bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_{protocol.upper()}")
+    if not bot_token:
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN_DEFAULT")
     chat_id = os.getenv(f"TELEGRAM_CHAT_ID_{protocol.upper()}")
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"

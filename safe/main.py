@@ -27,7 +27,7 @@ safe_apis = {
     "arbitrum-main": "https://safe-transaction-arbitrum.safe.global",
     "optimism-main": "https://safe-transaction-optimism.safe.global",
     "polygon-main": "https://safe-transaction-polygon.safe.global",
-    "base-main": "https://safe-transaction-polygon.safe.global"
+    "base-main": "https://safe-transaction-polygon.safe.global",
     # "optim-yearn": "https://safe-transaction-optimism.safe.global",
 }
 
@@ -157,8 +157,16 @@ def main():
         ],  # aave Governance Guardian Safe
         ["AAVE", "polygon-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
         ["AAVE", "arbitrum-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
-        ["MOONWELL", "base-main", "0x446342AF4F3bCD374276891C6bb3411bf2F8779E"], # admin of timelock controller
-        ["MOONWELL", "base-main", "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38"], # pause guardian of comptroller contract
+        [
+            "MOONWELL",
+            "base-main",
+            "0x446342AF4F3bCD374276891C6bb3411bf2F8779E",
+        ],  # admin of timelock controller
+        [
+            "MOONWELL",
+            "base-main",
+            "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
+        ],  # pause guardian of comptroller contract
         # no active stargate strategies
         # ["STARGATE", "mainnet", "0x65bb797c2B9830d891D87288F029ed8dACc19705"],
         # ["STARGATE", "polygon-main", "0x47290DE56E71DC6f46C26e50776fe86cc8b21656"],
