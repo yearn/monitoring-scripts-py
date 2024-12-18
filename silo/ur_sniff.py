@@ -29,14 +29,8 @@ arbitrum_silo_lens_address = "0xBDb843c7a7e48Dc543424474d7Aa63b61B5D9536"
 arbitrum_usdce_address = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
 
 
-# Build contract function
-def build_contract(address, provider_url):
-    w3 = Web3(Web3.HTTPProvider(provider_url))
-    contract = w3.eth.contract(address=address, abi=abi_sl)
-    return contract
-
-
 def print_stuff(chain_name, token_name, ur):
+    print(f"Chain: {chain_name}, Token: {token_name}, UR: {ur}")
     if ur > THRESHOLD_UR:
         message = (
             "🚨 **BEEP BOP** 🚨\n"
@@ -52,11 +46,34 @@ def print_stuff(chain_name, token_name, ur):
 
 # Function to process assets for a specific network
 def process_assets(chain_name, values, silo_lens_address, quote_address, provider_url):
-    silo_lens = build_contract(silo_lens_address, provider_url)
-    for silo_name, silo_address in values:
-        ur = silo_lens.functions.getUtilization(silo_address, quote_address).call()
-        human_readable_ur = ur / 1e18
-        print_stuff(chain_name, silo_name, human_readable_ur)
+    w3 = Web3(Web3.HTTPProvider(provider_url))
+    silo_lens = w3.eth.contract(address=silo_lens_address, abi=abi_sl)
+
+    # Prepare batch calls
+    with w3.batch_requests() as batch:
+        # Add all utilization calls to the batch
+        calls = []
+        for silo_name, silo_address in values:
+            calls.append(
+                (
+                    silo_name,
+                    batch.add(
+                        silo_lens.functions.getUtilization(silo_address, quote_address)
+                    ),
+                )
+            )
+
+        # Execute all calls at once
+        responses = batch.execute()
+        if len(responses) != len(values):
+            raise ValueError(
+                f"Expected {len(values)} responses from batch, got: {len(responses)}"
+            )
+
+        # Process results
+        for (silo_name, _), ur in zip(values, responses):
+            human_readable_ur = ur / 1e18
+            print_stuff(chain_name, silo_name, human_readable_ur)
 
 
 # Main function

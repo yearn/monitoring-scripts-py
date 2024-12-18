@@ -27,7 +27,7 @@ safe_apis = {
     "arbitrum-main": "https://safe-transaction-arbitrum.safe.global",
     "optimism-main": "https://safe-transaction-optimism.safe.global",
     "polygon-main": "https://safe-transaction-polygon.safe.global",
-    "base-main": "https://safe-transaction-polygon.safe.global"
+    "base-main": "https://safe-transaction-polygon.safe.global",
     # "optim-yearn": "https://safe-transaction-optimism.safe.global",
 }
 

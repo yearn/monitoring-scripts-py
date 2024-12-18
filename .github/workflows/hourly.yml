@@ -10,6 +10,7 @@ env:
   PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
   PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
   PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
+  PROVIDER_URL_BASE: ${{ secrets.PROVIDER_URL_BASE }}
   TELEGRAM_BOT_TOKEN_AAVE: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
   TELEGRAM_CHAT_ID_AAVE: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
   TELEGRAM_BOT_TOKEN_COMP: ${{ secrets.TELEGRAM_BOT_TOKEN_COMP }}
@@ -26,6 +27,8 @@ env:
   TELEGRAM_CHAT_ID_PENDLE: ${{ secrets.TELEGRAM_CHAT_ID_PENDLE }}
   TELEGRAM_BOT_TOKEN_PEGS: ${{ secrets.TELEGRAM_BOT_TOKEN_PEGS }}
   TELEGRAM_CHAT_ID_PEGS: ${{ secrets.TELEGRAM_CHAT_ID_PEGS }}
+  TELEGRAM_CHAT_ID_MORPHO: ${{ secrets.TELEGRAM_CHAT_ID_MORPHO }}
+  TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
   GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
   ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
   POLYGONSCAN_TOKEN: ${{ secrets.POLYGONSCAN_TOKEN }}
@@ -81,6 +84,10 @@ jobs:
         run: python -m pendle.main
       - name: Run LRT Peg Checker Balancer
         run: python -m lrt-pegs.balancer.main
+      - name: Run Morpho Monitoring script
+        run: python -m morpho.main
+      - name: Run Morpho Bad Debt script
+        run: python -m morpho.bad_debt
       - name: Run USD0 Peg Price Checker
         run: python -m usd0.price
 
