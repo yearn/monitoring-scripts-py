@@ -62,13 +62,6 @@ optimism_addresses = [
 ]
 
 
-# Build contract function
-def build_contract(address, provider_url):
-    w3 = Web3(Web3.HTTPProvider(provider_url))
-    contract = w3.eth.contract(address=address, abi=abi_ctoken)
-    return contract
-
-
 def print_stuff(chain_name, token_name, ur):
     if ur > THRESHOLD_UR:
         message = (
@@ -84,11 +77,31 @@ def print_stuff(chain_name, token_name, ur):
 
 
 def process_assets(chain_name, addresses, provider_url):
-    for i in range(0, len(addresses), 2):
-        ctoken = build_contract(addresses[i], provider_url)
-        ctoken_name = addresses[i + 1]
-        ur = int(ctoken.functions.getUtilization().call())
-        ur = ur / 1e18  # unscale it, it will be some number like 0.7, 0.8
+    w3 = Web3(Web3.HTTPProvider(provider_url))
+
+    # Prepare batch calls
+    with w3.batch_requests() as batch:
+        contracts = []
+        for i in range(0, len(addresses), 2):
+            ctoken_address = addresses[i]
+            ctoken = w3.eth.contract(address=ctoken_address, abi=abi_ctoken)
+            contracts.append(ctoken)
+
+            # Add utilization call to batch
+            batch.add(ctoken.functions.getUtilization())
+
+        # Execute all calls at once
+        responses = batch.execute()
+        expected_responses = len(addresses) / 2  # 1 call per token pair
+        if len(responses) != expected_responses:
+            raise ValueError(
+                f"Expected {expected_responses} responses from batch, got: {len(responses)}"
+            )
+
+    # Process results
+    for i in range(len(responses)):
+        ur = int(responses[i]) / 1e18  # unscale it
+        ctoken_name = addresses[i * 2 + 1]  # get token name from addresses array
         print_stuff(chain_name, ctoken_name, ur)
 
 
