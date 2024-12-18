@@ -63,14 +63,8 @@ THRESHOLD_UR = 0.96
 THRESHOLD_UR_NOTIFICATION = 0.99
 
 
-# Build contract function
-def build_contract(address, provider_url):
-    w3 = Web3(Web3.HTTPProvider(provider_url))
-    contract = w3.eth.contract(address=address, abi=abi_atoken)
-    return contract
-
-
 def print_stuff(chain_name, token_name, ur):
+    print(f"Chain: {chain_name}, Token: {token_name}, UR: {ur}")
     if ur > THRESHOLD_UR:
         message = (
             "🚨 **BEEP BOP** 🚨\n"
@@ -86,20 +80,41 @@ def print_stuff(chain_name, token_name, ur):
 
 # Function to process assets for a specific network
 def process_assets(chain_name, addresses, provider_url):
-    for atoken_address, underlying_token_address in addresses:
-        # Build contracts
-        atoken = build_contract(atoken_address, provider_url)
-        underlying_token = build_contract(underlying_token_address, provider_url)
+    w3 = Web3(Web3.HTTPProvider(provider_url))
 
-        # Get total supply and available balance
-        ts = atoken.functions.totalSupply().call()
-        av = underlying_token.functions.balanceOf(atoken_address).call()
+    # Prepare all contracts and batch calls
+    with w3.batch_requests() as batch:
+        contracts = []
+        for atoken_address, underlying_token_address in addresses:
+            atoken = w3.eth.contract(address=atoken_address, abi=abi_atoken)
+            underlying_token = w3.eth.contract(
+                address=underlying_token_address, abi=abi_atoken
+            )
+            contracts.append((atoken, underlying_token))
+
+            # Add all calls to the batch
+            batch.add(atoken.functions.totalSupply())
+            batch.add(underlying_token.functions.balanceOf(atoken_address))
+            batch.add(underlying_token.functions.symbol())
+
+        # Execute all calls at once
+        responses = batch.execute()
+        expected_responses = len(addresses) * 3
+        if len(responses) != expected_responses:
+            raise ValueError(
+                f"Expected {expected_responses} responses from batch, got: {len(responses)}"
+            )
+
+    # Process results
+    for i in range(0, len(responses), 3):
+        ts = responses[i]  # totalSupply
+        av = responses[i + 1]  # balanceOf
+        token_name = responses[i + 2]  # symbol
 
         # Calculate debt and utilization rate
         debt = ts - av
         ur = debt / ts if ts != 0 else 0
 
-        token_name = underlying_token.functions.symbol().call()
         print_stuff(chain_name, token_name, ur)
 
 

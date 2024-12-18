@@ -34,9 +34,20 @@ curve_pool = w3.eth.contract(
 
 
 def check_steth_validator_rate():
-    ts = steth.functions.totalSupply().call()
-    ta = steth.functions.getTotalPooledEther().call()
-    return ta / ts
+    # Use batch requests
+    with w3.batch_requests() as batch:
+        # Add calls to the batch
+        batch.add(steth.functions.totalSupply())
+        batch.add(steth.functions.getTotalPooledEther())
+
+        # Execute all calls at once
+        responses = batch.execute()
+
+        if len(responses) != 2:
+            raise ValueError(f"Expected 2 responses from batch, got: {len(responses)}")
+
+        ts, ta = responses
+        return ta / ts
 
 
 def check_steth_crv_pool_rate(amount_in):
@@ -58,21 +69,43 @@ def check_peg(validator_rate, curve_rate):
 
 
 def main():
-    validator_rate_unscaled = (
-        check_steth_validator_rate()
-    )  #  for 1 stETH in not 18 decimals
+    validator_rate_unscaled = check_steth_validator_rate()
     message = f"🔄 1 stETH is: {validator_rate_unscaled:.5f} ETH in Lido\n"
 
     amounts = [1e18, 100e18, 1000e18]
 
-    for amount in amounts:
-        curve_rate = check_steth_crv_pool_rate(amount)  # in 18 decimals
-        validator_rate_scaled = validator_rate_unscaled * amount
-        if curve_rate is not None and check_peg(validator_rate_scaled, curve_rate):
-            human_readable_amount = amount / 1e18
-            human_readable_result = curve_rate / 1e18
-            message += f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
-            send_telegram_message(message, PROTOCOL)
+    # Create batch request
+    batch_requests = []
+    with w3.batch_requests() as batch:
+        # Add all curve pool requests to the batch
+        for amount in amounts:
+            batch.add(curve_pool.functions.get_dy(1, 0, int(amount)))
+        # Execute all at once and store responses
+        try:
+            curve_rates = batch.execute()
+            if len(curve_rates) != len(amounts):
+                error_message = f"Batch response length mismatch. Expected: {len(amounts)}, Got: {len(curve_rates)}"
+                send_telegram_message(error_message, PROTOCOL)
+                return
+        except Exception as e:
+            error_message = f"Error executing batch curve pool calls: {e}"
+            send_telegram_message(error_message, PROTOCOL)
+            return
+
+    # Process results outside the batch to save rpc calls
+    for amount, curve_rate in zip(amounts, curve_rates):
+        try:
+            validator_rate_scaled = validator_rate_unscaled * amount
+            if curve_rate is not None and check_peg(validator_rate_scaled, curve_rate):
+                human_readable_amount = amount / 1e18
+                human_readable_result = curve_rate / 1e18
+                message += f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
+                send_telegram_message(message, PROTOCOL)
+        except Exception as e:
+            error_message = (
+                f"Error processing curve pool rate for amount {amount/1e18:.2f}: {e}"
+            )
+            send_telegram_message(error_message, PROTOCOL)
 
 
 if __name__ == "__main__":
