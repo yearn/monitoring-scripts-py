@@ -22,17 +22,6 @@ curve_pool = w3.eth.contract(
 )
 
 
-def check_usd0_crv_pool_rate(amount_in):
-    try:
-        swap_res = curve_pool.functions.get_dy(
-            0, 1, int(amount_in)
-        ).call()  # swap from usd0 to usdc
-        return swap_res  # return result is in 6 decimals
-    except Exception as e:
-        error_message = f"Error calling get_dy in curve pool: {e}"
-        send_telegram_message(error_message, PROTOCOL)
-
-
 def check_peg(usdc_rate, curve_rate):
     if curve_rate == 0:
         return False
@@ -45,8 +34,27 @@ def check_peg(usdc_rate, curve_rate):
 def check_peg_usd0():
     amounts = [1e18, 1000_000e18, 10_000_000e18]
     message = ""
-    for amount in amounts:
-        curve_rate = check_usd0_crv_pool_rate(amount)  # in 6 decimals
+
+    # Create batch request
+    with w3.batch_requests() as batch:
+        # Add all curve pool requests to the batch
+        for amount in amounts:
+            batch.add(curve_pool.functions.get_dy(0, 1, int(amount)))
+
+        # Execute all at once
+        try:
+            curve_rates = batch.execute()
+            if len(curve_rates) != len(amounts):
+                error_message = f"Batch response length mismatch. Expected: {len(amounts)}, Got: {len(curve_rates)}"
+                send_telegram_message(error_message, PROTOCOL)
+                return
+        except Exception as e:
+            error_message = f"Error executing batch curve pool calls: {e}"
+            send_telegram_message(error_message, PROTOCOL)
+            return
+
+    # Process results outside the batch
+    for amount, curve_rate in zip(amounts, curve_rates):
         if curve_rate is not None and check_peg(amount / 1e12, curve_rate):
             human_readable_amount = amount / 1e18
             human_readable_result = curve_rate / 1e6
