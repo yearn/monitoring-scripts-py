@@ -8,8 +8,8 @@ cache_filename = os.getenv("CACHE_FILENAME", "cache-id.txt")
 # format of the data: "address:nonce"
 nonces_filename = os.getenv("NONCE_FILENAME", "nonces.txt")
 # format of the data: "vault_address+market_id+type_value:cap_timestamp"
-morpho_filename = os.getenv("MORPHO_FILENAME", "morpho.txt")
-
+morpho_filename = os.getenv("MORPHO_FILENAME", "cache-id.txt")
+# use the same cache file because it is run in the same hourly workflow
 
 def get_last_queued_id_from_file(protocol):
     return get_last_value_for_key_from_file(cache_filename, protocol)
