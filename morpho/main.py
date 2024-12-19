@@ -122,6 +122,11 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
 
         # pending_cap check
         if pending_cap_timestamp > 0:
+            current_time = int(datetime.now().timestamp())
+            if pending_cap_timestamp <= current_time:
+                # skip if the pending cap is already in the past
+                continue
+
             if pending_cap_timestamp > get_last_executed_morpho_from_file(
                 vault_address, market, PENDING_CAP_TYPE
             ):
