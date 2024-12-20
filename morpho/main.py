@@ -107,14 +107,16 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 len(pending_cap_and_config_responses),
             )
 
-    for i in range(0, len(markets), 2):
+    for i in range(0, len(markets)):
         market_id = markets[i]
         market = Web3.to_hex(market_id)
-        pending_cap_timestamp = pending_cap_and_config_responses[i][
+        pending_cap_timestamp = pending_cap_and_config_responses[
+            i * 2
+        ][  # Multiply by 2 because there were 2 responses per market
             1
         ]  # [1] to get the timestamp
-        config = pending_cap_and_config_responses[i + 1]
-        current_cap = config[0]
+        config = pending_cap_and_config_responses[i * 2 + 1]  # Use i * 2 + 1 for config
+        current_cap = config[0]  # current cap value is at index 0 in config struct
 
         # generat urls
         market_url = get_market_url(market, chain)
@@ -127,9 +129,11 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 # skip if the pending cap is already in the past
                 continue
 
-            if pending_cap_timestamp > get_last_executed_morpho_from_file(
+            last_executed_morpho = get_last_executed_morpho_from_file(
                 vault_address, market, PENDING_CAP_TYPE
-            ):
+            )
+
+            if pending_cap_timestamp > last_executed_morpho:
                 pending_cap_value = pending_cap_and_config_responses[i][
                     0
                 ]  # [0] to get the value
@@ -146,9 +150,13 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 write_last_executed_morpho_to_file(
                     vault_address, market, PENDING_CAP_TYPE, pending_cap_timestamp
                 )
+            else:
+                print(
+                    f"Skipping pending cap update for vault {name}({vault_url}) for market: {market_url} because it was already executed"
+                )
 
         # removable_at check
-        removable_at = config[2]
+        removable_at = config[2]  # removable_at value is at index 2 in config struct
         if removable_at > 0:
             if removable_at > get_last_executed_morpho_from_file(
                 vault_address, market, REMOVABLE_AT_TYPE
@@ -162,6 +170,10 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 )
                 write_last_executed_morpho_to_file(
                     vault_address, market, REMOVABLE_AT_TYPE, removable_at
+                )
+            else:
+                print(
+                    f"Skipping removable_at update for vault {name}({vault_url}) for market: {market_url} because it was already executed"
                 )
 
 
