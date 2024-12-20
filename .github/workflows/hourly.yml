@@ -1,9 +1,14 @@
-name: Monitoring Scripts
+name: Hourly Monitoring Scripts
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "26 * * * *"
   workflow_dispatch:
+
+# Add concurrency control
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
@@ -51,14 +56,14 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       # restore file from cache
-      - name: Get Phrase cache file
+      - name: Get cache file
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
           path: cache-id.txt
-          key: cache-id-v2-${{ hashFiles('cache-id.txt') }}
+          key: cache-id-v3-${{ hashFiles('cache-id.txt') }}
           restore-keys: |
-            cache-id-v2-
+            cache-id-v3-
 
       - name: Run Aave script
         run: python -m aave.main
@@ -96,4 +101,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: cache-id.txt
-          key: cache-id-v2-${{ hashFiles('cache-id.txt') }}
+          key: cache-id-v3-${{ hashFiles('cache-id.txt') }}
