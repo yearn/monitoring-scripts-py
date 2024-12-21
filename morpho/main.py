@@ -33,6 +33,8 @@ MAINNET_VAULTS = [
 ]
 BASE_VAULTS = [
     ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"],
+    ["Moonwell Flagship ETH", "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1"],
+    ["Moonwell Flagship EURC", "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026"],
 ]
 
 
@@ -232,7 +234,7 @@ def get_data_for_chain(chain):
 
 def main():
     get_data_for_chain("mainnet")
-    # get_data_for_chain("base")
+    get_data_for_chain("base")
 
 
 if __name__ == "__main__":
