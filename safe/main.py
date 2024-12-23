@@ -167,6 +167,11 @@ def main():
             "base-main",
             "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
         ],  # pause guardian of comptroller contract
+        [
+            "USD0",
+            "mainnet",
+            "0x6e9d65eC80D69b1f508560Bc7aeA5003db1f7FB7",
+        ],  # USD0 protocol governance
         # no active stargate strategies
         # ["STARGATE", "mainnet", "0x65bb797c2B9830d891D87288F029ed8dACc19705"],
         # ["STARGATE", "polygon-main", "0x47290DE56E71DC6f46C26e50776fe86cc8b21656"],

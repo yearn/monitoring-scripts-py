@@ -1,0 +1,29 @@
+name: Daily Monitoring Scripts
+
+on:
+  schedule:
+    - cron: "11 0 * * *"
+  workflow_dispatch:
+
+env:
+  DUNE_API_KEY: ${{ secrets.DUNE_API_KEY }}
+  TELEGRAM_CHAT_ID_USD0: ${{ secrets.TELEGRAM_CHAT_ID_USD0 }}
+  TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
+
+jobs:
+  my_job:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip" # caching pip dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run USD0 script
+        run: python -m usd0.main
