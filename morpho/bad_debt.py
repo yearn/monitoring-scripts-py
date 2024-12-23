@@ -4,7 +4,7 @@ from utils.telegram import send_telegram_message
 
 API_URL = "https://blue-api.morpho.org/graphql"
 MARKET_URL = "https://app.morpho.org/market"
-PROTOCOL = "MORPHO"  # TODO: add env values for telegram for protocol MORPHO
+PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.1
 
 
@@ -47,10 +47,19 @@ def get_morpho_markets():
             "0xb7ad412532006bf876534ccae59900ddd9d1d1e394959065cb39b12b22f94ff5",  # agETH / WETH
             "0x49bb2d114be9041a787432952927f6f144f05ad3e83196a7d062f374ee11d0ee",  # ezETH / WETH
             # Base Vaults defined in morpho/main.py
+            "0x3a4048c64ba1b375330d376b1ce40e4047d03b47ab4d48af484edec9fec801ba",  # wstETH / WETH
+            "0x84662b4f95b85d6b082b68d32cf71bb565b3f22f216a65509cc2ede7dccdfe8c",  # cbETH / WETH
+            "0xdc69cf2caae7b7d1783fb5a9576dc875888afad17ab3d1a3fc102f741441c165",  # rETH / WETH
+            "0x5dffffc7d75dc5abfa8dbe6fad9cbdadf6680cbe1428bafe661497520c84a94c",  # cbBTC / WETH
             "0x1c21c59df9db44bf6f645d854ee710a8ca17b479451447e9f56758aee10a2fad",  # cbETH / USDC
             "0x13c42741a359ac4a8aa8287d2be109dcf28344484f91185f9a79bd5a805a55ae",  # wstETH / USDC
             "0x9103c3b4e834476c9a62ea009ba2c884ee42e94e6e314a26f04d312434191836",  # cbBTC / USDC
             "0x8793cf302b8ffd655ab97bd1c695dbd967807e8367a65cb2f4edaf1380ba1bda",  # WETH / USDC
+            "0xa9b5142fa687a24c275faf731f13b52faa9873252bb4e1cb6077aa1f412edb0b",  # WETH / EURC
+            "0x7fc498ddcb7707d6f85f6dc81f61edb6dc8d7f1b47a83b55808904790564929a",  # cbETH / EURC
+            "0x67ebd84b2fb39e3bc5a13d97e4c07abe1ea617e40654826e9abce252e95f049e",  # cbBTC / EURC
+            "0xf7e40290f8ca1d5848b3c129502599aa0f0602eb5f5235218797a34242719561",  # wstETH / EURC
+            "0x0103cbcd14c690f68a91ec7c84607153311e9954c94ac6eac06c9462db3fabb6",  # rETH / EURC
         ],
     }
 
