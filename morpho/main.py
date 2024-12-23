@@ -112,11 +112,13 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
     for i in range(0, len(markets)):
         market_id = markets[i]
         market = Web3.to_hex(market_id)
-        pending_cap_timestamp = pending_cap_and_config_responses[
-            i * 2
-        ][  # Multiply by 2 because there were 2 responses per market
-            1
-        ]  # [1] to get the timestamp
+
+        # Multiply by 2 because there were 2 responses per market and get
+        pending_value = pending_cap_and_config_responses[i * 2]
+        pending_cap_value = pending_value[0]
+        pending_cap_timestamp = pending_value[1]
+
+        # get the current config of the market
         config = pending_cap_and_config_responses[i * 2 + 1]  # Use i * 2 + 1 for config
         current_cap = config[0]  # current cap value is at index 0 in config struct
 
@@ -136,9 +138,6 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
             )
 
             if pending_cap_timestamp > last_executed_morpho:
-                pending_cap_value = pending_cap_and_config_responses[i][
-                    0
-                ]  # [0] to get the value
                 difference_in_percentage = (
                     (pending_cap_value - current_cap) / current_cap
                 ) * 100
