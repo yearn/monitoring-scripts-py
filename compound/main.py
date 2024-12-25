@@ -6,7 +6,7 @@ from utils.telegram import send_telegram_message
 load_dotenv()
 
 PROTOCOL = "comp"
-THRESHOLD_UR = 0.96
+THRESHOLD_UR = 0.99
 THRESHOLD_UR_NOTIFICATION = 0.99
 
 provider_url_polygon = os.getenv("PROVIDER_URL")

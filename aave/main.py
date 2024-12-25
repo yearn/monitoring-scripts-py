@@ -77,8 +77,8 @@ optimism_addresses = [
     "0x4200000000000000000000000000000000000042",  # op
 ]
 
-# TODO: Add different threshold UR's for each asset
-THRESHOLD_UR = 0.96
+
+THRESHOLD_UR = 0.99
 THRESHOLD_UR_NOTIFICATION = 0.99
 
 
