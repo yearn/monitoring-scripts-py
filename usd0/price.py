@@ -32,13 +32,14 @@ def check_peg(usdc_rate, curve_rate):
 
 
 def check_peg_usd0():
-    amounts = [1e18, 1000_000e18, 10_000_000e18]
+    amounts = [100_000e18, 1_000_000e18, 10_000_000e18]
     message = ""
 
     # Create batch request
     with w3.batch_requests() as batch:
         # Add all curve pool requests to the batch
         for amount in amounts:
+            # input token is USD0, output token is USDC
             batch.add(curve_pool.functions.get_dy(0, 1, int(amount)))
 
         # Execute all at once
@@ -58,8 +59,11 @@ def check_peg_usd0():
         if curve_rate is not None and check_peg(amount / 1e12, curve_rate):
             human_readable_amount = amount / 1e18
             human_readable_result = curve_rate / 1e6
-            message += f"📊 Swap result for amount {human_readable_amount:.2f}: {human_readable_result:.2f}"
-            send_telegram_message(message, PROTOCOL)
+            message += f"📊 Swap result: {human_readable_amount:.2f} USD0 -> {human_readable_result:.2f} USDC\n"
+
+    # send only one message
+    if len(message) > 0:
+        send_telegram_message(message, PROTOCOL)
 
 
 if __name__ == "__main__":
