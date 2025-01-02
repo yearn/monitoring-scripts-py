@@ -18,7 +18,8 @@ def get_morpho_markets():
             "0x8e6aeb10c401de3279ac79b4b2ea15fc94b7d9cfc098d6c2a1ff7b2b26d9d02c",  # USDe / DAI
             "0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28",  # sUSDe / DAI
             # USDC
-            "0xb48bb53f0f2690c71e8813f2dc7ed6fca9ac4b0ace3faa37b4a8e5ece38fa1a2",  # USD0++ / USDC
+            "0xb48bb53f0f2690c71e8813f2dc7ed6fca9ac4b0ace3faa37b4a8e5ece38fa1a2",  # USD0++ / USDC - 1:1 oracle
+            "0x92e5fe774a581e52428b4f8d6a775f35619a2e0a184363ae123fae478056d1cd",  # USD0++ / USDC new market - double chainlink oralce
             "0x8411eeb07c8e32de0b3784b6b967346a45593bfd8baeb291cc209dc195c7b3ad",  # PT-USD0++-27MAR2025 / USDC
             "0x864c9b82eb066ae2c038ba763dfc0221001e62fc40925530056349633eb0a259",  # USD0USD0++ / USDC
             "0xb323495f7e4148be5643a4ea4a8221eef163e4bccfdedc2a6f4696baacbc86cc",  # wstETH / USDC
