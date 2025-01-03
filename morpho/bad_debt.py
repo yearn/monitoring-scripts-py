@@ -47,6 +47,14 @@ def get_morpho_markets():
             "0x2287407f0f42ad5ad224f70e4d9da37f02770f79959df703d6cfee8afc548e0d",  # STONE / WETH
             "0xb7ad412532006bf876534ccae59900ddd9d1d1e394959065cb39b12b22f94ff5",  # agETH / WETH
             "0x49bb2d114be9041a787432952927f6f144f05ad3e83196a7d062f374ee11d0ee",  # ezETH / WETH
+            # USDT
+            "0xa921ef34e2fc7a27ccc50ae7e4b154e16c9799d3387076c421423ef52ac4df99",  # WBTC / USDT
+            "0xe7e9694b754c4d4f7e21faf7223f6fa71abaeb10296a4c43a54a7977149687d2",  # wstETH / USDT
+            # WBTC
+            "0xf6a056627a51e511ec7f48332421432ea6971fc148d8f3c451e14ea108026549",  # WBTC / LBTC
+            "0x198132864e7974fb451dfebeb098b3b7e7e65566667fb1cf1116db4fb2ad23f9",  # PT-LBTC-27MAR2025 / WBTC
+            "0xcfd9f683c6ab4b3c95e450e3faaf582c2b5fe938ef7405c4d60f2e9fd77415cc",  # PT-corn-SolvBTC.BBN-26DEC2024 / WBTC
+            "0x514efda728a646dcafe4fdc9afe4ea214709e110ac1b2b78185ae00c1782cc82",  # swBTC / WBTC
             # Base Vaults defined in morpho/main.py
             "0x3a4048c64ba1b375330d376b1ce40e4047d03b47ab4d48af484edec9fec801ba",  # wstETH / WETH
             "0x84662b4f95b85d6b082b68d32cf71bb565b3f22f216a65509cc2ede7dccdfe8c",  # cbETH / WETH
