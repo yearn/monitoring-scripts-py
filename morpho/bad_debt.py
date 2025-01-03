@@ -18,7 +18,8 @@ def get_morpho_markets():
             "0x8e6aeb10c401de3279ac79b4b2ea15fc94b7d9cfc098d6c2a1ff7b2b26d9d02c",  # USDe / DAI
             "0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28",  # sUSDe / DAI
             # USDC
-            "0xb48bb53f0f2690c71e8813f2dc7ed6fca9ac4b0ace3faa37b4a8e5ece38fa1a2",  # USD0++ / USDC
+            "0xb48bb53f0f2690c71e8813f2dc7ed6fca9ac4b0ace3faa37b4a8e5ece38fa1a2",  # USD0++ / USDC - 1:1 oracle
+            "0x92e5fe774a581e52428b4f8d6a775f35619a2e0a184363ae123fae478056d1cd",  # USD0++ / USDC new market - double chainlink oralce
             "0x8411eeb07c8e32de0b3784b6b967346a45593bfd8baeb291cc209dc195c7b3ad",  # PT-USD0++-27MAR2025 / USDC
             "0x864c9b82eb066ae2c038ba763dfc0221001e62fc40925530056349633eb0a259",  # USD0USD0++ / USDC
             "0xb323495f7e4148be5643a4ea4a8221eef163e4bccfdedc2a6f4696baacbc86cc",  # wstETH / USDC
@@ -52,6 +53,14 @@ def get_morpho_markets():
             "0xbd2a27358bdaf3fb902a0ad17f86d4633f9ac5377941298720b37a4d90deab96",  # Curve TriCRV LP / crvUSD
             "0x0cd36e6ecd9d846cffd921d011d2507bc4c2c421929cec65205b3cd72925367c",  # Curve TricryptoLLAMA LP / crvUSD
             "0x1c4b9ce834604969d33dc277bd8473d8aee856e5a577c08427b6deeb97cc72d6",  # Curve TricryptoUSDT LP / crvUSD
+            # USDT
+            "0xa921ef34e2fc7a27ccc50ae7e4b154e16c9799d3387076c421423ef52ac4df99",  # WBTC / USDT
+            "0xe7e9694b754c4d4f7e21faf7223f6fa71abaeb10296a4c43a54a7977149687d2",  # wstETH / USDT
+            # WBTC
+            "0xf6a056627a51e511ec7f48332421432ea6971fc148d8f3c451e14ea108026549",  # WBTC / LBTC
+            "0x198132864e7974fb451dfebeb098b3b7e7e65566667fb1cf1116db4fb2ad23f9",  # PT-LBTC-27MAR2025 / WBTC
+            "0xcfd9f683c6ab4b3c95e450e3faaf582c2b5fe938ef7405c4d60f2e9fd77415cc",  # PT-corn-SolvBTC.BBN-26DEC2024 / WBTC
+            "0x514efda728a646dcafe4fdc9afe4ea214709e110ac1b2b78185ae00c1782cc82",  # swBTC / WBTC
             # Base Vaults defined in morpho/main.py
             "0x3a4048c64ba1b375330d376b1ce40e4047d03b47ab4d48af484edec9fec801ba",  # wstETH / WETH
             "0x84662b4f95b85d6b082b68d32cf71bb565b3f22f216a65509cc2ede7dccdfe8c",  # cbETH / WETH
