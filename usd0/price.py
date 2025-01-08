@@ -1,67 +1,55 @@
-import os, json
-from web3 import Web3
-from dotenv import load_dotenv
+import json
+from utils.web3_wrapper import ChainManager
+from utils.chains import Chain
 from utils.telegram import send_telegram_message
 
-load_dotenv()
 PROTOCOL = "USD0"
-
 peg_threshold = 0.001  # 0.1% used
-provider_url = os.getenv("PROVIDER_URL_MAINNET")
-w3 = Web3(Web3.HTTPProvider(provider_url))
 
+# Load ABI
 with open("common-abi/CurvePool.json") as f:
     abi_data = json.load(f)
-    if isinstance(abi_data, dict):
-        abi_curve_pool = abi_data["result"]
-    elif isinstance(abi_data, list):
-        abi_curve_pool = abi_data
-
-curve_pool = w3.eth.contract(
-    address="0x14100f81e33C33Ecc7CDac70181Fb45B6E78569F", abi=abi_curve_pool
-)
+    abi_curve_pool = abi_data["result"] if isinstance(abi_data, dict) else abi_data
 
 
 def check_peg(usdc_rate, curve_rate):
     if curve_rate == 0:
         return False
-    # Calculate the percentage difference
     difference = abs(usdc_rate - curve_rate)
     percentage_diff = difference / usdc_rate
-    return percentage_diff >= peg_threshold  # 0.06 >= 0.05
+    return percentage_diff >= peg_threshold
 
 
 def check_peg_usd0():
     amounts = [100_000e18, 1_000_000e18, 10_000_000e18]
     message = ""
 
-    # Create batch request
-    with w3.batch_requests() as batch:
-        # Add all curve pool requests to the batch
-        for amount in amounts:
-            # input token is USD0, output token is USDC
-            batch.add(curve_pool.functions.get_dy(0, 1, int(amount)))
+    # Get Web3 client for mainnet
+    client = ChainManager.get_client(Chain.MAINNET)
 
-        # Execute all at once
+    # Initialize curve pool contract
+    curve_pool = client.eth.contract(
+        address="0x14100f81e33C33Ecc7CDac70181Fb45B6E78569F", abi=abi_curve_pool
+    )
+
+    # Execute individual requests
+    curve_rates = []
+    for amount in amounts:
         try:
-            curve_rates = batch.execute()
-            if len(curve_rates) != len(amounts):
-                error_message = f"Batch response length mismatch. Expected: {len(amounts)}, Got: {len(curve_rates)}"
-                send_telegram_message(error_message, PROTOCOL)
-                return
+            rate = curve_pool.functions.get_dy(0, 1, int(amount)).call()
+            curve_rates.append(rate)
         except Exception as e:
-            error_message = f"Error executing batch curve pool calls: {e}"
+            error_message = f"Error executing curve pool call: {e}"
             send_telegram_message(error_message, PROTOCOL)
             return
 
-    # Process results outside the batch
+    # Process results
     for amount, curve_rate in zip(amounts, curve_rates):
         if curve_rate is not None and check_peg(amount / 1e12, curve_rate):
             human_readable_amount = amount / 1e18
             human_readable_result = curve_rate / 1e6
             message += f"📊 Swap result: {human_readable_amount:.2f} USD0 -> {human_readable_result:.2f} USDC\n"
 
-    # send only one message
     if len(message) > 0:
         send_telegram_message(message, PROTOCOL)
 

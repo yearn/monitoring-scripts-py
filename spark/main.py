@@ -1,4 +1,5 @@
-from web3 import Web3
+from utils.web3_wrapper import ChainManager
+from utils.chains import Chain
 from dotenv import load_dotenv
 import os, json
 from utils.telegram import send_telegram_message
@@ -6,7 +7,6 @@ from utils.telegram import send_telegram_message
 load_dotenv()
 
 PROTOCOL = "SPARK"
-provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
 
 with open("aave/abi/AToken.json") as f:
     abi_data = json.load(f)
@@ -79,37 +79,42 @@ def print_stuff(chain_name, token_name, ur):
 
 
 # Function to process assets for a specific network
-def process_assets(chain_name, addresses, provider_url):
-    w3 = Web3(Web3.HTTPProvider(provider_url))
+def process_assets(chain_name, addresses):
+    # Get Web3 client using ChainManager
+    client = ChainManager.get_client(Chain.MAINNET)
+
+    # Create batch request
+    batch = client.batch_requests()
 
     # Prepare all contracts and batch calls
-    with w3.batch_requests() as batch:
-        contracts = []
-        for atoken_address, underlying_token_address in addresses:
-            atoken = w3.eth.contract(address=atoken_address, abi=abi_atoken)
-            underlying_token = w3.eth.contract(
-                address=underlying_token_address, abi=abi_atoken
-            )
-            contracts.append((atoken, underlying_token))
+    contracts = []
+    for atoken_address, underlying_token_address in addresses:
+        atoken = client.get_contract(atoken_address, abi_atoken)
+        underlying_token = client.get_contract(underlying_token_address, abi_atoken)
+        contracts.append((atoken, underlying_token))
 
-            # Add all calls to the batch
-            batch.add(atoken.functions.totalSupply())
-            batch.add(underlying_token.functions.balanceOf(atoken_address))
-            batch.add(underlying_token.functions.symbol())
+        # Add all calls to the batch
+        batch.add(atoken.functions.totalSupply())
+        batch.add(underlying_token.functions.balanceOf(atoken_address))
+        batch.add(underlying_token.functions.symbol())
 
-        # Execute all calls at once
-        responses = batch.execute()
-        expected_responses = len(addresses) * 3
-        if len(responses) != expected_responses:
-            raise ValueError(
-                f"Expected {expected_responses} responses from batch, got: {len(responses)}"
-            )
+    # Execute batch
+    responses = batch.execute()
 
     # Process results
+    expected_responses = len(addresses) * 3
+    if len(responses) != expected_responses:
+        raise ValueError(
+            f"Expected {expected_responses} responses, got: {len(responses)}"
+        )
+
     for i in range(0, len(responses), 3):
         ts = responses[i]  # totalSupply
         av = responses[i + 1]  # balanceOf
         token_name = responses[i + 2]  # symbol
+
+        if None in (ts, av, token_name):
+            continue
 
         # Calculate debt and utilization rate
         debt = ts - av
@@ -121,7 +126,7 @@ def process_assets(chain_name, addresses, provider_url):
 # Main function
 def main():
     print("Processing Mainnet assets...")
-    process_assets("Mainnet", mainnet_addresses, provider_url_mainnet)
+    process_assets("Mainnet", mainnet_addresses)
 
 
 # Run the main function
