@@ -14,4 +14,4 @@ The list of monitoring tools for the following protocols:
 - [Silo](./silo/README.md)
 - [Spark](./spark/README.md)
 - [Stargate](./stargate/README.md)
-- [Usual Money](./usual/README.md)
+- [USD0 - Usual Money](./usd0/README.md)
