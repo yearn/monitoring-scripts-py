@@ -1,10 +1,17 @@
-from web3 import Web3
-from web3.providers.base import BaseProvider
-from web3.exceptions import ProviderConnectionError
-from web3.contract import Contract
-import time, os
+import os
+import time
+from typing import Any, Callable, Dict, List, Tuple, TypeVar
+from urllib.parse import urlparse
+
+import requests
 from dotenv import load_dotenv
-from typing import List, Dict, TypeVar, Callable
+from web3 import Web3
+from web3.exceptions import Web3RPCError
+from web3.contract import Contract
+from web3.exceptions import ProviderConnectionError
+from web3.providers.rpc import HTTPProvider
+from web3.types import RPCResponse
+
 from .chains import Chain
 
 load_dotenv()
@@ -12,63 +19,106 @@ load_dotenv()
 T = TypeVar("T")  # Generic type for return values
 
 
-class RetryProvider(BaseProvider):
+class MultiHTTPProvider(HTTPProvider):
     def __init__(
-        self, providers: List[Web3.HTTPProvider], max_retries=3, backoff_factor=0.3
+        self,
+        providers: List[str],
+        request_kwargs: Dict[str, Any] = None,
+        max_retries: int = 3,
+        backoff_factor: float = 0.3,
     ):
-        self.providers = providers
+        self.provider_urls = self._validate_urls(providers)
+        if not self.provider_urls:
+            raise ValueError("No valid provider URLs provided")
+
+        self.current_provider_index = 0
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
-        self.current_provider_index = 0
+        self.request_kwargs = request_kwargs or {}  # Store request_kwargs
 
-    def make_request(self, method, params):
-        retries = 0
-        last_error = None
+        # Initialize with custom request kwargs
+        self.request_kwargs.setdefault("timeout", 100)  # Add default timeout
 
-        while retries < self.max_retries:
-            current_provider = self.providers[self.current_provider_index]
-            try:
-                response = current_provider.make_request(method, params)
-                if "error" in response:
-                    raise ProviderConnectionError(response["error"])
-                return response
-            except (ProviderConnectionError, IOError) as e:
-                last_error = e
-                retries += 1
-                wait_time = self.backoff_factor * (2 ** (retries - 1))
-                print(
-                    f"Provider {self.current_provider_index + 1} failed with {e}. Retrying in {wait_time} seconds..."
-                )
-                time.sleep(wait_time)
-                self.current_provider_index = (self.current_provider_index + 1) % len(
-                    self.providers
-                )
-
-        raise ProviderConnectionError(
-            f"All providers failed after {self.max_retries} retries. Last error: {last_error}"
+        super().__init__(
+            endpoint_uri=self.provider_urls[0], request_kwargs=self.request_kwargs
         )
 
-
-class BatchRequest:
-    def __init__(self, web3_client: "Web3Client"):
-        self._web3_client = web3_client
-        self._calls = []
-
-    def add(self, contract_function):
-        """Add a contract function call to the batch"""
-        self._calls.append(contract_function)
-
-    def execute(self):
-        """Execute all calls in the batch with retry logic"""
-        results = []
-        for call in self._calls:
+    def _validate_urls(self, urls: List[str]) -> List[str]:
+        """Validate and filter provider URLs"""
+        valid_urls = []
+        for url in urls:
+            if not url:
+                continue
             try:
-                result = self._web3_client.execute(call.call)
-                results.append(result)
+                parsed = urlparse(url)
+                if not parsed.scheme or not parsed.netloc:
+                    print(f"Invalid URL format: {url}")
+                    continue
+                valid_urls.append(url)
             except Exception as e:
-                print(f"Error in batch call: {e}")
-                results.append(None)
-        return results
+                print(f"Error validating URL {url}: {str(e)}")
+        return valid_urls
+
+    def _rotate_provider(self) -> None:
+        """Switch to the next provider in the list"""
+        self.current_provider_index = (self.current_provider_index + 1) % len(
+            self.provider_urls
+        )
+        self.endpoint_uri = self.provider_urls[self.current_provider_index]
+        print(f"Switching to provider: {self.endpoint_uri}")
+        self.session = requests.Session()
+        for key, value in self.request_kwargs.get(
+            "session_kwargs", {}
+        ).items():  # Use request_kwargs instead of _kwargs
+            setattr(self.session, key, value)
+
+    def make_request(self, method: str, params: List[Any]) -> RPCResponse:
+        retries = 0
+        errors = {}
+
+        while retries < self.max_retries * len(self.provider_urls):
+            try:
+                return super().make_request(method, params)
+            except Exception as e:
+                current_url = self.endpoint_uri
+                errors[current_url] = str(e)
+                retries += 1
+
+                wait_time = self.backoff_factor * (2 ** (retries - 1))
+                print(f"Provider {current_url} failed. Error: {str(e)}")
+                print(f"Switching provider and retrying in {wait_time} seconds...")
+
+                time.sleep(wait_time)
+                self._rotate_provider()
+
+        error_details = "\n".join([f"{url}: {error}" for url, error in errors.items()])
+        raise ProviderConnectionError(
+            f"All providers failed after {retries} attempts.\nErrors:\n{error_details}"
+        )
+
+    def make_batch_request(self, methods: List[Any]) -> List[RPCResponse]:
+        retries = 0
+        errors = {}
+
+        while retries < self.max_retries * len(self.provider_urls):
+            try:
+                return super().make_batch_request(methods)
+            except (Web3RPCError, Exception) as e:
+                current_url = self.endpoint_uri
+                errors[current_url] = str(e)
+                retries += 1
+
+                wait_time = self.backoff_factor * (2 ** (retries - 1))
+                print(f"Batch request failed on {current_url}. Error: {str(e)}")
+                print(f"Switching provider and retrying in {wait_time} seconds...")
+
+                time.sleep(wait_time)
+                self._rotate_provider()
+
+        error_details = "\n".join([f"{url}: {error}" for url, error in errors.items()])
+        raise ProviderConnectionError(
+            f"Batch requests failed on all providers after {retries} attempts.\nErrors:\n{error_details}"
+        )
 
 
 class Web3Client:
@@ -77,29 +127,32 @@ class Web3Client:
         self.w3 = self._initialize_web3()
 
     def _initialize_web3(self) -> Web3:
-        """Initialize Web3 with retry provider for the specified chain"""
-        providers = self._get_providers()
-        retry_provider = RetryProvider(providers)
-        return Web3(retry_provider)
+        """Initialize Web3 with multi-provider setup"""
+        provider_urls = self._get_provider_urls()
+        provider = MultiHTTPProvider(
+            providers=provider_urls, max_retries=3, backoff_factor=0.3
+        )
+        return Web3(provider)
 
-    def _get_providers(self) -> List[Web3.HTTPProvider]:
-        """Get providers for the chain from environment variables"""
-        providers = []
-        # try to get the default provider
+    def _get_provider_urls(self) -> List[str]:
+        """Get provider URLs for the chain from environment variables"""
+        urls = []
+        # Get default provider
         env_key = f"PROVIDER_URL_{self.chain.name.upper()}"
         url = os.getenv(env_key)
         if url:
-            providers.append(Web3.HTTPProvider(url))
-        #
+            urls.append(url)
+
+        # Get additional providers
         for i in range(1, 3):
             env_key = f"PROVIDER_URL_{self.chain.name.upper()}_{i}"
             url = os.getenv(env_key)
             if url:
-                providers.append(Web3.HTTPProvider(url))
+                urls.append(url)
 
-        if not providers:
+        if not urls:
             raise ValueError(f"No providers found for chain {self.chain.name}")
-        return providers
+        return urls
 
     def execute(self, operation: Callable[..., T], *args, **kwargs) -> T:
         """Execute any Web3 operation with retry logic"""
@@ -119,9 +172,8 @@ class Web3Client:
         """Get contract instance"""
         return self.w3.eth.contract(address=address, abi=abi)
 
-    def batch_requests(self) -> BatchRequest:
-        """Create a new batch request with retry logic"""
-        return BatchRequest(self)
+    def batch_requests(self):
+        return self.w3.batch_requests()
 
 
 class ChainManager:
