@@ -26,3 +26,7 @@ Bad debt is fetch from Morpho graph API. Each of the used market is checked for 
 ### How to add a new market
 
 Add the Morpho market address to variable `wanted_markets` in the [python script](./bad_debt.py#L12).
+
+### Risks
+
+Nice read from Llama risk: [https://www.llamarisk.com/research/morpho-vaults-risk-disclaimer](https://www.llamarisk.com/research/morpho-vaults-risk-disclaimer)

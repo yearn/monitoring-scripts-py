@@ -1,5 +1,7 @@
 # Stargate
 
+**Monitoring - DISABLED** because we don't have any active strategies.
+
 ## Withdraw amount
 
 Github bot that triggers every hour to check the amount of withdroom room. Telegram message is sent if the withdroom below the amount deposited by the strategy.
