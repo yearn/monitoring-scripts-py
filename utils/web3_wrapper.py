@@ -1,9 +1,9 @@
+import functools
 import os
 import time
 from typing import Any, Callable, Dict, List, TypeVar
 from urllib.parse import urlparse
 
-import requests
 from dotenv import load_dotenv
 from web3 import Web3
 from web3.contract import Contract
@@ -18,7 +18,48 @@ load_dotenv()
 T = TypeVar("T")  # Generic type for return values
 
 
-class MultiHTTPProvider(HTTPProvider):
+def retry_with_provider_rotation(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        errors = {}
+        for attempt in range(self.max_retries * len(self.provider_urls)):
+            try:
+                return func(self, *args, **kwargs)
+            except Exception as e:
+                current_url = self.endpoint_uri
+                errors[current_url] = str(e)
+                print(f"Failed on {current_url}: {str(e)}")
+                time.sleep(self.backoff_factor * (2**attempt))
+                self._rotate_provider()
+
+        raise ProviderConnectionError(
+            f"All providers failed. Errors:\n"
+            + "\n".join(f"{url}: {err}" for url, err in errors.items())
+        )
+
+    return wrapper
+
+
+class RetryProviders:
+    """Base class for provider retry functionality"""
+
+    def __init__(
+        self, provider_urls: List[str], max_retries: int = 3, backoff_factor: float = 1
+    ):
+        self.provider_urls = provider_urls
+        self.max_retries = max_retries
+        self.backoff_factor = backoff_factor
+        self.endpoint_uri = provider_urls[0]
+
+    def _rotate_provider(self) -> None:
+        """Switch to the next provider in the list"""
+        current_index = self.provider_urls.index(self.endpoint_uri)
+        next_index = (current_index + 1) % len(self.provider_urls)
+        self.endpoint_uri = self.provider_urls[next_index]
+        print(f"Switching to provider: {self.endpoint_uri}")
+
+
+class MultiHTTPProvider(HTTPProvider, RetryProviders):
     def __init__(
         self,
         providers: List[str],
@@ -26,20 +67,12 @@ class MultiHTTPProvider(HTTPProvider):
         max_retries: int = 3,
         backoff_factor: float = 1,
     ):
-        self.provider_urls = self._validate_urls(providers)
-        if not self.provider_urls:
-            raise ValueError("No valid provider URLs provided")
-
-        self.current_provider_index = 0
-        self.max_retries = max_retries
-        self.backoff_factor = backoff_factor
-        self.request_kwargs = request_kwargs or {}  # Store request_kwargs
-        # Initialize with custom request kwargs
-        self.request_kwargs.setdefault("timeout", 1000)  # Add default timeout
-        self.exception_retry_configuration = None
-
+        providers = self._validate_urls(providers)
+        RetryProviders.__init__(self, providers, max_retries, backoff_factor)
+        self.request_kwargs = request_kwargs or {}
+        self.request_kwargs.setdefault("timeout", 1000)
         super().__init__(
-            endpoint_uri=self.provider_urls[0], request_kwargs=self.request_kwargs
+            endpoint_uri=self.endpoint_uri, request_kwargs=self.request_kwargs
         )
 
     def _validate_urls(self, urls: List[str]) -> List[str]:
@@ -58,71 +91,20 @@ class MultiHTTPProvider(HTTPProvider):
                 print(f"Error validating URL {url}: {str(e)}")
         return valid_urls
 
-    def _rotate_provider(self) -> None:
-        """Switch to the next provider in the list"""
-        self.current_provider_index = (self.current_provider_index + 1) % len(
-            self.provider_urls
-        )
-        self.endpoint_uri = self.provider_urls[self.current_provider_index]
-        print(f"Switching to provider: {self.endpoint_uri}")
-        self.session = requests.Session()
-        for key, value in self.request_kwargs.get(
-            "session_kwargs", {}
-        ).items():  # Use request_kwargs instead of _kwargs
-            setattr(self.session, key, value)
-
+    @retry_with_provider_rotation
     def make_request(self, method: str, params: List[Any]) -> RPCResponse:
-        retries = 0
-        errors = {}
+        return super().make_request(method, params)
 
-        while retries < self.max_retries * len(self.provider_urls):
-            try:
-                return super().make_request(method, params)
-            except Exception as e:
-                current_url = self.endpoint_uri
-                errors[current_url] = str(e)
-                retries += 1
-
-                wait_time = self.backoff_factor * (2 ** (retries - 1))
-                print(f"Provider {current_url} failed. Error: {str(e)}")
-                print(f"Switching provider and retrying in {wait_time} seconds...")
-
-                time.sleep(wait_time)
-                self._rotate_provider()
-
-        error_details = "\n".join([f"{url}: {error}" for url, error in errors.items()])
-        raise ProviderConnectionError(
-            f"All providers failed after {retries} attempts.\nErrors:\n{error_details}"
-        )
-
+    @retry_with_provider_rotation
     def make_batch_request(self, methods: List[Any]) -> List[RPCResponse]:
-        retries = 0
-        errors = {}
-
-        while retries < self.max_retries * len(self.provider_urls):
-            try:
-                return super().make_batch_request(methods)
-            except Exception as e:
-                current_url = self.endpoint_uri
-                errors[current_url] = str(e)
-                retries += 1
-
-                wait_time = self.backoff_factor * (2 ** (retries - 1))
-                print(f"Batch request failed on {current_url}. Error: {str(e)}")
-                print(f"Switching provider and retrying in {wait_time} seconds...")
-
-                time.sleep(wait_time)
-                self._rotate_provider()
-
-        error_details = "\n".join([f"{url}: {error}" for url, error in errors.items()])
-        raise ProviderConnectionError(
-            f"Batch requests failed on all providers after {retries} attempts.\nErrors:\n{error_details}"
-        )
+        return super().make_batch_request(methods)
 
 
-class Web3Client:
+class Web3Client(RetryProviders):
     def __init__(self, chain: Chain):
         self.chain = chain
+        provider_urls = self._get_provider_urls()
+        RetryProviders.__init__(self, provider_urls)
         self.w3 = self._initialize_web3()
 
     def _initialize_web3(self) -> Web3:
@@ -174,34 +156,9 @@ class Web3Client:
     def batch_requests(self):
         return self.w3.batch_requests()
 
+    @retry_with_provider_rotation
     def execute_batch(self, batch):
-        """Execute batch request with retry logic across different providers"""
-        retries = 0
-        max_retries = self.w3.provider.max_retries * len(self.w3.provider.provider_urls)
-        errors = {}
-
-        while retries < max_retries:
-            try:
-                return batch.execute()
-            except Exception as e:
-                current_url = self.w3.provider.endpoint_uri
-                errors[current_url] = str(e)
-                retries += 1
-
-                if retries >= max_retries:
-                    break
-
-                wait_time = self.w3.provider.backoff_factor * (2 ** (retries - 1))
-                print(f"Batch execution failed on {current_url}. Error: {str(e)}")
-                print(f"Retrying with next provider in {wait_time} seconds...")
-
-                time.sleep(wait_time)
-                self.w3.provider._rotate_provider()
-
-        error_details = "\n".join([f"{url}: {error}" for url, error in errors.items()])
-        raise ProviderConnectionError(
-            f"Batch execution failed on all providers after {retries} attempts on {self.chain.name}.\nErrors:\n{error_details}"
-        )
+        return batch.execute()
 
 
 class ChainManager:
