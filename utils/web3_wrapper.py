@@ -1,12 +1,11 @@
 import os
 import time
-from typing import Any, Callable, Dict, List, Tuple, TypeVar
+from typing import Any, Callable, Dict, List, TypeVar
 from urllib.parse import urlparse
 
 import requests
 from dotenv import load_dotenv
 from web3 import Web3
-from web3.exceptions import Web3RPCError
 from web3.contract import Contract
 from web3.exceptions import ProviderConnectionError
 from web3.providers.rpc import HTTPProvider
@@ -25,7 +24,7 @@ class MultiHTTPProvider(HTTPProvider):
         providers: List[str],
         request_kwargs: Dict[str, Any] = None,
         max_retries: int = 3,
-        backoff_factor: float = 0.3,
+        backoff_factor: float = 1,
     ):
         self.provider_urls = self._validate_urls(providers)
         if not self.provider_urls:
@@ -35,9 +34,9 @@ class MultiHTTPProvider(HTTPProvider):
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
         self.request_kwargs = request_kwargs or {}  # Store request_kwargs
-
         # Initialize with custom request kwargs
-        self.request_kwargs.setdefault("timeout", 100)  # Add default timeout
+        self.request_kwargs.setdefault("timeout", 1000)  # Add default timeout
+        self.exception_retry_configuration = None
 
         super().__init__(
             endpoint_uri=self.provider_urls[0], request_kwargs=self.request_kwargs
@@ -103,7 +102,7 @@ class MultiHTTPProvider(HTTPProvider):
         while retries < self.max_retries * len(self.provider_urls):
             try:
                 return super().make_batch_request(methods)
-            except (Web3RPCError, Exception) as e:
+            except Exception as e:
                 current_url = self.endpoint_uri
                 errors[current_url] = str(e)
                 retries += 1
@@ -130,7 +129,7 @@ class Web3Client:
         """Initialize Web3 with multi-provider setup"""
         provider_urls = self._get_provider_urls()
         provider = MultiHTTPProvider(
-            providers=provider_urls, max_retries=3, backoff_factor=0.3
+            providers=provider_urls, max_retries=3, backoff_factor=1
         )
         return Web3(provider)
 
@@ -144,7 +143,7 @@ class Web3Client:
             urls.append(url)
 
         # Get additional providers
-        for i in range(1, 3):
+        for i in range(1, 4):
             env_key = f"PROVIDER_URL_{self.chain.name.upper()}_{i}"
             url = os.getenv(env_key)
             if url:
@@ -174,6 +173,35 @@ class Web3Client:
 
     def batch_requests(self):
         return self.w3.batch_requests()
+
+    def execute_batch(self, batch):
+        """Execute batch request with retry logic across different providers"""
+        retries = 0
+        max_retries = self.w3.provider.max_retries * len(self.w3.provider.provider_urls)
+        errors = {}
+
+        while retries < max_retries:
+            try:
+                return batch.execute()
+            except Exception as e:
+                current_url = self.w3.provider.endpoint_uri
+                errors[current_url] = str(e)
+                retries += 1
+
+                if retries >= max_retries:
+                    break
+
+                wait_time = self.w3.provider.backoff_factor * (2 ** (retries - 1))
+                print(f"Batch execution failed on {current_url}. Error: {str(e)}")
+                print(f"Retrying with next provider in {wait_time} seconds...")
+
+                time.sleep(wait_time)
+                self.w3.provider._rotate_provider()
+
+        error_details = "\n".join([f"{url}: {error}" for url, error in errors.items()])
+        raise ProviderConnectionError(
+            f"Batch execution failed on all providers after {retries} attempts on {self.chain.name}.\nErrors:\n{error_details}"
+        )
 
 
 class ChainManager:
