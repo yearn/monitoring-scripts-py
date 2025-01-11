@@ -1,36 +1,42 @@
-from web3 import Web3
-from dotenv import load_dotenv
-import os, json, requests
+from utils.web3_wrapper import ChainManager
+from utils.chains import Chain
+import json
 from utils.telegram import send_telegram_message
 
-load_dotenv()
-
-# TODO: Add different threshold UR's for each asset
 THRESHOLD_UR = 0.94
 THRESHOLD_UR_NOTIFICATION = 0.98
 PROTOCOL = "SILO"
 
-provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
-provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
 
-with open("silo/abi/SiloLens.json") as f:
-    abi_data = json.load(f)
-    if isinstance(abi_data, dict):
-        abi_sl = abi_data["result"]
-    elif isinstance(abi_data, list):
-        abi_sl = abi_data
+def load_abi(file_path):
+    with open(file_path) as f:
+        abi_data = json.load(f)
+        if isinstance(abi_data, dict):
+            return abi_data["result"]
+        elif isinstance(abi_data, list):
+            return abi_data
+        else:
+            raise ValueError("Invalid ABI format")
 
-arbitrum_addresses_usdce = [
-    ["Silo WSTETH-USDC.e", "0xA8897b4552c075e884BDB8e7b704eB10DB29BF0D"],
-    ["Silo WBTC-USDC.e", "0x69eC552BE56E6505703f0C861c40039e5702037A"],
-    ["Silo ARB-USDC.E", "0x0696E6808EE11a5750733a3d821F9bB847E584FB"],
-]
-arbitrum_silo_lens_address = "0xBDb843c7a7e48Dc543424474d7Aa63b61B5D9536"
-arbitrum_usdce_address = "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8"
+
+# Define addresses by chain (following aave pattern)
+ADDRESSES_BY_CHAIN = {
+    Chain.ARBITRUM: {
+        "lens": "0xBDb843c7a7e48Dc543424474d7Aa63b61B5D9536",
+        "usdc_e": "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+        "silos": [
+            ["Silo WSTETH-USDC.e", "0xA8897b4552c075e884BDB8e7b704eB10DB29BF0D"],
+            ["Silo WBTC-USDC.e", "0x69eC552BE56E6505703f0C861c40039e5702037A"],
+            ["Silo ARB-USDC.E", "0x0696E6808EE11a5750733a3d821F9bB847E584FB"],
+        ],
+    }
+}
+
+# Load ABI once
+ABI_SILO_LENS = load_abi("silo/abi/SiloLens.json")
 
 
 def print_stuff(chain_name, token_name, ur):
-    print(f"Chain: {chain_name}, Token: {token_name}, UR: {ur}")
     if ur > THRESHOLD_UR:
         message = (
             "🚨 **BEEP BOP** 🚨\n"
@@ -38,56 +44,37 @@ def print_stuff(chain_name, token_name, ur):
             f"📊 Utilization rate: {ur:.2%}\n"
             f"🌐 Chain: {chain_name}"
         )
-        disable_notification = True
-        if ur > THRESHOLD_UR_NOTIFICATION:
-            disable_notification = False
+        disable_notification = ur <= THRESHOLD_UR_NOTIFICATION
         send_telegram_message(message, PROTOCOL, disable_notification)
 
 
-# Function to process assets for a specific network
-def process_assets(chain_name, values, silo_lens_address, quote_address, provider_url):
-    w3 = Web3(Web3.HTTPProvider(provider_url))
-    silo_lens = w3.eth.contract(address=silo_lens_address, abi=abi_sl)
+def process_assets(chain: Chain):
+    chain_data = ADDRESSES_BY_CHAIN[chain]
+    client = ChainManager.get_client(chain)
+    silo_lens = client.eth.contract(address=chain_data["lens"], abi=ABI_SILO_LENS)
 
-    # Prepare batch calls
-    with w3.batch_requests() as batch:
-        # Add all utilization calls to the batch
-        calls = []
-        for silo_name, silo_address in values:
-            calls.append(
-                (
-                    silo_name,
-                    batch.add(
-                        silo_lens.functions.getUtilization(silo_address, quote_address)
-                    ),
-                )
+    with client.batch_requests() as batch:
+        for silo_name, silo_address in chain_data["silos"]:
+            batch.add(
+                silo_lens.functions.getUtilization(silo_address, chain_data["usdc_e"])
             )
 
-        # Execute all calls at once
-        responses = batch.execute()
-        if len(responses) != len(values):
+        responses = client.execute_batch(batch)
+        if len(responses) != len(chain_data["silos"]):
             raise ValueError(
-                f"Expected {len(values)} responses from batch, got: {len(responses)}"
+                f"Expected {len(chain_data['silos'])} responses from batch, got: {len(responses)}"
             )
 
-        # Process results
-        for (silo_name, _), ur in zip(values, responses):
+        for (silo_name, _), ur in zip(chain_data["silos"], responses):
             human_readable_ur = ur / 1e18
-            print_stuff(chain_name, silo_name, human_readable_ur)
+            print_stuff(chain.name, silo_name, human_readable_ur)
 
 
-# Main function
 def main():
-    print("Processing Arbitrum USDC.E Silos...")
-    process_assets(
-        "Arbitrum",
-        arbitrum_addresses_usdce,
-        arbitrum_silo_lens_address,
-        arbitrum_usdce_address,
-        provider_url_arb,
-    )
+    for chain in ADDRESSES_BY_CHAIN.keys():
+        print(f"Processing {chain.name} Silos...")
+        process_assets(chain)
 
 
-# Run the main function
 if __name__ == "__main__":
     main()

@@ -35,8 +35,9 @@ VAULTS_BY_CHAIN = {
         ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"],
         ["Moonwell Flagship ETH", "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1"],
         ["Moonwell Flagship EURC", "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026"],
-    ]
+    ],
 }
+
 
 # Load ABI files
 def load_abi(file_path):

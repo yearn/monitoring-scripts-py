@@ -22,7 +22,6 @@ def check_peg(usdc_rate, curve_rate):
 
 def check_peg_usd0():
     amounts = [100_000e18, 1_000_000e18, 10_000_000e18]
-    message = ""
 
     # Get Web3 client for mainnet
     client = ChainManager.get_client(Chain.MAINNET)
@@ -32,26 +31,38 @@ def check_peg_usd0():
         address="0x14100f81e33C33Ecc7CDac70181Fb45B6E78569F", abi=abi_curve_pool
     )
 
-    # Execute individual requests
-    curve_rates = []
-    for amount in amounts:
-        try:
-            rate = curve_pool.functions.get_dy(0, 1, int(amount)).call()
-            curve_rates.append(rate)
-        except Exception as e:
-            error_message = f"Error executing curve pool call: {e}"
-            send_telegram_message(error_message, PROTOCOL)
-            return
+    # Create batch request
+    batch = client.batch_requests()
 
-    # Process results
-    for amount, curve_rate in zip(amounts, curve_rates):
-        if curve_rate is not None and check_peg(amount / 1e12, curve_rate):
-            human_readable_amount = amount / 1e18
-            human_readable_result = curve_rate / 1e6
-            message += f"📊 Swap result: {human_readable_amount:.2f} USD0 -> {human_readable_result:.2f} USDC\n"
+    # Add all get_dy calls to the batch
+    calls = [
+        (amount, batch.add(curve_pool.functions.get_dy(0, 1, int(amount))))
+        for amount in amounts
+    ]
 
-    if len(message) > 0:
-        send_telegram_message(message, PROTOCOL)
+    try:
+        # Execute all calls at once
+        responses = batch.execute()
+        if len(responses) != len(amounts):
+            raise ValueError(
+                f"Expected {len(amounts)} responses from batch, got: {len(responses)}"
+            )
+
+        # Process results
+        message = ""
+        for (amount, _), curve_rate in zip(calls, responses):
+            if curve_rate is not None and check_peg(amount / 1e12, curve_rate):
+                human_readable_amount = amount / 1e18
+                human_readable_result = curve_rate / 1e6
+                message += f"📊 Swap result: {human_readable_amount:,.2f} USD0 -> {human_readable_result:,.2f} USDC\n"
+
+        if len(message) > 0:
+            send_telegram_message(message, PROTOCOL)
+
+    except Exception as e:
+        error_message = f"Error executing batch requests: {e}"
+        send_telegram_message(error_message, PROTOCOL)
+        return
 
 
 if __name__ == "__main__":
