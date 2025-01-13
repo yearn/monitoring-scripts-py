@@ -9,10 +9,6 @@ from safe.specific import handle_pendle
 
 load_dotenv()
 
-UPGRADE_FUNCTION_SIGNATURE = "3659cfe6"  # bytes4(keccak256("upgradeTo(address)"))
-UPGRADE_AND_CALL_FUNCTION_SIGNATURE = (
-    "229a3a5f"  # bytes4(keccak256("upgradeAndCall(address,bytes)"))
-)
 SAFE_WEBSITE_URL = "https://app.safe.global/transactions/queue?safe="
 provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
 provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
@@ -34,6 +30,15 @@ safe_apis = {
     "base-main": "https://safe-transaction-polygon.safe.global",
     # "optim-yearn": "https://safe-transaction-optimism.safe.global",
 }
+
+PROXY_UPGRADE_SIGNATURES = [
+    # Standard Proxy (OpenZeppelin, UUPS, Transparent)
+    "3659cfe6",  # bytes4(keccak256("upgradeTo(address)"))
+    "4f1ef286",  # upgradeToAndCall(address,bytes)
+    "f2fde38b",  # changeProxyAdmin(address,address)
+    # Diamond Proxy (EIP-2535)
+    "1f931c1c",  # diamondCut((address,uint8,bytes4[])[],address,bytes)
+]
 
 
 def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
@@ -105,13 +110,12 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
             # pendle uses specific owner of the contracts where we need to decode the data
             if protocol == "PENDLE":
                 hex_data = tx["data"]
-                # if hex data doesnt contain the upgrade function signatures, skip
-                if not (
-                    UPGRADE_FUNCTION_SIGNATURE in hex_data
-                    or UPGRADE_AND_CALL_FUNCTION_SIGNATURE in hex_data
+                # if hex data doesnt contain any of the proxy upgrade signatures, skip
+                if not any(
+                    signature in hex_data for signature in PROXY_UPGRADE_SIGNATURES
                 ):
                     print(
-                        f"Skipping tx with nonce {nonce} as it is not an upgrade or upgradeAndCall call."
+                        f"Skipping tx with nonce {nonce} as it does not contain any proxy upgrade signatures."
                     )
                     continue
 
