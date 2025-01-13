@@ -1,7 +1,7 @@
+import json, datetime
 from utils.web3_wrapper import ChainManager
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
-import json, datetime
 
 # Constants
 DURATION = 1800  # 30 minutes
@@ -62,7 +62,6 @@ def process_assets(chain: Chain):
         strategies_data.append((strategies, vault_name))
 
     # Second batch: Check strategy assets and expiry
-    strategy_details = []
     with client.batch_requests() as batch:
         for strategies, _ in strategies_data:
             for strategy_address in strategies:

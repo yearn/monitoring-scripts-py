@@ -1,6 +1,6 @@
+import json
 from utils.web3_wrapper import ChainManager
 from utils.chains import Chain
-import json
 from utils.telegram import send_telegram_message
 
 THRESHOLD_UR = 0.94
@@ -71,7 +71,7 @@ def process_assets(chain: Chain):
 
 
 def main():
-    for chain in ADDRESSES_BY_CHAIN.keys():
+    for chain in [Chain.ARBITRUM]:
         print(f"Processing {chain.name} Silos...")
         process_assets(chain)
 
