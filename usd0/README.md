@@ -1,5 +1,7 @@
 # USD0 - Usual Money
 
+**Monitoring - DISABLED**
+
 [Usual](https://usual.money/) is team behind stablecoin USD0. For more info check [this post by Llama Risk](https://www.llamarisk.com/research/pegkeeper-onboarding-usd0).
 
 ## Governance

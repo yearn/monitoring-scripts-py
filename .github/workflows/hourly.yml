@@ -94,8 +94,8 @@ jobs:
         run: python -m morpho.main
       - name: Run Morpho Bad Debt script
         run: python -m morpho.bad_debt
-      - name: Run USD0 Peg Price Checker
-        run: python -m usd0.price
+      # - name: Run USD0 Peg Price Checker
+      #   run: python -m usd0.price
 
       # save file to cache
       - name: Cache cache-id.txt

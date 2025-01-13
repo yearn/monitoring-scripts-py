@@ -21,7 +21,7 @@ VAULTS_BY_CHAIN = {
     Chain.MAINNET: [
         ["Steakhouse USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"],
         ["Steakhouse USDT", "0xbEef047a543E45807105E51A8BBEFCc5950fcfBa"],
-        ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D"],
+        # ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D"],
         ["Gantlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618"],
         ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d"],
         ["Gauntlet USDT Prime", "0x8CB3649114051cA5119141a34C200D65dc0Faa73"],
@@ -37,7 +37,6 @@ VAULTS_BY_CHAIN = {
         ["Moonwell Flagship EURC", "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026"],
     ],
 }
-
 
 # Load ABI files
 def load_abi(file_path):

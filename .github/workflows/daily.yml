@@ -1,8 +1,8 @@
 name: Daily Monitoring Scripts
 
 on:
-  schedule:
-    - cron: "11 0 * * *"
+  # schedule:
+  #   - cron: "11 0 * * *"
   workflow_dispatch:
 
 env:
@@ -25,5 +25,5 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run USD0 script
-        run: python -m usd0.main
+      # - name: Run USD0 script
+      #   run: python -m usd0.main
