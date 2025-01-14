@@ -31,6 +31,15 @@ safe_apis = {
     # "optim-yearn": "https://safe-transaction-optimism.safe.global",
 }
 
+PROXY_UPGRADE_SIGNATURES = [
+    # Standard Proxy (OpenZeppelin, UUPS, Transparent)
+    "3659cfe6",  # bytes4(keccak256("upgradeTo(address)"))
+    "4f1ef286",  # upgradeToAndCall(address,bytes)
+    "f2fde38b",  # changeProxyAdmin(address,address)
+    # Diamond Proxy (EIP-2535)
+    "1f931c1c",  # diamondCut((address,uint8,bytes4[])[],address,bytes)
+]
+
 
 def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
     base_url = safe_apis[network_name] + "/api/v1"
@@ -101,6 +110,15 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
             # pendle uses specific owner of the contracts where we need to decode the data
             if protocol == "PENDLE":
                 hex_data = tx["data"]
+                # if hex data doesnt contain any of the proxy upgrade signatures, skip
+                if not any(
+                    signature in hex_data for signature in PROXY_UPGRADE_SIGNATURES
+                ):
+                    print(
+                        f"Skipping tx with nonce {nonce} as it does not contain any proxy upgrade signatures."
+                    )
+                    continue
+
                 try:
                     if network_name == "mainnet":
                         message += handle_pendle(provider_url_mainnet, hex_data)
