@@ -4,11 +4,9 @@
 
 ## Bad Debt
 
-TODO: implement using this site: https://defirisk.intotheblock.com/metrics/base/moonwell or https://app.gauntlet.xyz/protocols/moonwell/markets/base/liquidations
+The data is fetched from [https://defirisk.intotheblock.com/metrics/base/moonwell](https://defirisk.intotheblock.com/metrics/base/moonwell)
 
-## Utilization
-
-TODO: check if it possible to use the data from this website: https://app.gauntlet.xyz/protocols/moonwell/markets/base
+The alert is sent when the [bad debt ratio](bad_debt.py#L65) is greater than 0.5% or if the [debt supply ratio](bad_debt.py#L66) is greater than 70%.
 
 ## Governance
 
@@ -23,3 +21,7 @@ To get the proposal data from the received alert:
 3. go to Moonwell governance [https://moonwell.fi/governance/proposal/moonbeam?id=proposalId+79](https://moonwell.fi/governance/proposal/moonbeam?id=147) and check the proposal data. For base, the proposalId is increased by 79.
 
 TODO: Add API calls to get governance proposals.
+
+## Utilization
+
+TODO: check if it possible to use the data from this website: https://app.gauntlet.xyz/protocols/moonwell/markets/base
