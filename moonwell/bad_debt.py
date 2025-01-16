@@ -16,7 +16,7 @@ def get_timestamp_before(hours: int):
 
 
 def fetch_metrics():
-    """Fetch all required metrics from Moonwell API"""
+    """Fetch all required metrics from IntoTheBlock API about Moonwell"""
     metrics = {}
     endpoints = {
         "total_supply": "general/total_supply",
@@ -90,31 +90,6 @@ def check_thresholds(metrics):
         send_telegram_message(message, PROTOCOL)
 
 
-def print_metrics():
-    """Print all metrics for local testing"""
-    metrics = fetch_metrics()
-    print("\n=== Moonwell Metrics ===")
-    print(f"Timestamp: {get_timestamp_before(hours=30)}")
-    print("\nRaw Values:")
-    print(f"Total Supply: ${metrics['total_supply']:,.2f}")
-    print(f"Total Debt: ${metrics['total_debt']:,.2f}")
-    print(f"Bad Debt: ${metrics['bad_debt']:,.2f}")
-
-    # Calculate derived metrics
-    tvl = metrics["total_supply"] - metrics["total_debt"]
-    bad_debt_ratio = metrics["bad_debt"] / tvl if tvl > 0 else 0
-    debt_supply_ratio = (
-        metrics["total_debt"] / metrics["total_supply"]
-        if metrics["total_supply"] > 0
-        else 0
-    )
-
-    print("\nDerived Metrics:")
-    print(f"TVL: ${tvl:,.2f}")
-    print(f"Bad Debt Ratio: {bad_debt_ratio:.2%}")
-    print(f"Debt/Supply Ratio: {debt_supply_ratio:.2%}")
-
-
 def main():
     metrics = fetch_metrics()
     check_thresholds(metrics)
@@ -122,4 +97,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # print_metrics()

@@ -34,6 +34,7 @@ env:
   TELEGRAM_CHAT_ID_PEGS: ${{ secrets.TELEGRAM_CHAT_ID_PEGS }}
   TELEGRAM_CHAT_ID_MORPHO: ${{ secrets.TELEGRAM_CHAT_ID_MORPHO }}
   TELEGRAM_CHAT_ID_USD0: ${{ secrets.TELEGRAM_CHAT_ID_USD0 }}
+  TELEGRAM_CHAT_ID_MOONWELL: ${{ secrets.TELEGRAM_CHAT_ID_MOONWELL }}
   TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
   GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
   ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
@@ -94,6 +95,8 @@ jobs:
         run: python -m morpho.main
       - name: Run Morpho Bad Debt script
         run: python -m morpho.bad_debt
+      - name: Run Moonwell Bad Debt script
+        run: python -m moonwell.bad_debt
       # - name: Run USD0 Peg Price Checker
       #   run: python -m usd0.price
 
