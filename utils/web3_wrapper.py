@@ -70,7 +70,7 @@ class MultiHTTPProvider(HTTPProvider, RetryProviders):
         providers = self._validate_urls(providers)
         RetryProviders.__init__(self, providers, max_retries, backoff_factor)
         self.request_kwargs = request_kwargs or {}
-        self.request_kwargs.setdefault("timeout", 1000)
+        self.request_kwargs.setdefault("timeout", 5000)
         super().__init__(
             endpoint_uri=self.endpoint_uri, request_kwargs=self.request_kwargs
         )
@@ -111,7 +111,7 @@ class Web3Client(RetryProviders):
         """Initialize Web3 with multi-provider setup"""
         provider_urls = self._get_provider_urls()
         provider = MultiHTTPProvider(
-            providers=provider_urls, max_retries=3, backoff_factor=1
+            providers=provider_urls, max_retries=3, backoff_factor=2
         )
         return Web3(provider)
 
