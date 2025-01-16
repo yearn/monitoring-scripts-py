@@ -2,14 +2,6 @@
 
 [Moonwell](https://moonwell.fi/) is Compound V2 fork.
 
-## Bad Debt
-
-TODO: implement using this site: https://defirisk.intotheblock.com/metrics/base/moonwell or https://app.gauntlet.xyz/protocols/moonwell/markets/base/liquidations
-
-## Utilization
-
-TODO: check if it possible to use the data from this website: https://app.gauntlet.xyz/protocols/moonwell/markets/base
-
 ## Governance
 
 Tenderly alert for queueing tx to [Timelock contract on Base](https://dashboard.tenderly.co/yearn/sam/alerts/rules/41361042-facb-4d5d-b4a5-ddd1323e0602).
@@ -23,3 +15,13 @@ To get the proposal data from the received alert:
 3. go to Moonwell governance [https://moonwell.fi/governance/proposal/moonbeam?id=proposalId+79](https://moonwell.fi/governance/proposal/moonbeam?id=147) and check the proposal data. For base, the proposalId is increased by 79.
 
 TODO: Add API calls to get governance proposals.
+
+## Bad Debt
+
+The alerts are sent when the [bad debt ratio](bad_debt.py#L65) is greater than 0.5% or if the [debt supply ratio](bad_debt.py#L66) is greater than 70%.
+
+The data is fetched from [IntoTheBlock API](https://defirisk.intotheblock.com/metrics/base/moonwell).
+
+## Utilization
+
+TODO: check if it possible to use the data from this website: https://app.gauntlet.xyz/protocols/moonwell/markets/base or https://defirisk.intotheblock.com/metrics/base/moonwell
