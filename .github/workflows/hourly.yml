@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PROVIDER_URL: ${{ secrets.PROVIDER_URL }}
+  PROVIDER_URL_POLYGON: ${{ secrets.PROVIDER_URL }}
   PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
   PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
   PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
