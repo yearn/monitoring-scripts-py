@@ -27,7 +27,6 @@ def fetch_metrics():
     # Get timestamp from 36 hours ago because supply and debt data are updated daily
     # but bad debt data is updated hourly. Only latest values is used.
     timestamp = get_timestamp_before(hours=36)
-    print(f"Timestamp: {timestamp}")
 
     for metric_name, endpoint in endpoints.items():
         url = f"{BASE_URL}/{endpoint}?since={timestamp}"
@@ -46,7 +45,6 @@ def fetch_metrics():
 
         except Exception as e:
             message = f"Error fetching {metric_name}: {str(e)}"
-            print(message)
             send_telegram_message(message, PROTOCOL)
             metrics[metric_name] = 0
 
@@ -58,6 +56,10 @@ def check_thresholds(metrics):
     total_supply = metrics["total_supply"]
     total_debt = metrics["total_debt"]
     bad_debt = metrics["bad_debt"]
+
+    # If there is no supply or debt, skip the checks
+    if total_supply == 0 or total_debt == 0:
+        return
 
     tvl = total_supply - total_debt
 
