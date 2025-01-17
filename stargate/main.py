@@ -1,33 +1,36 @@
-from web3 import Web3, constants
-from dotenv import load_dotenv
-import os, json
+import json
+from utils.web3_wrapper import ChainManager
+from utils.chains import Chain
 from utils.telegram import send_telegram_message
 
-load_dotenv()
-
 PROTOCOL = "STARGATE"
-provider_url_polygon = os.getenv("PROVIDER_URL")
-provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
 
-with open("common-abi/Strategy.json") as f:
-    abi_data = json.load(f)
-    if isinstance(abi_data, dict):
-        abi_strategy = abi_data["result"]
-    elif isinstance(abi_data, list):
-        abi_strategy = abi_data
 
-# Add only strategies that are used by Vaults
-polygon_strategies = [
-    "0x8BBa7AFd0f9B1b664C161EC31d812a8Ec15f7e1a",  # stargate staker usdc.e strategy
-    "0x2c5d0c3DB75D2f8A4957c74BE09194a9271Cf28D",  # stargate staker usdt strategy
-    # Add more pairs as needed
-]
+def load_abi(file_path):
+    with open(file_path) as f:
+        abi_data = json.load(f)
+        if isinstance(abi_data, dict):
+            return abi_data["result"]
+        elif isinstance(abi_data, list):
+            return abi_data
+        else:
+            raise ValueError("Invalid ABI format")
 
-arbitrum_strategies = [
-    # Add more pairs as needed
-]
 
-buffer = 0.1
+ABI_STRATEGY = load_abi("common-abi/Strategy.json")
+
+# Map addresses by chain
+STRATEGIES_BY_CHAIN = {
+    Chain.POLYGON: [
+        "0x8BBa7AFd0f9B1b664C161EC31d812a8Ec15f7e1a",  # stargate staker usdc.e strategy
+        "0x2c5d0c3DB75D2f8A4957c74BE09194a9271Cf28D",  # stargate staker usdt strategy
+    ],
+    Chain.ARBITRUM: [
+        # Add arbitrum strategies here
+    ],
+}
+
+BUFFER = 0.1
 
 
 def print_stuff(
@@ -38,7 +41,6 @@ def print_stuff(
     underlying_token_decimals,
     chain_name,
 ):
-
     total_debt /= 10**underlying_token_decimals
     net_room /= 10**underlying_token_decimals
     total_idle /= 10**underlying_token_decimals
@@ -54,52 +56,57 @@ def print_stuff(
     send_telegram_message(message, PROTOCOL)
 
 
-# Wrap address to Strategy contract
-def wrap_address_to_contract(address, provider_url):
-    w3 = Web3(Web3.HTTPProvider(provider_url))
-    contract = w3.eth.contract(address=address, abi=abi_strategy)
-    return contract
+def process_assets(chain: Chain):
+    client = ChainManager.get_client(chain)
+    strategies = STRATEGIES_BY_CHAIN[chain]
 
-
-# Function to process assets for a specific network
-def process_assets(chain_name, strategies, provider_url):
-    ## loop through all the strategies
     for strategy_address in strategies:
         # Build contracts
-        strategy = wrap_address_to_contract(strategy_address, provider_url)
-        underlying_token = wrap_address_to_contract(
-            strategy.functions.asset().call(), provider_url
+        strategy = client.eth.contract(address=strategy_address, abi=ABI_STRATEGY)
+
+        # Batch all the calls
+        with client.batch_requests() as batch:
+            batch.add(strategy.functions.asset())
+            batch.add(
+                strategy.functions.availableWithdrawLimit(client.eth.address_zero)
+            )
+            batch.add(strategy.functions.totalAssets())
+            batch.add(strategy.functions.name())
+            batch.add(strategy.functions.decimals())
+
+        responses = client.execute_batch(batch)
+
+        underlying_token_address = responses[0]
+        withdraw_room = responses[1]
+        total_assets = responses[2]
+        strategy_name = responses[3]
+        underlying_token_decimals = responses[4]
+
+        # Get underlying token balance
+        underlying_token = client.eth.contract(
+            address=underlying_token_address, abi=ABI_STRATEGY
         )
+        total_idle = underlying_token.functions.balanceOf(strategy_address).call()
 
-        # Get total supply and available balance
-        withdraw_room = strategy.functions.availableWithdrawLimit(
-            constants.ADDRESS_ZERO
-        ).call()
-        total_idle = underlying_token.functions.balanceOf(strategy.address).call()
         net_room = withdraw_room - total_idle
-
-        total_assets = strategy.functions.totalAssets().call()
         total_debt = total_assets - total_idle
 
-        if total_debt * (1 + buffer) > net_room:
-            strategy_name = strategy.functions.name().call()
-            underlying_token_decimals = strategy.functions.decimals().call()
+        if total_debt * (1 + BUFFER) > net_room:
             print_stuff(
                 int(total_debt),
                 int(net_room),
                 int(total_idle),
                 strategy_name,
                 int(underlying_token_decimals),
-                chain_name,
+                chain.name,
             )
 
 
 def main():
-    print("Processing Polygon assets...")
-    process_assets("Polygon", polygon_strategies, provider_url_polygon)
-
-    print("Processing Arbitrum assets...")
-    process_assets("Arbitrum", arbitrum_strategies, provider_url_arb)
+    for chain in [Chain.POLYGON]:
+        if STRATEGIES_BY_CHAIN[chain]:  # Only process chains with defined strategies
+            print(f"Processing {chain.name} assets...")
+            process_assets(chain)
 
 
 if __name__ == "__main__":

@@ -1,46 +1,42 @@
-from web3 import Web3
-from dotenv import load_dotenv
-import os, json
 from datetime import datetime
-from utils.telegram import send_telegram_message
+import json
 from utils.cache import (
     get_last_executed_morpho_from_file,
     write_last_executed_morpho_to_file,
 )
-
-# Load environment variables
-load_dotenv()
+from utils.chains import Chain
+from utils.telegram import send_telegram_message
+from utils.web3_wrapper import ChainManager
+from web3 import Web3
 
 PROTOCOL = "MORPHO"
 MARKET_URL = "https://app.morpho.org/market"
 VAULT_URL = "https://app.morpho.org/vault"
-# Provider URLs
-PROVIDER_URL_MAINNET = os.getenv("PROVIDER_URL_MAINNET")
-PROVIDER_URL_BASE = os.getenv("PROVIDER_URL_BASE")
 
 PENDING_CAP_TYPE = "pending_cap"
 REMOVABLE_AT_TYPE = "removable_at"
 
-# format of the vault list item is: [name, address]
-MAINNET_VAULTS = [
-    ["Steakhouse USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"],
-    ["Steakhouse USDT", "0xbEef047a543E45807105E51A8BBEFCc5950fcfBa"],
-    # ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D"],
-    ["Gantlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618"],
-    ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d"],
-    ["Gauntlet USDT Prime", "0x8CB3649114051cA5119141a34C200D65dc0Faa73"],
-    ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658"],
-    ["Gantlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458"],
-    ["Gantlet DAI Core", "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5"],
-    ["Gantlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2"],
-    ["LlamaRisk crvUSD Vault", "0x67315dd969B8Cd3a3520C245837Bf71f54579C75"],
-]
-BASE_VAULTS = [
-    ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"],
-    ["Moonwell Flagship ETH", "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1"],
-    ["Moonwell Flagship EURC", "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026"],
-]
-
+# Map vaults by chain
+VAULTS_BY_CHAIN = {
+    Chain.MAINNET: [
+        ["Steakhouse USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"],
+        ["Steakhouse USDT", "0xbEef047a543E45807105E51A8BBEFCc5950fcfBa"],
+        # ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D"],
+        ["Gantlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618"],
+        ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d"],
+        ["Gauntlet USDT Prime", "0x8CB3649114051cA5119141a34C200D65dc0Faa73"],
+        ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658"],
+        ["Gantlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458"],
+        ["Gantlet DAI Core", "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5"],
+        ["Gantlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2"],
+        ["LlamaRisk crvUSD Vault", "0x67315dd969B8Cd3a3520C245837Bf71f54579C75"],
+    ],
+    Chain.BASE: [
+        ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"],
+        ["Moonwell Flagship ETH", "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1"],
+        ["Moonwell Flagship EURC", "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026"],
+    ],
+}
 
 # Load ABI files
 def load_abi(file_path):
@@ -57,15 +53,16 @@ def load_abi(file_path):
 ABI_MORPHO = load_abi("morpho/abi/morpho.json")
 
 
-def get_market_url(market, chain):
-    return f"{MARKET_URL}?id={market}&network={chain}"
+def get_market_url(market, chain: Chain):
+    chain_name = chain.name.lower()
+    return f"{MARKET_URL}?id={market}&network={chain_name}"
 
 
-def get_vault_url_by_name(vault_name, chain):
-    vaults = MAINNET_VAULTS if chain == "mainnet" else BASE_VAULTS
+def get_vault_url_by_name(vault_name, chain: Chain):
+    vaults = VAULTS_BY_CHAIN[chain]
     for name, address in vaults:
         if name == vault_name:
-            return f"{VAULT_URL}?vault={address}&network={chain}"
+            return f"{VAULT_URL}?vault={address}&network={chain.name.lower()}"
     return None
 
 
@@ -74,7 +71,7 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
         batch.add(morpho_contract.functions.supplyQueueLength())
         batch.add(morpho_contract.functions.withdrawQueueLength())
 
-        length_responses = batch.execute()
+        length_responses = w3.execute_batch(batch)
         if len(length_responses) != 2:
             raise ValueError(
                 "Expected 2 responses from batch(supplyQueueLength+withdrawQueueLength), got: ",
@@ -89,7 +86,7 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
             batch.add(morpho_contract.functions.supplyQueue(i))
         for i in range(length_of_withdraw_queue):
             batch.add(morpho_contract.functions.withdrawQueue(i))
-        market_responses = batch.execute()
+        market_responses = w3.execute_batch(batch)
         if len(market_responses) != length_of_supply_queue + length_of_withdraw_queue:
             raise ValueError(
                 "Expected ",
@@ -104,7 +101,7 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
         for market in markets:
             batch.add(morpho_contract.functions.pendingCap(market))
             batch.add(morpho_contract.functions.config(market))
-        pending_cap_and_config_responses = batch.execute()
+        pending_cap_and_config_responses = w3.execute_batch(batch)
         if len(pending_cap_and_config_responses) != len(markets) * 2:
             raise ValueError(
                 "Expected ",
@@ -199,11 +196,11 @@ def check_pending_role_change(name, morpho_contract, role_type, timestamp, chain
         )
 
 
-def check_timelock_and_guardian(name, morpho_contract, chain):
+def check_timelock_and_guardian(name, morpho_contract, chain, client):
     with morpho_contract.w3.batch_requests() as batch:
         batch.add(morpho_contract.functions.pendingTimelock())
         batch.add(morpho_contract.functions.pendingGuardian())
-        responses = batch.execute()
+        responses = client.execute_batch(batch)
         if len(responses) != 2:
             raise ValueError("Expected 2 responses from batch, got: ", len(responses))
 
@@ -214,30 +211,22 @@ def check_timelock_and_guardian(name, morpho_contract, chain):
     check_pending_role_change(name, morpho_contract, "guardian", guardian, chain)
 
 
-def get_data_for_chain(chain):
-    if chain == "mainnet":
-        w3 = Web3(Web3.HTTPProvider(PROVIDER_URL_MAINNET))
-        vaults = MAINNET_VAULTS
-    elif chain == "base":
-        w3 = Web3(Web3.HTTPProvider(PROVIDER_URL_BASE))
-        vaults = BASE_VAULTS
-    else:
-        raise ValueError("Invalid chain")
+def get_data_for_chain(chain: Chain):
+    client = ChainManager.get_client(chain)
+    vaults = VAULTS_BY_CHAIN[chain]
 
-    print(f"Processing Morpho Vaults on {chain} ...")
+    print(f"Processing Morpho Vaults on {chain.name} ...")
     print(f"Vaults: {vaults}")
 
     for vault in vaults:
-        # TODO: additional optimization is possible by combining marketes of all vaults into one list
-        # and then checking the pending caps for all markets in one batch request
-        morpho_contract = w3.eth.contract(address=vault[1], abi=ABI_MORPHO)
-        check_markets_pending_cap(vault[0], morpho_contract, chain, w3)
-        check_timelock_and_guardian(vault[0], morpho_contract, chain)
+        morpho_contract = client.eth.contract(address=vault[1], abi=ABI_MORPHO)
+        check_markets_pending_cap(vault[0], morpho_contract, chain, client)
+        check_timelock_and_guardian(vault[0], morpho_contract, chain, client)
 
 
 def main():
-    get_data_for_chain("mainnet")
-    get_data_for_chain("base")
+    get_data_for_chain(Chain.MAINNET)
+    get_data_for_chain(Chain.BASE)
 
 
 if __name__ == "__main__":

@@ -1,12 +1,9 @@
-from web3 import Web3
-from dotenv import load_dotenv
-import os, json
+import json
+from utils.web3_wrapper import ChainManager
+from utils.chains import Chain
 from utils.telegram import send_telegram_message
 
-load_dotenv()
-
 PROTOCOL = "SPARK"
-provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
 
 with open("aave/abi/AToken.json") as f:
     abi_data = json.load(f)
@@ -59,7 +56,7 @@ mainnet_addresses = [
 ]
 
 # TODO: Add different threshold UR's for each asset
-THRESHOLD_UR = 0.96
+THRESHOLD_UR = 0.99
 THRESHOLD_UR_NOTIFICATION = 0.99
 
 
@@ -79,18 +76,17 @@ def print_stuff(chain_name, token_name, ur):
 
 
 # Function to process assets for a specific network
-def process_assets(chain_name, addresses, provider_url):
-    w3 = Web3(Web3.HTTPProvider(provider_url))
+def process_assets(chain, addresses):
+    # Get Web3 client using ChainManager
+    client = ChainManager.get_client(chain)
 
     # Prepare all contracts and batch calls
-    with w3.batch_requests() as batch:
-        contracts = []
+    with client.batch_requests() as batch:
         for atoken_address, underlying_token_address in addresses:
-            atoken = w3.eth.contract(address=atoken_address, abi=abi_atoken)
-            underlying_token = w3.eth.contract(
+            atoken = client.eth.contract(address=atoken_address, abi=abi_atoken)
+            underlying_token = client.eth.contract(
                 address=underlying_token_address, abi=abi_atoken
             )
-            contracts.append((atoken, underlying_token))
 
             # Add all calls to the batch
             batch.add(atoken.functions.totalSupply())
@@ -106,22 +102,31 @@ def process_assets(chain_name, addresses, provider_url):
             )
 
     # Process results
+    expected_responses = len(addresses) * 3
+    if len(responses) != expected_responses:
+        raise ValueError(
+            f"Expected {expected_responses} responses, got: {len(responses)}"
+        )
+
     for i in range(0, len(responses), 3):
         ts = responses[i]  # totalSupply
         av = responses[i + 1]  # balanceOf
         token_name = responses[i + 2]  # symbol
 
+        if None in (ts, av, token_name):
+            continue
+
         # Calculate debt and utilization rate
         debt = ts - av
         ur = debt / ts if ts != 0 else 0
 
-        print_stuff(chain_name, token_name, ur)
+        print_stuff(chain.name, token_name, ur)
 
 
 # Main function
 def main():
     print("Processing Mainnet assets...")
-    process_assets("Mainnet", mainnet_addresses, provider_url_mainnet)
+    process_assets(Chain.MAINNET, mainnet_addresses)
 
 
 # Run the main function

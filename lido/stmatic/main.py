@@ -1,58 +1,50 @@
-from web3 import Web3
-from dotenv import load_dotenv
-import os, json
+import json
+from utils.web3_wrapper import ChainManager
+from utils.chains import Chain
 from utils.telegram import send_telegram_message
 
-load_dotenv()
-
-peg_threshold = 0.05  # 5%
-provider_url = os.getenv("PROVIDER_URL_MAINNET")
-provider_url_polygon = os.getenv("PROVIDER_URL")
-w3 = Web3(Web3.HTTPProvider(provider_url))
-w3_polygon = Web3(Web3.HTTPProvider(provider_url_polygon))
-ASSET_BONDS_EXCEEDED = "GYR#357"  # https://github.com/gyrostable/gyro-pools/blob/24060707809123e1ffd222eba99a5694e4b074c7/tests/geclp/util.py#L419
 PROTOCOL = "LIDO"
+PEG_THRESHOLD = 0.05  # 5%
+ASSET_BONDS_EXCEEDED = "GYR#357"
 
-with open("lido/stmatic/abi/StMatic.json") as f:
-    abi_data = json.load(f)
-    if isinstance(abi_data, dict):
-        abi_stmatic = abi_data["result"]
-    elif isinstance(abi_data, list):
-        abi_stmatic = abi_data
 
-stmatic = w3.eth.contract(
-    address="0x9ee91F9f426fA633d227f7a9b000E28b9dfd8599", abi=abi_stmatic
-)
+# Load ABI
+def load_abi(file_path):
+    with open(file_path) as f:
+        abi_data = json.load(f)
+        if isinstance(abi_data, dict):
+            return abi_data["result"]
+        elif isinstance(abi_data, list):
+            return abi_data
+        else:
+            raise ValueError("Invalid ABI format")
 
-with open("common-abi/BalancerQuery.json") as f:
-    abi_data = json.load(f)
-    if isinstance(abi_data, dict):
-        abi_bq = abi_data["result"]
-    elif isinstance(abi_data, list):
-        abi_bq = abi_data
 
-with open("common-abi/BalancerVault.json") as f:
-    abi_data = json.load(f)
-    if isinstance(abi_data, dict):
-        abi_bv = abi_data["result"]
-    elif isinstance(abi_data, list):
-        abi_bv = abi_data
+# Load all required ABIs
+ABI_STMATIC = load_abi("lido/stmatic/abi/StMatic.json")
+ABI_BALANCER_QUERY = load_abi("common-abi/BalancerQuery.json")
+ABI_BALANCER_VAULT = load_abi("common-abi/BalancerVault.json")
 
-balancer_query = w3_polygon.eth.contract(
-    address="0xE39B5e3B6D74016b2F6A9673D7d7493B6DF549d5", abi=abi_bq
-)
-balancer_vault = w3_polygon.eth.contract(
-    address="0xBA12222222228d8Ba445958a75a0704d566BF2C8", abi=abi_bv
-)
+# Contract addresses
+ADDRESSES = {
+    Chain.MAINNET: {
+        "stmatic": "0x9ee91F9f426fA633d227f7a9b000E28b9dfd8599",
+    },
+    Chain.POLYGON: {
+        "balancer_query": "0xE39B5e3B6D74016b2F6A9673D7d7493B6DF549d5",
+        "balancer_vault": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
+    },
+}
 
-balancer_pool_id = "0x8159462d255c1d24915cb51ec361f700174cd99400000000000000000000075d"
+BALANCER_POOL_ID = "0x8159462d255c1d24915cb51ec361f700174cd99400000000000000000000075d"
 
+# ... rest of your swap templates remain the same ...
 single_swap_template = {
-    "poolId": balancer_pool_id,  # gyroscope concentraded pool
-    "kind": 0,  # 0 for GIVEN_IN
-    "assetIn": "0x3A58a54C066FdC0f2D55FC9C89F0415C92eBf3C4",  # stmatic
-    "assetOut": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",  # matic
-    "amount": 0,  # will be dynamically set
+    "poolId": BALANCER_POOL_ID,
+    "kind": 0,
+    "assetIn": "0x3A58a54C066FdC0f2D55FC9C89F0415C92eBf3C4",
+    "assetOut": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+    "amount": 0,
     "userData": b"",
 }
 
@@ -64,7 +56,7 @@ fund_management = {
 }
 
 
-def query_swap(single_swap, fund_management):
+def query_swap(balancer_query, balancer_vault, single_swap, fund_management):
     try:
         swap_res = balancer_query.functions.querySwap(
             single_swap, fund_management
@@ -77,9 +69,8 @@ def query_swap(single_swap, fund_management):
         else:
             message = f"Error calling query in balancer pool: {e}\n"
 
-        # get the balances in the pool in case of error
         try:
-            amounts = balancer_vault.functions.getPoolTokens(balancer_pool_id).call()[1]
+            amounts = balancer_vault.functions.getPoolTokens(BALANCER_POOL_ID).call()[1]
             matic_balance = amounts[0] / 1e18
             stmatic_balance = amounts[1] / 1e18
             total_balance = matic_balance + stmatic_balance
@@ -90,39 +81,48 @@ def query_swap(single_swap, fund_management):
             )
         except Exception as e:
             message += f"Error querying balances in pool: {e}"
-        send_telegram_message(message, PROTOCOL, True)  # disable notification
+        send_telegram_message(message, PROTOCOL, True)
+        return None
 
 
 def check_peg(validator_rate, balancer_rate):
     if balancer_rate == 0:
         return False
-    # Calculate the percentage difference
     difference = abs(validator_rate - balancer_rate)
     percentage_diff = difference / validator_rate
-    return percentage_diff >= peg_threshold  # 0.06 >= 0.05
+    return percentage_diff >= PEG_THRESHOLD
 
 
 def main():
+    # Initialize web3 clients
+    mainnet_client = ChainManager.get_client(Chain.MAINNET)
+    polygon_client = ChainManager.get_client(Chain.POLYGON)
+
+    # Initialize contracts
+    stmatic = mainnet_client.eth.contract(
+        address=ADDRESSES[Chain.MAINNET]["stmatic"], abi=ABI_STMATIC
+    )
+    balancer_query = polygon_client.eth.contract(
+        address=ADDRESSES[Chain.POLYGON]["balancer_query"], abi=ABI_BALANCER_QUERY
+    )
+    balancer_vault = polygon_client.eth.contract(
+        address=ADDRESSES[Chain.POLYGON]["balancer_vault"], abi=ABI_BALANCER_VAULT
+    )
+
     validator_rate = int(stmatic.functions.convertStMaticToMatic(10**18).call()[0])
     human_readable_res = validator_rate / 1e18
     message = f"🔄 1 StMATIC is: {human_readable_res:.5f} MATIC in Lido\n"
 
-    # 1 stMATIC, 1000 stMATIC, 100K stMATIC
-    # spot price, med amount, big amount
-    amounts = [
-        1e18,
-        100e18,
-        10_000e18,
-    ]  # TODO: Make these dynamic, maybe add it to env and change it there
+    amounts = [1e18, 100e18, 10_000e18]
 
     for amount in amounts:
         single_swap = single_swap_template.copy()
         single_swap["amount"] = int(amount)
         validator_rate = human_readable_res * amount
-        balancer_rate = query_swap(single_swap, fund_management)
+        balancer_rate = query_swap(
+            balancer_query, balancer_vault, single_swap, fund_management
+        )
         if balancer_rate is None:
-            # break the loop if there is no rate
-            # if the first amount is without rate others are also
             break
         if check_peg(validator_rate, balancer_rate):
             human_readable_amount = amount / 1e18
