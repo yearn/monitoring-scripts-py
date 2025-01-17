@@ -24,9 +24,9 @@ def fetch_metrics():
         "bad_debt": "liquidation/health_factor_distribution",
     }
 
-    # Get timestamp from 30 hours ago because supply and debt data are updated daily
+    # Get timestamp from 36 hours ago because supply and debt data are updated daily
     # but bad debt data is updated hourly. Only latest values is used.
-    timestamp = get_timestamp_before(hours=30)
+    timestamp = get_timestamp_before(hours=36)
     print(f"Timestamp: {timestamp}")
 
     for metric_name, endpoint in endpoints.items():
