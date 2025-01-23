@@ -14,7 +14,7 @@ To get the proposal data from the received alert:
 2. find the event `ProposalStateChanged` and get [`proposalId` value](https://basescan.org/tx/0x43f11101683eb6d58d346cc0f1c810f66abd1979539b0b54170904e5af64a310#eventlog)
 3. go to Moonwell governance [https://moonwell.fi/governance/proposal/moonbeam?id=proposalId+79](https://moonwell.fi/governance/proposal/moonbeam?id=147) and check the proposal data. For base, the proposalId is increased by 79.
 
-TODO: Add API calls to get governance proposals.
+The script [proposals.py](proposals.py) to check for new governance proposals is [run hourly by Github actions](../.github/workflows/hourly.yml#L100). If the proposal is queued, it sends a telegram message. It uses cache to avoid sending duplicate messages.
 
 ## Bad Debt
 
