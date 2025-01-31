@@ -7,52 +7,49 @@ API_URL = "https://blue-api.morpho.org/graphql"
 MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.1
-LIQUIDITY_THRESHOLD = 0.10  # 10% threshold # TODO: think about lower to 5%
+LIQUIDITY_THRESHOLD = 0.10
 
 # Map vaults by chain
 VAULTS_BY_CHAIN = {
     Chain.MAINNET: [
-        ["Steakhouse USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"],
-        ["Steakhouse USDT", "0xbEef047a543E45807105E51A8BBEFCc5950fcfBa"],
-        ["Gantlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618"],
-        ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d"],
-        ["Gauntlet USDT Prime", "0x8CB3649114051cA5119141a34C200D65dc0Faa73"],
-        ["Gantlet DAI Core", "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5"],
-        ["LlamaRisk crvUSD Vault", "0x67315dd969B8Cd3a3520C245837Bf71f54579C75"],
+        # name, address, risk level
+        ["Steakhouse USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB", 1],
+        ["Steakhouse USDT", "0xbEef047a543E45807105E51A8BBEFCc5950fcfBa", 1],
+        ["Gantlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618", 1],
+        ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d", 1],
+        ["Gauntlet USDT Prime", "0x8CB3649114051cA5119141a34C200D65dc0Faa73", 1],
+        ["Gantlet DAI Core", "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5", 2],
+        ["LlamaRisk crvUSD Vault", "0x67315dd969B8Cd3a3520C245837Bf71f54579C75", 2],
         # these vaults are not used by yVaults
-        # ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658"],
-        # ["Gantlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458"],
-        # ["Gantlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2"],
-        # ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D"],
+        ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658", 3],
+        ["Gantlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458", 3],
+        ["Gantlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2", 3],
+        ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D", 5],
     ],
     Chain.BASE: [
-        ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"],
-        ["Moonwell Flagship ETH", "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1"],
-        ["Moonwell Flagship EURC", "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026"],
+        ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca", 2],
+        ["Moonwell Flagship ETH", "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1", 2],
+        ["Moonwell Flagship EURC", "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026", 2],
     ],
 }
 
 MARKETS_RISK_1 = {
     Chain.MAINNET: [
-        "0x3a85e619751152991742810df6ec69ce473daef99e28a64ab2340d7b7ccfee49",  # WBTC/USDC
-        "0xb323495f7e4148be5643a4ea4a8221eef163e4bccfdedc2a6f4696baacbc86cc",  # wstETH/USDC
-        "0x64d65c9a2d91c36d56fbc42d69e979335320169b3df63bf92789e2c8883fcc64",  # cbBTC/USDC
-        "0xb8fc70e82bc5bb53e773626fcc6a23f7eefa036918d7ef216ecfb1950a94a85e",  # wstETH/WETH
-        "0xc54d7acf14de29e0e5527cabd7a576506870346a78a11a6762e2cca66322ec41",  # wstETH/WETH more aggressive on high utilization
-        "0xd0e50cdac92fe2172043f5e0c36532c6369d24947e40968f34a5e8819ca9ec5d",  # wstETH/WETH less aggressive on high utilization
-        "0x138eec0e4a1937eb92ebc70043ed539661dd7ed5a89fb92a720b341650288a40",  # WBTC/WETH
-        "0x3c83f77bde9541f8d3d82533b19bbc1f97eb2f1098bb991728acbfbede09cc5d",  # rETH/WETH
-        "0x2cbfb38723a8d9a2ad1607015591a78cfe3a5949561b39bde42c242b22874ec0",  # cbBTC/WETH
-        "0x1929f8139224cb7d5db8c270addc9ce366d37ad279e1135f73c0adce74b0f936",  # sDAI/WETH
-        "0x46981f15ab56d2fdff819d9c2b9c33ed9ce8086e0cce70939175ac7e55377c7f",  # sDAI/USDC
-        "0xa921ef34e2fc7a27ccc50ae7e4b154e16c9799d3387076c421423ef52ac4df99",  # WBTC/USDT
-        "0x3274643db77a064abd3bc851de77556a4ad2e2f502f4f0c80845fa8f909ecf0b",  # sUSDS/USDT
-        "0xe7e9694b754c4d4f7e21faf7223f6fa71abaeb10296a4c43a54a7977149687d2",  # wstETH/USDT
-        "0x1ca7ff6b26581fe3155f391f3960d32a033b5f7d537b1f1932b2021a6cf4f706",  # sDAI/USDT
-        "0x5e3e6b1e01c5708055548d82d01db741e37d03b948a7ef9f3d4b962648bcbfa7",  # PT-sUSDE-27MAR2025 / DAI -> using aggresive interest rate curve and using discounted oracle
-        "0xab0dcab71e65c05b7f241ea79a33452c87e62db387129e4abe15e458d433e4d8",  # PT-USDe-27MAR2025 / DAI -> using aggresive interest rate curve and using discounted oracle
-        "0x74ef8d7022b0ef0c0e6dc001fbda3c8bd9a3e706f03bb559c833e1dce7302d3a",  # Curve TricryptoUSDC LP / crvUSD -> collaterals: ETH, USDC, WBTC
-        "0x1c4b9ce834604969d33dc277bd8473d8aee856e5a577c08427b6deeb97cc72d6",  # Curve TricryptoUSDT LP / crvUSD -> collaterals: ETH, USDT, WBTC
+        "0x3a85e619751152991742810df6ec69ce473daef99e28a64ab2340d7b7ccfee49",  # WBTC/USDC -> lltv 86%, oracle: chainlink
+        "0xb323495f7e4148be5643a4ea4a8221eef163e4bccfdedc2a6f4696baacbc86cc",  # wstETH/USDC -> lltv 86%, oracle: compound oracle wstETH/ETH, chainlink ETH/USD
+        "0x64d65c9a2d91c36d56fbc42d69e979335320169b3df63bf92789e2c8883fcc64",  # cbBTC/USDC -> lltv 86%, oracle: chainlink BTC/USD
+        "0xb8fc70e82bc5bb53e773626fcc6a23f7eefa036918d7ef216ecfb1950a94a85e",  # wstETH/WETH -> lltv 96.5%, oracle: lido exchange rate
+        "0xc54d7acf14de29e0e5527cabd7a576506870346a78a11a6762e2cca66322ec41",  # wstETH/WETH more aggressive on high utilization -> lltv 94.5%, oracle: compound oracle, uses
+        "0xd0e50cdac92fe2172043f5e0c36532c6369d24947e40968f34a5e8819ca9ec5d",  # wstETH/WETH less aggressive on high utilization -> lltv 94.5%, oracle: lido exchange rate
+        "0x138eec0e4a1937eb92ebc70043ed539661dd7ed5a89fb92a720b341650288a40",  # WBTC/WETH -> lltv 91.5%, oracle: chainlink BTC/ETH
+        "0x3c83f77bde9541f8d3d82533b19bbc1f97eb2f1098bb991728acbfbede09cc5d",  # rETH/WETH -> lltv 94.5%, oracle: gravita rETH/ETH, TODO: verify oracle
+        "0x2cbfb38723a8d9a2ad1607015591a78cfe3a5949561b39bde42c242b22874ec0",  # cbBTC/WETH -> lltv 91.5%, oracle: chainlink BTC/USD and chainlink ETH/USD
+        "0x1929f8139224cb7d5db8c270addc9ce366d37ad279e1135f73c0adce74b0f936",  # sDAI/WETH -> lltv 86%, oracle: chainlink DAI/ETH
+        "0x46981f15ab56d2fdff819d9c2b9c33ed9ce8086e0cce70939175ac7e55377c7f",  # sDAI/USDC -> lltv 96.5%, oracle: sDAI vault
+        "0xa921ef34e2fc7a27ccc50ae7e4b154e16c9799d3387076c421423ef52ac4df99",  # WBTC/USDT -> lltv 86%, oracle: chainlink WBTC/BTC, chainlink BTC/USD and chainlink USDT/USD
+        "0x3274643db77a064abd3bc851de77556a4ad2e2f502f4f0c80845fa8f909ecf0b",  # sUSDS/USDT -> lltv 96.5%, oracle: chainlink USDT/USD, chainlink DAI/USD and sUSDS vault
+        "0xe7e9694b754c4d4f7e21faf7223f6fa71abaeb10296a4c43a54a7977149687d2",  # wstETH/USDT -> lltv 86%, oracle: compound oracle wstETH/ETH, chainlink ETH/USDT
+        "0x1ca7ff6b26581fe3155f391f3960d32a033b5f7d537b1f1932b2021a6cf4f706",  # sDAI/USDT -> lltv 94.5%, oracle: sDAI vault, chainlink DAI/USD and chainlink USDT/USD
     ],
     Chain.BASE: [
         "0x7fc498ddcb7707d6f85f6dc81f61edb6dc8d7f1b47a83b55808904790564929a",  # cbETH/EURC
@@ -71,14 +68,18 @@ MARKETS_RISK_1 = {
 
 MARKETS_RISK_2 = {
     Chain.MAINNET: [
-        "0x85c7f4374f3a403b36d54cc284983b2b02bbd8581ee0f3c36494447b87d9fcab",  # sUSDe/USDC
-        "0x346afa2b6d528222a2f9721ded6e7e2c40ac94877a598f5dae5013c651d2a462",  # PT-sUSDE-27MAR2025 / USDC
-        "0x27852bb453d4fe6ec918dd27b7136bb233d210aab1758a59ed8daaeec24f7b3d",  # PT-sUSDE-27FEB2025 / USDC
-        "0xba761af4134efb0855adfba638945f454f0a704af11fc93439e20c7c5ebab942",  # rsETH/WETH -> same asset
-        "0xa0534c78620867b7c8706e3b6df9e69a2bc67c783281b7a77e034ed75cee012e",  # ezETH/WETH -> same asset
-        "0x37e7484d642d90f14451f1910ba4b7b8e4c3ccdd0ec28f8b2bdb35479e472ba7",  # weETH/WETH -> same asset
-        "0xf6a056627a51e511ec7f48332421432ea6971fc148d8f3c451e14ea108026549",  # LBTC/BTC -> same asset
-        "0x198132864e7974fb451dfebeb098b3b7e7e65566667fb1cf1116db4fb2ad23f9",  # PT-LBTC-27MAR2025 / WBTC
+        "0x85c7f4374f3a403b36d54cc284983b2b02bbd8581ee0f3c36494447b87d9fcab",  # sUSDe/USDC -> lltv 91.5%, oracle: sUSDe vault
+        "0xba761af4134efb0855adfba638945f454f0a704af11fc93439e20c7c5ebab942",  # rsETH/WETH -> lltv 94.5%, oracle: origami exchange rate rsETH/ETH # TODO: verify oracle
+        "0xa0534c78620867b7c8706e3b6df9e69a2bc67c783281b7a77e034ed75cee012e",  # ezETH/WETH -> lltv 94.5%, oracle: origami exchange rate ezETH/ETH # TODO: verify oracle
+        "0x37e7484d642d90f14451f1910ba4b7b8e4c3ccdd0ec28f8b2bdb35479e472ba7",  # weETH/WETH -> lltv 94.5%, oracle: origami exchange rate weETH/ETH # TODO: verify oracle
+        "0xf6a056627a51e511ec7f48332421432ea6971fc148d8f3c451e14ea108026549",  # LBTC/WBTC -> lltv 94.5%, oracle: readstone exchange rate LBTC/BTC and chainlink WBTC/BTC
+        "0x198132864e7974fb451dfebeb098b3b7e7e65566667fb1cf1116db4fb2ad23f9",  # PT-LBTC-27MAR2025 / WBTC, lltv 86%, oracle: Pendle PT, readstone exchange rate LBTC/BTC and chainlink WBTC/BTC
+        "0x346afa2b6d528222a2f9721ded6e7e2c40ac94877a598f5dae5013c651d2a462",  # PT-sUSDE-27MAR2025 / USDC, lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle, aggresive interest rate on high utilization
+        "0x27852bb453d4fe6ec918dd27b7136bb233d210aab1758a59ed8daaeec24f7b3d",  # PT-sUSDE-27FEB2025 / USDC, lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle, aggresive interest rate on high utilization
+        "0x5e3e6b1e01c5708055548d82d01db741e37d03b948a7ef9f3d4b962648bcbfa7",  # PT-sUSDE-27MAR2025 / DAI -> using aggresive interest rate curve and using discounted oracle
+        "0xab0dcab71e65c05b7f241ea79a33452c87e62db387129e4abe15e458d433e4d8",  # PT-USDe-27MAR2025 / DAI -> using aggresive interest rate curve and using discounted oracle
+        "0x74ef8d7022b0ef0c0e6dc001fbda3c8bd9a3e706f03bb559c833e1dce7302d3a",  # Curve TricryptoUSDC LP / crvUSD -> collaterals: ETH, USDC, WBTC
+        "0x1c4b9ce834604969d33dc277bd8473d8aee856e5a577c08427b6deeb97cc72d6",  # Curve TricryptoUSDT LP / crvUSD -> collaterals: ETH, USDT, WBTC
         "0x42e157d3739f9ae3f418f5dd0977b7d51c3a677502afd9f3f594f46cc07dec6a",  # Curve TryLSD LP / crvUSD -> collaterals: wstETH, rETH, sfrxETH
         "0xbd2a27358bdaf3fb902a0ad17f86d4633f9ac5377941298720b37a4d90deab96",  # Curve TriCRV LP / crvUSD -> collaterals: crvUSD, ETH, crv
         "0x0cd36e6ecd9d846cffd921d011d2507bc4c2c421929cec65205b3cd72925367c",  # Curve TricryptoLLAMA LP / crvUSD -> collaterals: crvUSD, wstETH, tBTC
@@ -120,13 +121,34 @@ MARKETS_RISK_4 = {
     Chain.BASE: [],
 }
 
-MARKETS_RISK_1_MAX_ALLOCATION = (
-    0.80  # TODO: think about removing this and just skip checking risk 1 markets
-)
-MARKET_RISK_2_MAX_ALLOCATION = 0.30
-MARKET_RISK_3_MAX_ALLOCATION = 0.10
-MARKET_RISK_4_MAX_ALLOCATION = 0.05
-UNKNOWN_MARKET_MAX_ALLOCATION = 0.05
+# Define base allocation tiers
+ALLOCATION_TIERS = {
+    1: 1.0,  # Risk tier 1 max allocation # TODO: think about lowering this to 0.80 but some vaults use 100% allocation to one market
+    2: 0.30,  # Risk tier 2 max allocation
+    3: 0.10,  # Risk tier 3 max allocation
+    4: 0.05,  # Risk tier 4 max allocation
+    5: 0.05,  # Unknown market max allocation
+}
+
+# Define max risk thresholds by risk level
+MAX_RISK_THRESHOLDS = {
+    1: 1.10,  # Risk tier 1 max total risk
+    2: 2.20,  # Risk tier 2 max total risk
+    3: 3.30,  # Risk tier 3 max total risk
+    4: 4.40,  # Risk tier 4 max total risk
+    5: 5.00,  # Risk tier 5 max total risk
+}
+
+
+def get_market_allocation_threshold(market_risk_level, vault_risk_level):
+    """
+    Get allocation threshold based on market and vault risk levels.
+    For higher vault risk levels, thresholds shift up (become more permissive).
+    For example, if vault risk level is 2, then market risk level 1 is 0.80, market risk level 2 is 0.30, etc.
+    """
+    # Shift market risk level down based on vault risk level
+    adjusted_risk = max(1, market_risk_level - (vault_risk_level - 1))
+    return ALLOCATION_TIERS[adjusted_risk]
 
 
 def get_market_url(market):
@@ -142,6 +164,9 @@ def get_vault_url(vault_data):
 
 
 def bad_debt_alert(markets, vault_name=""):
+    """
+    Send telegram message if bad debt is detected in any market.
+    """
     for market in markets:
         bad_debt = market["badDebt"]["usd"]
         borrowed_tvl = market["state"]["borrowAssetsUsd"]
@@ -154,12 +179,30 @@ def bad_debt_alert(markets, vault_name=""):
 
 
 def check_high_allocation(vault_data):
+    """
+    Send telegram message if high allocation is detected in any market.
+    Send another message if total risk level is too high.
+    """
     total_assets = vault_data["state"]["totalAssetsUsd"]
     if total_assets == 0:
         return
 
     vault_name = vault_data["name"]
     vault_url = get_vault_url(vault_data)
+    chain = Chain.from_chain_id(vault_data["chain"]["id"])
+    # Find vault in VAULTS_BY_CHAIN to get risk level
+    vault_address = vault_data["address"]
+    risk_level = None
+    for vault in VAULTS_BY_CHAIN[chain]:
+        if vault[1].lower() == vault_address.lower():
+            risk_level = vault[2]
+            break
+
+    if risk_level is None:
+        # Throw error if vault not found in config
+        raise ValueError(f"Vault {vault_address} not found in VAULTS_BY_CHAIN config")
+
+    total_risk_level = 0.0
 
     for allocation in vault_data["state"]["allocation"]:
         # market without collateral asset is idle asset
@@ -168,20 +211,26 @@ def check_high_allocation(vault_data):
 
         market = allocation["market"]
         unique_key = market["uniqueKey"]
-        chain = Chain.from_chain_id(market["collateralAsset"]["chain"]["id"])
-        if unique_key in MARKETS_RISK_1[chain]:
-            allocation_threshold = MARKETS_RISK_1_MAX_ALLOCATION
-        elif unique_key in MARKETS_RISK_2[chain]:
-            allocation_threshold = MARKET_RISK_2_MAX_ALLOCATION
-        elif unique_key in MARKETS_RISK_3[chain]:
-            allocation_threshold = MARKET_RISK_3_MAX_ALLOCATION
-        elif unique_key in MARKETS_RISK_4[chain]:
-            allocation_threshold = MARKET_RISK_4_MAX_ALLOCATION
-        else:
-            allocation_threshold = UNKNOWN_MARKET_MAX_ALLOCATION
-
         market_supply = allocation["supplyAssetsUsd"]
         allocation_ratio = market_supply / total_assets
+
+        # Determine market risk level
+        if unique_key in MARKETS_RISK_1[chain]:
+            market_risk_level = 1
+        elif unique_key in MARKETS_RISK_2[chain]:
+            market_risk_level = 2
+        elif unique_key in MARKETS_RISK_3[chain]:
+            market_risk_level = 3
+        elif unique_key in MARKETS_RISK_4[chain]:
+            market_risk_level = 4
+        else:
+            market_risk_level = 5
+
+        allocation_threshold = get_market_allocation_threshold(
+            market_risk_level, risk_level
+        )
+        risk_multiplier = market_risk_level
+
         if allocation_ratio > allocation_threshold:
             market_url = get_market_url(market)
             market_name = (
@@ -194,8 +243,27 @@ def check_high_allocation(vault_data):
             )
             send_telegram_message(message, PROTOCOL)
 
+        # Calculate weighted risk score for each market allocation
+        # risk_multiplier: market risk tier (1-5, higher = riskier)
+        # allocation_ratio: percentage of vault's assets in this market
+        # total_risk_level: sum of (risk_tier * allocation) across all markets
+        total_risk_level += risk_multiplier * allocation_ratio
+
+    # print total risk level and vault name
+    print(f"Total risk level: {total_risk_level:.1%}, vault: {vault_name}")
+    if total_risk_level > MAX_RISK_THRESHOLDS[risk_level]:
+        message = (
+            f"🔺 High allocation detected in [{vault_name}]({vault_url})\n"
+            f"🔢 Total risk level: {total_risk_level:.1%} but max acceptable is {MAX_RISK_THRESHOLDS[risk_level]}\n"
+            f"🔢 Total assets: ${total_assets:,.2f}\n"
+        )
+        send_telegram_message(message, PROTOCOL)
+
 
 def check_low_liquidity(vault_data):
+    """
+    Send telegram message if low liquidity is detected.
+    """
     vault_name = vault_data["name"]
     vault_url = get_vault_url(vault_data)
     total_assets = vault_data["state"]["totalAssetsUsd"]
@@ -216,6 +284,10 @@ def check_low_liquidity(vault_data):
 
 
 def main():
+    """
+    Check markets for low liquidity, high allocation and bad debt.
+    Send telegram message if data cannot be fetched.
+    """
     # Collect all vault addresses from all chains
     vault_addresses = []
     for chain, vaults in VAULTS_BY_CHAIN.items():

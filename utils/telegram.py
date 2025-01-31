@@ -19,6 +19,7 @@ def send_telegram_message(message, protocol, disable_notification=False):
     params = {
         "chat_id": chat_id,
         "text": message,
+        "parse_mode": "Markdown",
         "disable_notification": disable_notification,
     }
     response = requests.get(url, params=params)
