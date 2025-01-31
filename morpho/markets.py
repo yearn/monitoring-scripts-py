@@ -7,7 +7,7 @@ API_URL = "https://blue-api.morpho.org/graphql"
 MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.1
-LIQUIDITY_THRESHOLD = 0.10
+LIQUIDITY_THRESHOLD = 0.10  # 10% of total assets # TODO: think about lowering this to 0.05 = 5% of total assets
 
 # Map vaults by chain
 VAULTS_BY_CHAIN = {
@@ -42,7 +42,6 @@ MARKETS_RISK_1 = {
         "0xc54d7acf14de29e0e5527cabd7a576506870346a78a11a6762e2cca66322ec41",  # wstETH/WETH more aggressive on high utilization -> lltv 94.5%, oracle: compound oracle, uses
         "0xd0e50cdac92fe2172043f5e0c36532c6369d24947e40968f34a5e8819ca9ec5d",  # wstETH/WETH less aggressive on high utilization -> lltv 94.5%, oracle: lido exchange rate
         "0x138eec0e4a1937eb92ebc70043ed539661dd7ed5a89fb92a720b341650288a40",  # WBTC/WETH -> lltv 91.5%, oracle: chainlink BTC/ETH
-        "0x3c83f77bde9541f8d3d82533b19bbc1f97eb2f1098bb991728acbfbede09cc5d",  # rETH/WETH -> lltv 94.5%, oracle: gravita rETH/ETH, TODO: verify oracle
         "0x2cbfb38723a8d9a2ad1607015591a78cfe3a5949561b39bde42c242b22874ec0",  # cbBTC/WETH -> lltv 91.5%, oracle: chainlink BTC/USD and chainlink ETH/USD
         "0x1929f8139224cb7d5db8c270addc9ce366d37ad279e1135f73c0adce74b0f936",  # sDAI/WETH -> lltv 86%, oracle: chainlink DAI/ETH
         "0x46981f15ab56d2fdff819d9c2b9c33ed9ce8086e0cce70939175ac7e55377c7f",  # sDAI/USDC -> lltv 96.5%, oracle: sDAI vault
@@ -69,20 +68,16 @@ MARKETS_RISK_1 = {
 MARKETS_RISK_2 = {
     Chain.MAINNET: [
         "0x85c7f4374f3a403b36d54cc284983b2b02bbd8581ee0f3c36494447b87d9fcab",  # sUSDe/USDC -> lltv 91.5%, oracle: sUSDe vault
-        "0xba761af4134efb0855adfba638945f454f0a704af11fc93439e20c7c5ebab942",  # rsETH/WETH -> lltv 94.5%, oracle: origami exchange rate rsETH/ETH # TODO: verify oracle
-        "0xa0534c78620867b7c8706e3b6df9e69a2bc67c783281b7a77e034ed75cee012e",  # ezETH/WETH -> lltv 94.5%, oracle: origami exchange rate ezETH/ETH # TODO: verify oracle
-        "0x37e7484d642d90f14451f1910ba4b7b8e4c3ccdd0ec28f8b2bdb35479e472ba7",  # weETH/WETH -> lltv 94.5%, oracle: origami exchange rate weETH/ETH # TODO: verify oracle
         "0xf6a056627a51e511ec7f48332421432ea6971fc148d8f3c451e14ea108026549",  # LBTC/WBTC -> lltv 94.5%, oracle: readstone exchange rate LBTC/BTC and chainlink WBTC/BTC
         "0x198132864e7974fb451dfebeb098b3b7e7e65566667fb1cf1116db4fb2ad23f9",  # PT-LBTC-27MAR2025 / WBTC, lltv 86%, oracle: Pendle PT, readstone exchange rate LBTC/BTC and chainlink WBTC/BTC
         "0x346afa2b6d528222a2f9721ded6e7e2c40ac94877a598f5dae5013c651d2a462",  # PT-sUSDE-27MAR2025 / USDC, lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle, aggresive interest rate on high utilization
         "0x27852bb453d4fe6ec918dd27b7136bb233d210aab1758a59ed8daaeec24f7b3d",  # PT-sUSDE-27FEB2025 / USDC, lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle, aggresive interest rate on high utilization
-        "0x5e3e6b1e01c5708055548d82d01db741e37d03b948a7ef9f3d4b962648bcbfa7",  # PT-sUSDE-27MAR2025 / DAI -> using aggresive interest rate curve and using discounted oracle
-        "0xab0dcab71e65c05b7f241ea79a33452c87e62db387129e4abe15e458d433e4d8",  # PT-USDe-27MAR2025 / DAI -> using aggresive interest rate curve and using discounted oracle
-        "0x74ef8d7022b0ef0c0e6dc001fbda3c8bd9a3e706f03bb559c833e1dce7302d3a",  # Curve TricryptoUSDC LP / crvUSD -> collaterals: ETH, USDC, WBTC
-        "0x1c4b9ce834604969d33dc277bd8473d8aee856e5a577c08427b6deeb97cc72d6",  # Curve TricryptoUSDT LP / crvUSD -> collaterals: ETH, USDT, WBTC
-        "0x42e157d3739f9ae3f418f5dd0977b7d51c3a677502afd9f3f594f46cc07dec6a",  # Curve TryLSD LP / crvUSD -> collaterals: wstETH, rETH, sfrxETH
-        "0xbd2a27358bdaf3fb902a0ad17f86d4633f9ac5377941298720b37a4d90deab96",  # Curve TriCRV LP / crvUSD -> collaterals: crvUSD, ETH, crv
-        "0x0cd36e6ecd9d846cffd921d011d2507bc4c2c421929cec65205b3cd72925367c",  # Curve TricryptoLLAMA LP / crvUSD -> collaterals: crvUSD, wstETH, tBTC
+        "0x5e3e6b1e01c5708055548d82d01db741e37d03b948a7ef9f3d4b962648bcbfa7",  # PT-sUSDE-27MAR2025 / DAI -> lltv 91.5%, using aggresive interest rate curve and using discounted oracle
+        "0xab0dcab71e65c05b7f241ea79a33452c87e62db387129e4abe15e458d433e4d8",  # PT-USDe-27MAR2025 / DAI -> lltv 91.5%, using aggresive interest rate curve and using discounted oracle
+        "0x74ef8d7022b0ef0c0e6dc001fbda3c8bd9a3e706f03bb559c833e1dce7302d3a",  # Curve TricryptoUSDC LP / crvUSD -> lltv 86%, collaterals: ETH, USDC, WBTC
+        "0x1c4b9ce834604969d33dc277bd8473d8aee856e5a577c08427b6deeb97cc72d6",  # Curve TricryptoUSDT LP / crvUSD -> lltv 86%, collaterals: ETH, USDT, WBTC
+        "0x42e157d3739f9ae3f418f5dd0977b7d51c3a677502afd9f3f594f46cc07dec6a",  # Curve TryLSD LP / crvUSD -> lltv 86%, collaterals: wstETH, rETH, sfrxETH
+        "0xbd2a27358bdaf3fb902a0ad17f86d4633f9ac5377941298720b37a4d90deab96",  # Curve TriCRV LP / crvUSD -> lltv 86%, collaterals: crvUSD, ETH, crv
     ],
     Chain.BASE: [
         "0x84662b4f95b85d6b082b68d32cf71bb565b3f22f216a65509cc2ede7dccdfe8c",  # cbETH/WETH -> low interest rate on high utilization
@@ -92,6 +87,10 @@ MARKETS_RISK_2 = {
 
 MARKETS_RISK_3 = {
     Chain.MAINNET: [
+        "0x0cd36e6ecd9d846cffd921d011d2507bc4c2c421929cec65205b3cd72925367c",  # Curve TricryptoLLAMA LP / crvUSD -> collaterals: crvUSD, wstETH, tBTC.
+        "0xba761af4134efb0855adfba638945f454f0a704af11fc93439e20c7c5ebab942",  # rsETH/WETH -> lltv 94.5%, oracle: origami rsETH/ETH which calls KELP_LRT_ORACLE.rsETHPrice(). Oracle address: https://etherscan.io/address/0x349A73444b1a310BAe67ef67973022020d70020d
+        "0xa0534c78620867b7c8706e3b6df9e69a2bc67c783281b7a77e034ed75cee012e",  # ezETH/WETH -> lltv 94.5%, oracle: origami ezETH/ETH which calls renzoOracle()).calculateRedeemAmount(). It is hypothetical price, not the actual price.
+        "0x37e7484d642d90f14451f1910ba4b7b8e4c3ccdd0ec28f8b2bdb35479e472ba7",  # weETH/WETH -> lltv 94.5%, oracle: origami weETH/ETH which calls WEETH.getRate().
         "0x8e7cc042d739a365c43d0a52d5f24160fa7ae9b7e7c9a479bd02a56041d4cf77",  # USR/USDC
         "0x97bb820669a19ba5fa6de964a466292edd67957849f9631eb8b830c382f58b7f",  # MKR/USDC
         "0x718af3af39b183758849486340b69466e3e89b84b7884188323416621ee91cb7",  # UNI/USDC
@@ -108,6 +107,7 @@ MARKETS_RISK_3 = {
 
 MARKETS_RISK_4 = {
     Chain.MAINNET: [
+        "0x3c83f77bde9541f8d3d82533b19bbc1f97eb2f1098bb991728acbfbede09cc5d",  # rETH/WETH -> lltv 94.5%, oracle: gravita rETH/ETH. Can change owner and aggregator.
         "0xe95187ba4e7668ab4434bbb17d1dfd7b87e878242eee3e73dac9fdb79a4d0d99",  # EIGEN/USDC
         "0x444327b909aa41043cc4f20209eefb2fbb37f1c38ff9ca312374a4ecc3f0a871",  # solvBTC/USDC
         "0x2287407f0f42ad5ad224f70e4d9da37f02770f79959df703d6cfee8afc548e0d",  # STONE/WETH -> centralization risk
