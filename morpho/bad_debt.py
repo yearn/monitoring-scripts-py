@@ -4,8 +4,7 @@ from utils.chains import Chain
 
 
 API_URL = "https://blue-api.morpho.org/graphql"
-MARKET_URL = "https://app.morpho.org/market"
-VAULT_URL = "https://app.morpho.org/vault"
+MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.1
 LIQUIDITY_THRESHOLD = 0.10  # 10% threshold # TODO: think about lower to 5%
@@ -133,13 +132,13 @@ UNKNOWN_MARKET_MAX_ALLOCATION = 0.05
 def get_market_url(market):
     chain_id = market["collateralAsset"]["chain"]["id"]
     chain_name = Chain.from_chain_id(chain_id).network_name
-    return f"{MARKET_URL}?id={market['uniqueKey']}&network={chain_name}"
+    return f"{MORPHO_URL}/market?id={market['uniqueKey']}&network={chain_name}"
 
 
 def get_vault_url(vault_data):
     chain_id = vault_data["chain"]["id"]
     chain_name = Chain.from_chain_id(chain_id).network_name
-    return f"{VAULT_URL}?vault={vault_data['address']}&network={chain_name}"
+    return f"{MORPHO_URL}/vault?vault={vault_data['address']}&network={chain_name}"
 
 
 def bad_debt_alert(markets, vault_name=""):
