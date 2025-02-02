@@ -97,8 +97,8 @@ jobs:
         run: python -m morpho.bad_debt
       - name: Run Moonwell Bad Debt script
         run: python -m moonwell.bad_debt
-      # - name: Run Moonwell Proposals script
-      #   run: python -m moonwell.proposals
+      - name: Run Moonwell Proposals script
+        run: python -m moonwell.proposals
       # - name: Run USD0 Peg Price Checker
       #   run: python -m usd0.price
 
