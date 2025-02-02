@@ -161,7 +161,7 @@ def main():
         ],  # https://docs.lido.fi/multisigs/emergency-brakes/#11-gateseal-committee -> expires on 1 April 2025.
         ["PENDLE", "mainnet", "0x8119EC16F0573B7dAc7C0CB94EB504FB32456ee1"],
         ["PENDLE", "arbitrum-main", "0x7877AdFaDEd756f3248a0EBfe8Ac2E2eF87b75Ac"],
-        ["EULER", "mainnet", "0xcAD001c30E96765aC90307669d578219D4fb1DCe"],
+        # ["EULER", "mainnet", "0xcAD001c30E96765aC90307669d578219D4fb1DCe"],
         [
             "AAVE",
             "mainnet",
