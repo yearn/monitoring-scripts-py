@@ -54,7 +54,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: nonces.txt
-          key: nonces-v3-${{ runner.os }}-${{ hashFiles('nonces.txt') }}
+          key: nonces-v3-${{ hashFiles('nonces.txt') }}
           restore-keys: |
             nonces-v3-${{ runner.os }}-
 
