@@ -5,6 +5,11 @@ on:
     - cron: "0/10 * * * *"
   workflow_dispatch:
 
+# Add concurrency control
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   TELEGRAM_BOT_TOKEN_AAVE: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
   TELEGRAM_CHAT_ID_AAVE: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
@@ -49,9 +54,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: nonces.txt
-          key: nonces-v2-${{ runner.os }}-${{ hashFiles('nonces.txt') }}
+          key: nonces-v3-${{ runner.os }}-${{ hashFiles('nonces.txt') }}
           restore-keys: |
-            nonces-v2-${{ runner.os }}-
+            nonces-v3-${{ runner.os }}-
 
       - name: Run Safe script
         run: python -m safe.main
@@ -63,4 +68,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: nonces.txt
-          key: nonces-v2-${{ runner.os }}-${{ hashFiles('nonces.txt') }}
+          key: nonces-v3-${{ hashFiles('nonces.txt') }}

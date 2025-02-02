@@ -10,6 +10,9 @@ def fetch_moonwell_proposals():
     query = """
     query {
         proposals(
+            where: {
+                proposalId_gt: 158 # the last reported proposal, fix for updating the cache
+            }
             limit: 10,
             orderDirection: "desc",
             orderBy: "proposalId"

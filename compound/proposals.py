@@ -36,6 +36,10 @@ def fetch_and_filter_compound_proposals():
         queued_proposals = []
         last_reported_id = get_last_queued_id_from_file(PROTOCOL)
 
+        # use last reported id, fix for updating the cache
+        if last_reported_id is 0:
+            last_reported_id = 393
+
         # comp backend returns proposals in descending order by id
         for proposal in reversed(data.get("proposals", [])):
             states = proposal.get("states", [])

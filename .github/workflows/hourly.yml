@@ -63,9 +63,9 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: cache-id.txt
-          key: cache-id-v3-${{ hashFiles('cache-id.txt') }}
+          key: cache-id-v4-${{ hashFiles('cache-id.txt') }}
           restore-keys: |
-            cache-id-v3-
+            cache-id-v4-
 
       - name: Run Aave script
         run: python -m aave.main
@@ -109,4 +109,4 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: cache-id.txt
-          key: cache-id-v3-${{ hashFiles('cache-id.txt') }}
+          key: cache-id-v4-${{ hashFiles('cache-id.txt') }}
