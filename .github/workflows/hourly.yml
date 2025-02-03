@@ -94,7 +94,7 @@ jobs:
       - name: Run Morpho Monitoring script
         run: python -m morpho.main
       - name: Run Morpho Bad Debt script
-        run: python -m morpho.bad_debt
+        run: python -m morpho.markets
       - name: Run Moonwell Bad Debt script
         run: python -m moonwell.bad_debt
       - name: Run Moonwell Proposals script
