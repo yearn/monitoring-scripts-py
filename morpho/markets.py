@@ -123,7 +123,7 @@ MARKETS_RISK_4 = {
 
 # Define base allocation tiers
 ALLOCATION_TIERS = {
-    1: 1.0,  # Risk tier 1 max allocation # TODO: think about lowering this to 0.80 but some vaults use 100% allocation to one market
+    1: 1.01,  # Risk tier 1 max allocation # TODO: think about lowering this to 0.80 but some vaults use 100% allocation to one market
     2: 0.30,  # Risk tier 2 max allocation
     3: 0.10,  # Risk tier 3 max allocation
     4: 0.05,  # Risk tier 4 max allocation
