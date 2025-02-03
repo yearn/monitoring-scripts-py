@@ -7,7 +7,7 @@ API_URL = "https://blue-api.morpho.org/graphql"
 MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.1
-LIQUIDITY_THRESHOLD = 0.10  # 10% of total assets # TODO: think about lowering this to 0.05 = 5% of total assets
+LIQUIDITY_THRESHOLD = 0.05  # 5% of total assets
 
 # Map vaults by chain
 VAULTS_BY_CHAIN = {
