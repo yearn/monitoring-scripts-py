@@ -147,7 +147,7 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                     "%Y-%m-%d %H:%M:%S"
                 )
                 send_telegram_message(
-                    f"Updating cap to new cap {pending_cap_value}, current cap {current_cap}, difference: {difference_in_percentage:.2f}%. \nFor vault {name}({vault_url}) for market: {market_url}. Queued for {time}",
+                    f"Updating cap to new cap {pending_cap_value}, current cap {current_cap}, difference: {difference_in_percentage:.2f}%. \nFor vault [{name}]({vault_url}) for market: [{market}]({market_url}). Queued for {time}",
                     PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(
@@ -168,7 +168,7 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                     "%Y-%m-%d %H:%M:%S"
                 )
                 send_telegram_message(
-                    f"Vault {name}({vault_url}) queued to remove market: {market_url} at {time}",
+                    f"Vault [{name}]({vault_url}) queued to remove market: [{market}]({market_url}) at {time}",
                     PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(
@@ -189,7 +189,7 @@ def check_pending_role_change(name, morpho_contract, role_type, timestamp, chain
     ):
         vault_url = get_vault_url_by_name(name, chain)
         send_telegram_message(
-            f"{role_type.capitalize()} is changing for vault {name}({vault_url})",
+            f"{role_type.capitalize()} is changing for vault [{name}]({vault_url})",
             PROTOCOL,
         )
         write_last_executed_morpho_to_file(
