@@ -16,12 +16,22 @@ To get the proposal data from the received alert:
 
 The script [proposals.py](proposals.py) to check for new governance proposals is [run hourly by Github actions](../.github/workflows/hourly.yml#L100). If the proposal is queued, it sends a telegram message. It uses cache to avoid sending duplicate messages.
 
-## Bad Debt
+## Data Monitoring
 
-The alerts are sent when the [bad debt ratio](bad_debt.py#L65) is greater than 0.5% or if the [debt supply ratio](bad_debt.py#L66) is greater than 70%.
+The script [bad_debt.py](bad_debt.py) is run hourly by Github actions. It fetches the data from [IntoTheBlock API](https://defirisk.intotheblock.com/metrics/base/moonwell) and [Gauntlet dashboard](https://dashboards.gauntlet.xyz/protocols/moonwell) and sends alerts if the thresholds are exceeded. If both data sources are not working, it sends an alert.
 
-The data is fetched from [IntoTheBlock API](https://defirisk.intotheblock.com/metrics/base/moonwell).
+### Bad Debt
 
-## Utilization
+The alerts are sent when the [bad debt ratio](bad_debt.py#L65) is greater than 0.5% or if the [debt supply ratio](bad_debt.py#L66) is greater than 70%. The data is fetched from [IntoTheBlock API](https://defirisk.intotheblock.com/metrics/base/moonwell).
 
-TODO: check if it possible to use the data from this website: https://app.gauntlet.xyz/protocols/moonwell/markets/base or https://defirisk.intotheblock.com/metrics/base/moonwell
+### Value at Risk
+
+The alerts are sent when the [value at risk](bad_debt.py#L50) is greater than 1% of the total debt. The data is fetched from [Gauntlet dashboard](https://dashboards.gauntlet.xyz/protocols/moonwell).
+
+### Liquidation at Risk
+
+The alerts are sent when the [liquidation at risk](bad_debt.py#L61) is greater than 5% of the total debt. The data is fetched from [Gauntlet dashboard](https://dashboards.gauntlet.xyz/protocols/moonwell).
+
+### Debt Supply Ratio
+
+The script fetches the data from [IntoTheBlock API](https://defirisk.intotheblock.com/metrics/base/moonwell) and [Gauntlet dashboard](https://dashboards.gauntlet.xyz/protocols/moonwell) and sends alerts if the debt supply ratio is greater than 70%.

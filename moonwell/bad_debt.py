@@ -15,9 +15,71 @@ def get_timestamp_before(hours: int):
     return one_hour_ago.strftime("%Y-%m-%dT%H:00:00.000Z")
 
 
+def fetch_metric_from_gauntlet():
+    # TODO: verify if the key after data needs to be changed
+    urlHealthMetrics = "https://dashboards.gauntlet.xyz/_next/data/qA1T3oa5dRRXh5ya1_q5Y/protocols/moonwell.json?protocolSlug=moonwell"
+    alerts = []
+    response = requests.get(urlHealthMetrics)
+    response.raise_for_status()
+    data = response.json()
+    markets = data["pageProps"]["protocolPage"]["markets"]
+    for market in markets:
+        if market["key"] == "base":
+            market_data = market["data"]
+            last_updated = market_data["borrow"]["lastUpdated"]
+            if last_updated < get_timestamp_before(hours=6):
+                # don't accept data older than 6 hours
+                alerts.append(
+                    f"🚨 Market is not updated for {market['key']} - last updated {last_updated}"
+                )
+                break
+
+            borrow_amount = market_data["borrow"]["amount"]
+            supply_amount = market_data["supply"]["amount"]
+            debt_supply_ratio = (
+                borrow_amount / supply_amount if supply_amount > 0 else 0
+            )
+            if debt_supply_ratio > DEBT_SUPPLY_RATIO:
+                alerts.append(
+                    f"🚨 High Debt/Supply Ratio Alert:\n"
+                    f"📈 Debt/Supply Ratio: {debt_supply_ratio:.2%}\n"
+                    f"💸 Total Debt: ${borrow_amount:.2f}\n"
+                    f"💰 Total Supply: ${supply_amount:.2f}"
+                )
+
+            # VaR conveys capital at risk due to insolvencies when markets are under duress (i.e., Black Thursday)
+            value_at_risk = market_data["var"]["amount"]
+            if value_at_risk / borrow_amount > 0.01:
+                # for more info check: https://www.gauntlet.xyz/resources/improved-var-methodology
+                alerts.append(
+                    f"🚨 Value at Risk Alert:\n"
+                    f"💸 Value at Risk: ${value_at_risk:.2f}\n"
+                    f"💸 Total Debt: ${borrow_amount:.2f}\n"
+                    f"💰 Total Supply: ${supply_amount:.2f}"
+                )
+
+            # LaR conveys capital at risk due to liquidations when markets are under duress.
+            liquidation_at_risk = market_data["lar"]["amount"]
+            if liquidation_at_risk / borrow_amount > 0.05:
+                # for more info check: https://www.gauntlet.xyz/resources/improved-lar-methodology
+                alerts.append(
+                    f"🚨 Liquidation at Risk Alert:\n"
+                    f"💸 Liquidation at Risk: ${liquidation_at_risk:.2f}\n"
+                    f"💸 Total Debt: ${borrow_amount:.2f}\n"
+                    f"💰 Total Supply: ${supply_amount:.2f}"
+                )
+        return True
+
+    if alerts:
+        message = "\n\n".join(alerts)
+        send_telegram_message(message, PROTOCOL)
+    return False
+
+
 def fetch_metrics():
     """Fetch all required metrics from IntoTheBlock API about Moonwell"""
     metrics = {}
+    error_messages = []
     endpoints = {
         "total_supply": "general/total_supply",
         "total_debt": "general/total_debt",
@@ -35,18 +97,22 @@ def fetch_metrics():
             data = response.json()
 
             if not data.get("metric") or len(data["metric"]) == 0:
-                message = f"No data returned for {metric_name}"
-                send_telegram_message(message, PROTOCOL)
+                error_messages.append(f"No data returned for {metric_name}")
                 metrics[metric_name] = 0
                 continue
 
             metrics[metric_name] = data["metric"][-1][1]  # Get latest value
 
         except Exception as e:
-            message = f"Error fetching {metric_name}: {str(e)}"
-            send_telegram_message(message, PROTOCOL)
+            error_messages.append(f"Error fetching {metric_name}: {str(e)}")
             metrics[metric_name] = 0
 
+    # Send combined error messages if any
+    if error_messages:
+        combined_message = "Errors occurred:" + "\n".join(error_messages)
+        # send_telegram_message(combined_message, PROTOCOL)
+        print(combined_message)
+        return {}
     return metrics
 
 
@@ -93,7 +159,12 @@ def check_thresholds(metrics):
 
 def main():
     metrics = fetch_metrics()
-    check_thresholds(metrics)
+    if len(metrics) == 3:
+        check_thresholds(metrics)
+    successfull = fetch_metric_from_gauntlet()
+    if not successfull and len(metrics) != 3:
+        # if both data sources are not working, send an alert
+        send_telegram_message("🚨 Moonwell metrics cannot be fetched", PROTOCOL)
 
 
 if __name__ == "__main__":
