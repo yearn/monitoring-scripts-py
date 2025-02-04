@@ -58,12 +58,22 @@ jobs:
           restore-keys: |
             nonces-v3-${{ runner.os }}-
 
+      # Get initial hash
+      - name: Get initial hash
+        id: initial-hash
+        run: echo "hash=${{ hashFiles('nonces.txt') }}" >> $GITHUB_OUTPUT
+
       - name: Run Safe script
         run: python -m safe.main
 
-      # save file to cache
+      # Check final hash
+      - name: Check final hash
+        id: final-hash
+        run: echo "hash=${{ hashFiles('nonces.txt') }}" >> $GITHUB_OUTPUT
+
+      # save file to cache only if hash changed
       - name: Cache nonces.txt
-        if: always()
+        if: always() && steps.initial-hash.outputs.hash != steps.final-hash.outputs.hash
         id: cache-save
         uses: actions/cache/save@v4
         with:

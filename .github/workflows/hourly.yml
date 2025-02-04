@@ -67,6 +67,11 @@ jobs:
           restore-keys: |
             cache-id-v4-
 
+      # Get initial hash
+      - name: Get initial hash
+        id: initial-hash
+        run: echo "hash=${{ hashFiles('cache-id.txt') }}" >> $GITHUB_OUTPUT
+
       - name: Run Aave script
         run: python -m aave.main
       - name: Run Aave Proposals script
@@ -102,9 +107,13 @@ jobs:
       # - name: Run USD0 Peg Price Checker
       #   run: python -m usd0.price
 
-      # save file to cache
+      # Check final hash
+      - name: Check final hash
+        id: final-hash
+        run: echo "hash=${{ hashFiles('cache-id.txt') }}" >> $GITHUB_OUTPUT
+
       - name: Cache cache-id.txt
-        if: always()
+        if: always() && steps.initial-hash.outputs.hash != steps.final-hash.outputs.hash
         id: cache-save
         uses: actions/cache/save@v4
         with:
