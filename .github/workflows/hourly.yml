@@ -96,8 +96,8 @@ jobs:
         run: python -m pendle.main
       - name: Run LRT Peg Checker Balancer
         run: python -m lrt-pegs.balancer.main
-      - name: Run Morpho Monitoring script
-        run: python -m morpho.main
+      - name: Run Morpho Governance Monitoring script
+        run: python -m morpho.governance
       - name: Run Morpho Bad Debt script
         run: python -m morpho.markets
       - name: Run Moonwell Bad Debt script

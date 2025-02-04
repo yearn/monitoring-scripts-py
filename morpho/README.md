@@ -2,99 +2,100 @@
 
 ## Governance
 
-For roles on morpho vaults check the following [document](https://github.com/morpho-org/metamorpho/blob/main/README.md).
+For roles on Morpho vaults, refer to the following [document](https://github.com/morpho-org/metamorpho/blob/main/README.md).
 
-## Monitoring
+Morpho governance monitoring is defined in the [Python script](./governance.py) that is executed hourly via [GitHub Actions](../.github/workflows/hourly.yml).
 
-Morpho monitoring is define in [python script](./main.py) that is executed every hour using [Github Actions](../.github/workflows/hourly.yml).
-
-The scripts checks if there are any new value pending in timelock for a given vault. Possible changes that can be detected are:
+The script checks if there are any new values pending in the timelock for a given vault. It detects the following changes:
 
 - Changing timelock value, minimal values is 1 day.
 - Changing guardian address.
 - Changing supply caps, only to higher value than the current one, for both supply and withdraw markets.
 - Removing of a market from the vault.
 
-### How to add a new vault
+### How to Add a New Vault
 
-Add the vault address to variable `MAINNET_VAULTS` or `BASE_VAULTS` in the [python script](./main.py#L21).
+Add the vault address to either the `MAINNET_VAULTS` or `BASE_VAULTS` variable in [governance.py#L21](./governance.py#L21) to monitor governance changes.
 
-## Bad Debt
+## Vaults & Markets
 
-Bad debt is fetch from Morpho graph API. Each of the used market is checked for bad debt, if any of the market has bad debt, telegram message is sent. The script is executed every hour using [Github Actions](../.github/workflows/hourly.yml).
+Morpho Vaults consist of multiple markets, each defining key parameters such as LTV, interest rate models, and oracle data.
 
-### How to add a new market
+Market monitoring is configured via the vault definitions in [markets.py#L13](./markets.py#L13). The script fetches all markets for each vault and checks the following metrics:
 
-Add the Morpho market address to variable `wanted_markets` in the [python script](./bad_debt.py#L12).
+- **Bad Debt Ratio:** If the bad debt ratio exceeds 0.5% of total borrowed assets, a Telegram message is sent.
+- **Utilization Ratio:** If the utilization ratio exceeds 95%, a Telegram message is sent.
+- **Vault Risk Level:** If the computed risk level of a vault exceeds its maximum threshold, a Telegram message is sent.
+- **Market Allocation Ratio:** If any market's allocation ratio exceeds its risk-adjusted threshold, a Telegram message is sent.
 
-### Vault Risks
+Additional insights on Morpho vault risks are available at [Llama Risk blog](https://www.llamarisk.com/research/morpho-vaults-risk-disclaimer).
 
-Nice read from Llama risk: [https://www.llamarisk.com/research/morpho-vaults-risk-disclaimer](https://www.llamarisk.com/research/morpho-vaults-risk-disclaimer)
+### Risk Levels
 
-## Risk Calculation
+The overall risk level of a Morpho Vault is determined by the risk levels of its markets. For more details, refer to the comments in [markets.py#L36](./markets.py#L36). Markets and vaults are categorized by their risk level and blockchain, with Level 1 representing the safest configuration.
 
-The total risk level of a vault is calculated as a weighted sum of market allocations and their risk tiers. Each market has a risk tier (1-5, with higher numbers indicating higher risk) that acts as a risk multiplier.
+### How to Add a New Vault
 
-### Formula
+To monitor a new vault, add its address to the `VAULTS_BY_CHAIN` variable in [markets.py#L13](./markets.py#L13). This ensures that both the vault's overall metrics and its individual markets are monitored.
+
+### Bad Debt
+
+Bad debt is fetched from the Morpho GraphQL API. Each market is checked for bad debt; if any market exhibits bad debt, a Telegram message is sent. The script runs hourly via [GitHub Actions](../.github/workflows/hourly.yml). The monitoring logic is implemented in [markets.py#L166](./markets.py#L166).
+
+### Utilization
+
+The utilization ratio for each market is calculated as the ratio of borrowed assets to total collateral assets. If this ratio exceeds 95%, a Telegram message is sent. The script runs hourly via [GitHub Actions](../.github/workflows/hourly.yml), and the monitoring logic is defined in [markets.py#L263](./markets.py#L263). Note that liquidity is the inverse of utilization—high utilization implies low liquidity (e.g., 95% utilization corresponds to 5% liquidity).
+
+### Vault Risk Level
+
+The total risk level of a vault is computed as the weighted sum of the risk levels of its individual market allocations:
 
 ```math
-\text{Total Risk Level} = \sum_{i=1}^{n} (\text{Risk Tier}_i \times \text{Allocation}_i)
+\text{Total Risk Level} = \sum_{i=1}^{n} (\text{Market Risk Level}_i \times \text{Allocation}_i)
 ```
 
 Where:
 
-- `Risk Tier`: Market risk level (1-5)
-- `Allocation`: Percentage of vault's assets in that market
-- `Total Risk Level`: Sum of weighted risks across all markets
+- **Market Risk Level:** A value between 1 and 5, with 1 representing the lowest risk. This value acts as a multiplier (e.g., a market with risk level 1 contributes a multiplier of 1, level 2 contributes 2, etc.).
+- **Allocation:** The percentage of the vault's assets allocated to that market.
+- **Total Risk Level:** The sum of the weighted risks across all markets.
 
-The calculated risk score is compared against maximum thresholds defined for each vault risk level:
+This computed risk level is compared against predefined maximum thresholds defined in [markets.py#L134](./markets.py#L134):
 
-- Risk Level 1: max 1.15
-- Risk Level 2: max 2.20
-- Risk Level 3: max 3.30
-- Risk Level 4: max 4.40
-- Risk Level 5: max 5.00
+- **Risk Level 1:** Maximum threshold of 1.10
+- **Risk Level 2:** Maximum threshold of 2.20
+- **Risk Level 3:** Maximum threshold of 3.30
+- **Risk Level 4:** Maximum threshold of 4.40
+- **Risk Level 5:** Maximum threshold of 5.00
 
-If a vault's total risk level exceeds its threshold, an alert is triggered and telegram message is sent.
+If a vault's total risk level exceeds its threshold, an alert is triggered via a Telegram message.
 
-## Market Allocation Monitoring
+### Market Allocation Ratio
 
-The system monitors individual market allocations within vaults to ensure they don't exceed risk-appropriate thresholds. Each market has a maximum allocation threshold based on its risk tier and the vault's risk level.
+The system monitors each market's allocation within a vault to ensure it does not exceed its risk-adjusted threshold. Each market has a maximum allocation threshold based on its inherent risk tier and the vault's overall risk level.
 
-### Allocation Thresholds
+The base allocation limits by risk tier (as defined in [markets.py#L125](./markets.py#L125)) are:
 
-Base allocation limits by risk tier:
+- **Risk Level 1:** 100%
+- **Risk Level 2:** 30%
+- **Risk Level 3:** 10%
+- **Risk Level 4:** 5%
+- **Risk Level 5:** 1%
 
-- Risk Tier 1: 80%
-- Risk Tier 2: 30%
-- Risk Tier 3: 10%
-- Risk Tier 4: 5%
-- Risk Tier 5: 5%
+These limits apply to vaults with a risk level of 1. For vaults with higher risk levels, the thresholds become more permissive. The adjustment is calculated in the [get_market_allocation_threshold](./markets.py#L143) function.
 
-### Threshold Adjustment
+Examples:
 
-The actual threshold for a market is adjusted based on the vault's risk level. For higher vault risk levels, thresholds shift up (become more permissive). The adjustment is calculated as:
+- A Risk-1 vault accepts up to 30% of its total assets in a Risk-2 market.
+- A Risk-2 vault accepts up to 80% of its total assets in a Risk-2 market.
+- A Risk-3 vault accepts up to 100% of its total assets in a Risk-2 market.
+- A Risk-2 vault accepts up to 10% of its total assets in a Risk-4 market.
+- A Risk-3 vault accepts up to 30% of its total assets in a Risk-4 market.
 
-```python
-adjusted_risk = max(1, market_risk_level - (vault_risk_level - 1))
-threshold = ALLOCATION_TIERS[adjusted_risk]
+The system monitors the allocation ratio for each market hourly:
+
+```math
+\text{Allocation\_ratio} = \frac{\text{Market Supply USD}}{\text{Total Vault Assets USD}}
 ```
 
-For example:
-
-- A Risk-2 market in a Risk-1 vault uses the 30% threshold
-- The same Risk-2 market in a Risk-2 vault effectively becomes Risk-1, using the 80% threshold
-
-### Alerts
-
-The system continuously monitors the allocation ratio for each market:
-
-```python
-allocation_ratio = market_supply_usd / total_vault_assets_usd
-```
-
-If any market's allocation exceeds its adjusted threshold, an alert is triggered and telegram message is sent. This helps ensure that vaults maintain appropriate diversification and don't become overly concentrated in higher-risk markets.
-
-## Markets
-
-Risk level of the Morpho Vaults depends on the risk level of the markets used by the vault. For more information check comments for each market in [markets.py](./markets.py#L36). Markets are grouped by risk level and chain. Level 1 markets are safest.
+If any market's allocation exceeds its adjusted threshold, an alert is triggered with a corresponding Telegram message. This mechanism ensures that vaults maintain proper diversification and are not overly concentrated in higher-risk markets.

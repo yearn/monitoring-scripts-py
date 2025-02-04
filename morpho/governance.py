@@ -38,6 +38,7 @@ VAULTS_BY_CHAIN = {
     ],
 }
 
+
 # Load ABI files
 def load_abi(file_path):
     with open(file_path) as f:

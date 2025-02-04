@@ -6,7 +6,7 @@ from utils.chains import Chain
 API_URL = "https://blue-api.morpho.org/graphql"
 MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
-BAD_DEBT_RATIO = 0.1
+BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
 LIQUIDITY_THRESHOLD = 0.01  # 1% of total assets
 
 # Map vaults by chain
@@ -127,7 +127,7 @@ ALLOCATION_TIERS = {
     2: 0.30,  # Risk tier 2 max allocation
     3: 0.10,  # Risk tier 3 max allocation
     4: 0.05,  # Risk tier 4 max allocation
-    5: 0.05,  # Unknown market max allocation
+    5: 0.01,  # Unknown market max allocation
 }
 
 # Define max risk thresholds by risk level
