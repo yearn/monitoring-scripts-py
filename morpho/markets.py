@@ -151,16 +151,23 @@ def get_market_allocation_threshold(market_risk_level, vault_risk_level):
     return ALLOCATION_TIERS[adjusted_risk]
 
 
+def get_chain_name(chain: Chain):
+    if chain == Chain.MAINNET:
+        return "ethereum"
+    else:
+        return chain.name.lower()
+
+
 def get_market_url(market):
     chain_id = market["collateralAsset"]["chain"]["id"]
-    chain_name = Chain.from_chain_id(chain_id).network_name
-    return f"{MORPHO_URL}/market?id={market['uniqueKey']}&network={chain_name}"
+    chain = Chain.from_chain_id(chain_id)
+    return f"{MORPHO_URL}/{get_chain_name(chain)}/market/{market['uniqueKey']}"
 
 
 def get_vault_url(vault_data):
     chain_id = vault_data["chain"]["id"]
-    chain_name = Chain.from_chain_id(chain_id).network_name
-    return f"{MORPHO_URL}/vault?vault={vault_data['address']}&network={chain_name}"
+    chain = Chain.from_chain_id(chain_id)
+    return f"{MORPHO_URL}/{get_chain_name(chain)}/vault/{vault_data['address']}"
 
 
 def bad_debt_alert(markets, vault_name=""):

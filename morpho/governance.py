@@ -10,8 +10,7 @@ from utils.web3_wrapper import ChainManager
 from web3 import Web3
 
 PROTOCOL = "MORPHO"
-MARKET_URL = "https://app.morpho.org/market"
-VAULT_URL = "https://app.morpho.org/vault"
+MORPHO_URL = "https://app.morpho.org"
 
 PENDING_CAP_TYPE = "pending_cap"
 REMOVABLE_AT_TYPE = "removable_at"
@@ -54,16 +53,22 @@ def load_abi(file_path):
 ABI_MORPHO = load_abi("morpho/abi/morpho.json")
 
 
+def get_chain_name(chain: Chain):
+    if chain == Chain.MAINNET:
+        return "ethereum"
+    else:
+        return chain.name.lower()
+
+
 def get_market_url(market, chain: Chain):
-    chain_name = chain.name.lower()
-    return f"{MARKET_URL}?id={market}&network={chain_name}"
+    return f"{MORPHO_URL}/{get_chain_name(chain)}/market/{market}"
 
 
 def get_vault_url_by_name(vault_name, chain: Chain):
     vaults = VAULTS_BY_CHAIN[chain]
     for name, address in vaults:
         if name == vault_name:
-            return f"{VAULT_URL}?vault={address}&network={chain.name.lower()}"
+            return f"{MORPHO_URL}/{get_chain_name(chain)}/vault/{address}"
     return None
 
 
