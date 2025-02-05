@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime, timedelta
 from utils.telegram import send_telegram_message
+import re
 
 PROTOCOL = "MOONWELL"
 BASE_URL = "https://services.defirisk.intotheblock.com/metric/base/moonwell"
@@ -15,65 +16,112 @@ def get_timestamp_before(hours: int):
     return one_hour_ago.strftime("%Y-%m-%dT%H:00:00.000Z")
 
 
-def fetch_metric_from_gauntlet():
-    # TODO: verify if the key after data needs to be changed
-    urlHealthMetrics = "https://dashboards.gauntlet.xyz/_next/data/qA1T3oa5dRRXh5ya1_q5Y/protocols/moonwell.json?protocolSlug=moonwell"
+def get_gauntlet_build_id():
+    """Get the latest build ID from Gauntlet dashboard"""
+    try:
+        # Request the main page first to get the latest build ID
+        response = requests.get("https://dashboards.gauntlet.xyz/protocols/moonwell")
+        response.raise_for_status()
+
+        # Find the build ID in the HTML
+        # It's usually in a script tag with id="__NEXT_DATA__"
+        build_id = re.search(r'"buildId":"([^"]+)"', response.text)
+        if build_id:
+            return build_id.group(1)
+    except Exception as e:
+        print(f"🚨 Error fetching Gauntlet build ID: {str(e)}")
+    return None
+
+
+def fetch_metric_from_gauntlet(max_retries=3):
+    base_url = "https://dashboards.gauntlet.xyz/_next/data/{}/protocols/moonwell.json"
     alerts = []
-    response = requests.get(urlHealthMetrics)
-    response.raise_for_status()
-    data = response.json()
-    markets = data["pageProps"]["protocolPage"]["markets"]
-    for market in markets:
-        if market["key"] == "base":
-            market_data = market["data"]
-            last_updated = market_data["borrow"]["lastUpdated"]
-            if last_updated < get_timestamp_before(hours=6):
-                # don't accept data older than 6 hours
-                alerts.append(
-                    f"🚨 Market is not updated for {market['key']} - last updated {last_updated}"
-                )
-                break
 
-            borrow_amount = market_data["borrow"]["amount"]
-            supply_amount = market_data["supply"]["amount"]
-            debt_supply_ratio = (
-                borrow_amount / supply_amount if supply_amount > 0 else 0
-            )
-            if debt_supply_ratio > DEBT_SUPPLY_RATIO:
-                alerts.append(
-                    f"🚨 High Debt/Supply Ratio Alert:\n"
-                    f"📈 Debt/Supply Ratio: {debt_supply_ratio:.2%}\n"
-                    f"💸 Total Debt: ${borrow_amount:.2f}\n"
-                    f"💰 Total Supply: ${supply_amount:.2f}"
-                )
+    for attempt in range(max_retries):
+        try:
+            # Get the latest build ID
+            build_id = get_gauntlet_build_id()
+            if not build_id:
+                raise Exception("Failed to get build ID")
 
-            # VaR conveys capital at risk due to insolvencies when markets are under duress (i.e., Black Thursday)
-            value_at_risk = market_data["var"]["amount"]
-            if value_at_risk / borrow_amount > 0.01:
-                # for more info check: https://www.gauntlet.xyz/resources/improved-var-methodology
-                alerts.append(
-                    f"🚨 Value at Risk Alert:\n"
-                    f"💸 Value at Risk: ${value_at_risk:.2f}\n"
-                    f"💸 Total Debt: ${borrow_amount:.2f}\n"
-                    f"💰 Total Supply: ${supply_amount:.2f}"
-                )
+            # Construct the URL with the latest build ID
+            urlHealthMetrics = base_url.format(build_id) + "?protocolSlug=moonwell"
 
-            # LaR conveys capital at risk due to liquidations when markets are under duress.
-            liquidation_at_risk = market_data["lar"]["amount"]
-            if liquidation_at_risk / borrow_amount > 0.05:
-                # for more info check: https://www.gauntlet.xyz/resources/improved-lar-methodology
-                alerts.append(
-                    f"🚨 Liquidation at Risk Alert:\n"
-                    f"💸 Liquidation at Risk: ${liquidation_at_risk:.2f}\n"
-                    f"💸 Total Debt: ${borrow_amount:.2f}\n"
-                    f"💰 Total Supply: ${supply_amount:.2f}"
-                )
-        return True
+            response = requests.get(urlHealthMetrics)
+            response.raise_for_status()
+            data = response.json()
 
-    if alerts:
-        message = "\n\n".join(alerts)
-        send_telegram_message(message, PROTOCOL)
-    return False
+            # If we get here, the request was successful
+            # Continue with the existing logic
+            markets = data["pageProps"]["protocolPage"]["markets"]
+            for market in markets:
+                if market["key"] == "base":
+                    market_data = market["data"]
+                    last_updated = market_data["borrow"]["lastUpdated"]
+                    if last_updated < get_timestamp_before(hours=6):
+                        # don't accept data older than 6 hours
+                        alerts.append(
+                            f"🚨 Market is not updated for {market['key']} - last updated {last_updated}"
+                        )
+                        break
+
+                    borrow_amount = market_data["borrow"]["amount"]
+                    supply_amount = market_data["supply"]["amount"]
+                    debt_supply_ratio = (
+                        borrow_amount / supply_amount if supply_amount > 0 else 0
+                    )
+                    if debt_supply_ratio > DEBT_SUPPLY_RATIO:
+                        alerts.append(
+                            f"🚨 High Debt/Supply Ratio Alert:\n"
+                            f"📈 Debt/Supply Ratio: {debt_supply_ratio:.2%}\n"
+                            f"💸 Total Debt: ${borrow_amount:.2f}\n"
+                            f"💰 Total Supply: ${supply_amount:.2f}\n"
+                            f"🕒 Last Updated: {last_updated}"
+                        )
+
+                    # VaR conveys capital at risk due to insolvencies when markets are under duress (i.e., Black Thursday)
+                    value_at_risk = market_data["var"]["amount"]
+                    if value_at_risk / borrow_amount > 0.01:
+                        # for more info check: https://www.gauntlet.xyz/resources/improved-var-methodology
+                        alerts.append(
+                            f"🚨 Value at Risk Alert:\n"
+                            f"💸 Value at Risk: ${value_at_risk:.2f}\n"
+                            f"💸 Total Debt: ${borrow_amount:.2f}\n"
+                            f"💰 Total Supply: ${supply_amount:.2f}\n"
+                            f"🕒 Last Updated: {last_updated}"
+                        )
+
+                    # LaR conveys capital at risk due to liquidations when markets are under duress.
+                    liquidation_at_risk = market_data["lar"]["amount"]
+                    if liquidation_at_risk / borrow_amount > 0.05:
+                        # for more info check: https://www.gauntlet.xyz/resources/improved-lar-methodology
+                        alerts.append(
+                            f"🚨 Liquidation at Risk Alert:\n"
+                            f"💸 Liquidation at Risk: ${liquidation_at_risk:.2f}\n"
+                            f"💸 Total Debt: ${borrow_amount:.2f}\n"
+                            f"💰 Total Supply: ${supply_amount:.2f}\n"
+                            f"🕒 Last Updated: {last_updated}"
+                        )
+
+            if alerts:
+                # send only alerts related to bad metrics not http
+                message = "\n\n".join(alerts)
+                send_telegram_message(message, PROTOCOL)
+
+            return True
+
+        except requests.RequestException as e:
+            if attempt == max_retries - 1:  # Last attempt
+                print(f"🚨 Error fetching Gauntlet metrics after {max_retries} attempts: {str(e)}")
+                return False
+            print(f"Attempt {attempt + 1} failed, retrying...")
+            continue
+        except ValueError as e:
+            print(f"🚨 Error parsing Gauntlet JSON response: {str(e)}")
+            return False
+        except Exception as e:
+            print(f"🚨 Unexpected error: {str(e)}")
+            return False
 
 
 def fetch_metrics():
