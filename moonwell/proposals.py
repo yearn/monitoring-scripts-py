@@ -79,8 +79,9 @@ def fetch_moonwell_proposals():
         return base_proposals
 
     except requests.exceptions.RequestException as e:
+        # skip sending telegram message because tenderly alert is also set up for proposals
         error_message = f"Failed to fetch moonwell proposals: {e}"
-        send_telegram_message(error_message, PROTOCOL)
+        print(error_message)
         return None
 
 
