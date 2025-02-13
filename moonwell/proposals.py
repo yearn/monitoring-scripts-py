@@ -7,6 +7,7 @@ PROTOCOL = "moonwell"
 
 def fetch_moonwell_proposals():
     url = "https://ponder.moonwell.fi/graphql"
+    url_retry = "https://ponder-eu2.moonwell.fi/"
     query = """
     query {
         proposals(
@@ -34,8 +35,14 @@ def fetch_moonwell_proposals():
     payload = {"query": query}
 
     try:
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
+        try:
+            response = requests.post(url, json=payload)
+            response.raise_for_status()
+        except requests.exceptions.RequestException:
+            print(f"Primary URL failed, trying backup URL: {url_retry}")
+            response = requests.post(url_retry, json=payload)
+            response.raise_for_status()
+
         data = response.json()
 
         base_proposals = []
