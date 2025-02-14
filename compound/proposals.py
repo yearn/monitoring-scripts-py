@@ -114,10 +114,9 @@ def get_proposals():
         last_reported_id = int(queued_proposals[0]["onchainId"])
         write_last_queued_id_to_file(PROTOCOL, last_reported_id)
 
-    except Exception as e:
-        print(f"Error fetching proposals: {e}")
-        return None
-
+    except requests.RequestException as e:
+        message = f"Failed to fetch compound proposals: {e}"
+        send_telegram_message(message, PROTOCOL)
 
 if __name__ == "__main__":
     get_proposals()
