@@ -1,9 +1,17 @@
 import requests, os
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.telegram import send_telegram_message
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# If more project start to use tally, extract tally code to utils
+TALLY_API_KEY = os.getenv("TALLY_API_KEY")
+TALLY_API_URL = "https://api.tally.xyz/query"
+COMPOUND_TALLY_URL = "https://www.tally.xyz/gov/compound/proposal/"
 
 PROTOCOL = "comp"  # must be lower case
-max_length_summary = 500
+max_length_summary = 450
 
 
 def extract_summary_from_description(description):
@@ -25,71 +33,91 @@ def extract_summary_from_description(description):
     return summary
 
 
-def fetch_and_filter_compound_proposals():
-    url = "https://v3-api.compound.finance/governance/mainnet/all/proposals?page_size=10&page_number=1&with_detail=false"
-    proposal_url = "https://compound.finance/governance/proposals/"
+def get_proposals():
+    headers = {"Api-Key": TALLY_API_KEY, "Content-Type": "application/json"}
+
+    query = """
+    query GovernanceProposals($input: ProposalsInput!) {
+      proposals(input: $input) {
+        nodes {
+          ... on Proposal {
+            id
+            onchainId
+            status
+            createdAt
+            metadata {
+              title
+              description
+            }
+          }
+        }
+      }
+    }
+    """
+
+    variables = {
+        "input": {
+            "filters": {"organizationId": "2206072050458560433"},
+            "sort": {"sortBy": "id", "isDescending": True},
+            "page": {"limit": 10},
+        }
+    }
 
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raises an HTTPError for bad responses
+        response = requests.post(
+            TALLY_API_URL,
+            json={"query": query, "variables": variables},
+            headers=headers,
+        )
+        response.raise_for_status()
         data = response.json()
-        queued_proposals = []
+
+        if "errors" in data:
+            raise Exception(f"GraphQL errors: {data['errors']}")
+
+        proposals = data["data"]["proposals"]["nodes"]
+        queued_proposals = [p for p in proposals if p["status"] == "queued"]
+        if not queued_proposals:
+            print("No queued proposals found")
+            return
+
+        print(f"Found {len(queued_proposals)} queued proposals")
+
         last_reported_id = get_last_queued_id_from_file(PROTOCOL)
-
-        # use last reported id, fix for updating the cache
-        if last_reported_id is 0:
-            last_reported_id = 393
-
-        # comp backend returns proposals in descending order by id
-        for proposal in reversed(data.get("proposals", [])):
-            states = proposal.get("states", [])
-            for state in reversed(states):
-                match state["state"]:
-                    case "executed":
-                        break  # skip executed proposals
-                    case "queued":
-                        proposal_id = int(proposal["id"])
-                        if proposal_id > last_reported_id:
-                            queued_proposals.append(proposal)
-                        else:
-                            print("Proposal with id", proposal_id, "already sent")
-                        break  # exit loop after finding queued state
-
-        if queued_proposals.__len__() == 0:
-            print("No new proposals found")
-            return None
+        newest_queued_proposal_id = int(queued_proposals[0]["onchainId"])
+        if newest_queued_proposal_id <= last_reported_id:
+            print(f"No new proposals, last reported id: {last_reported_id}")
+            return
 
         message = "🖋️ Compound Governance Proposals 🖋️\n"
         for proposal in queued_proposals:
-            link = proposal_url + str(proposal["id"])
-            message += (
-                f"📗 Title: {proposal['title']}\n" f"🔗 Link to Proposal: {link}\n"
-            )
-            description = extract_summary_from_description(proposal["description"])
-            if len(description) > 0:
-                message += f"📝 Description: {description}\n\n"
+            proposal_id = int(proposal["onchainId"])
+            if proposal_id <= last_reported_id:
+                break
+
+            link = COMPOUND_TALLY_URL + str(proposal_id)
+            message += f"📗 Proposal ID: {proposal_id}\n"
+            message += f"🔗 Link to Proposal: {link}\n"
+
+            metadata = proposal["metadata"]
+            title = metadata["title"]
+            description = metadata["description"]
+            if title:
+                message += f"📝 Title: {title}\n"
+            if description:
+                summary = extract_summary_from_description(description)
+                if summary:
+                    message += f"📝 Description: {summary}\n\n"
 
         send_telegram_message(message, PROTOCOL)
-        # write last sent queued proposal id to file
-        write_last_queued_id_to_file(PROTOCOL, queued_proposals[-1]["id"])
-    except requests.RequestException as e:
-        message = f"Failed to fetch compound proposals: {e}"
-        send_telegram_message(message, PROTOCOL)
+        # write the last reported id
+        last_reported_id = int(queued_proposals[0]["onchainId"])
+        write_last_queued_id_to_file(PROTOCOL, last_reported_id)
 
-
-def send_telegram_message(message, protocol):
-    print(f"Sending telegram message:\n{message}")
-    bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_{protocol.upper()}")
-    chat_id = os.getenv(f"TELEGRAM_CHAT_ID_{protocol.upper()}")
-
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {"chat_id": chat_id, "text": message}
-    response = requests.get(url, params=params)
-    if response.status_code != 200:
-        raise Exception(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
+    except Exception as e:
+        print(f"Error fetching proposals: {e}")
+        return None
 
 
 if __name__ == "__main__":
-    fetch_and_filter_compound_proposals()
+    get_proposals()
