@@ -58,6 +58,39 @@ def get_markets_for_protocol(protocol, max_retries=3):
             print(f"🚨 Unexpected error: {str(e)}")
             return []
 
+def get_charts_for_protocol_market(protocol, market, max_retries=3):
+    base_url = "https://dashboards.gauntlet.xyz/_next/data/{}/protocols/{}/markets/{}.json"
+
+    for attempt in range(max_retries):
+        try:
+            # Get the latest build ID
+            build_id = get_gauntlet_build_id()
+            if not build_id:
+                raise Exception("Failed to get build ID")
+
+            protocol_lower = protocol.lower()
+            urlCharts = base_url.format(build_id, protocol_lower, market)
+
+            response = requests.get(urlCharts)
+            response.raise_for_status()
+            data = response.json()
+
+            # this is used only for euler, if there are more protocols, we need to change this
+            # response has ["scalarCards"] and ["charts"]
+            return data["pageProps"]["chartSections"][0]
+
+        except requests.RequestException as e:
+            if attempt == max_retries - 1:  # Last attempt
+                print(f"🚨 Error fetching Gauntlet charts after {max_retries} attempts: {str(e)}")
+                return []
+            print(f"Attempt {attempt + 1} failed, retrying...")
+            continue
+        except ValueError as e:
+            print(f"🚨 Error parsing Gauntlet JSON response: {str(e)}")
+            return []
+        except Exception as e:
+            print(f"🚨 Unexpected error: {str(e)}")
+            return []
 
 def get_timestamp_before(hours: int):
     """Get timestamp from one hour ago in ISO format"""

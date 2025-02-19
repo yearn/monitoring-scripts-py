@@ -1,16 +1,86 @@
 from utils.telegram import send_telegram_message
-from utils.gauntlet import get_markets_for_protocol, format_usd, get_timestamp_before
+from utils.gauntlet import (
+    get_markets_for_protocol,
+    format_usd,
+    get_timestamp_before,
+    get_charts_for_protocol_market,
+)
 
 PROTOCOL = "EULER"
-DEBT_SUPPLY_RATIO = 0.70  # 70%
+DEBT_SUPPLY_RATIO = 0.60  # 60%
 # available markets: https://dashboards.gauntlet.xyz/protocols/euler
 USED_EULER_VAULTS_KEYS = ["ethereum-prime", "ethereum-yield"]
+
+SUPPLY_ASSETS = [
+    # Risk Tier 1
+    ["USDS", 1],
+    ["mETH", 1],
+    ["USDT", 1],
+    ["cbETH", 1],
+    ["rETH", 1],
+    ["sUSDS", 1],
+    ["wstETH", 1],
+    ["cbBTC", 1],
+    ["USDC", 1],
+    ["WETH", 1],
+    ["WBTC", 1],
+    # Risk Tier 2
+    [
+        "ETHx",
+        2,
+    ],  # https://www.llamarisk.com/research/risk-addendum-to-collateral-risk-assessment-stader-ethx
+    ["PT-USDe-27MAR2025", 2],
+    # Risk Tier 3
+    [
+        "wUSDM",
+        3,
+    ],  # https://www.llamarisk.com/research/archive-llamarisk-asset-risk-assessment-mountain-protocol-usdm - https://mountainprotocol.com/usdm
+    ["eBTC", 3],
+    [
+        "ezETH",
+        3,
+    ],  # https://www.llamarisk.com/research/risk-collateral-risk-assessment-renzo-restaked-eth-ezeth
+    [
+        "weETH",
+        3,
+    ],  # or 2 https://www.llamarisk.com/research/risk-collateral-risk-assessment-wrapped-etherfi-eth-weeth
+    ["rsETH", 3],
+    ["LBTC", 3],  # or 3 https://defillama.com/protocol/lombard-finance#information
+    ["PYUSD", 3],  # TODO: think about paypal usd
+    # Risk Tier 4
+    ["SolvBTC", 4],  # https://solv.finance/
+    ["USD0++", 4],
+    ["FDUSD", 4],  # TODO: check
+    # Risk Tier 5
+    ["mTBILL", 5],  # https://midas.app/
+    ["wM", 5],  # https://www.m0.org/
+]
+
+# Convert SUPPLY_ASSETS list to dictionary for easier lookup
+SUPPLY_ASSETS_DICT = {asset: risk_tier for asset, risk_tier in SUPPLY_ASSETS}
+
+# Define base allocation tiers
+ALLOCATION_TIERS = {
+    1: 1.01,  # Risk tier 1 max allocation
+    2: 0.30,  # Risk tier 2 max allocation
+    3: 0.10,  # Risk tier 3 max allocation
+    4: 0.05,  # Risk tier 4 max allocation
+    5: 0.01,  # Unknown market max allocation
+}
+
+# Define max risk thresholds by risk level
+MAX_RISK_THRESHOLDS = {
+    1: 1.10,  # Risk tier 1 max total risk
+    2: 2.20,  # Risk tier 2 max total risk
+    3: 3.30,  # Risk tier 3 max total risk
+    4: 4.40,  # Risk tier 4 max total risk
+    5: 5.00,  # Risk tier 5 max total risk
+}
 
 
 def fetch_metric_from_gauntlet(max_retries=3):
     alerts = []
     markets = get_markets_for_protocol(PROTOCOL, max_retries)
-    print(markets)
 
     if not markets:
         return False
@@ -70,13 +140,107 @@ def fetch_metric_from_gauntlet(max_retries=3):
     return True
 
 
+# reused from morpho/markets.py
+def get_market_allocation_threshold(market_risk_level, vault_risk_level):
+    """
+    Get allocation threshold based on market and vault risk levels.
+    For higher vault risk levels, thresholds shift up (become more permissive).
+    For example, if vault risk level is 2, then market risk level 1 is 0.80, market risk level 2 is 0.30, etc.
+    """
+    # Shift market risk level down based on vault risk level
+    adjusted_risk = max(1, market_risk_level - (vault_risk_level - 1))
+    return ALLOCATION_TIERS[adjusted_risk]
+
+
+def fetch_borrow_metrics_from_gauntlet(market_key, vault_risk_level):
+    alerts = []
+    charts = get_charts_for_protocol_market(PROTOCOL, market_key)
+    cards = charts["scalarCards"]
+    total_supply = cards[0]["value"]["amount"]
+    total_borrow = cards[1]["value"]["amount"]
+
+    charts = charts["charts"]
+    total_risk_level = 0.0
+    print(f"Market: {market_key}")
+    print(f"Assigned Risk Level: {vault_risk_level}")
+    print(f"Total supply: {format_usd(total_supply)}")
+    print(f"Total borrow: {format_usd(total_borrow)}")
+    print("--------------------------------")
+    print("Asset | Supply | Allocation")
+
+    for chart in charts:
+        if chart["key"] == "market_health_timeseries_asset_supply":
+            # reverse the data so we get the biggest markets/vaults first
+            for data in reversed(chart["data"]):
+                asset = data["id"]
+                supply = data["data"][-1]["y"]
+                if supply == 0:
+                    continue
+
+                # Use dictionary lookup instead of list indexing
+                asset_risk_tier = SUPPLY_ASSETS_DICT.get(
+                    asset, 5
+                )  # Default to tier 5 if asset not found
+                allocation_threshold = get_market_allocation_threshold(
+                    asset_risk_tier, vault_risk_level
+                )
+
+                # Calculate allocation ratio
+                allocation_ratio = supply / total_supply if total_supply > 0 else 0
+
+                # Check if allocation exceeds threshold
+                if allocation_ratio > allocation_threshold:
+                    alerts.append(
+                        f"🔺 High allocation detected for {asset}:\n"
+                        f"💹 Current allocation: {allocation_ratio:.1%}\n"
+                        f"📊 Max acceptable allocation: {allocation_threshold:.1%}\n"
+                        f"💰 Supply amount: {format_usd(supply)}"
+                    )
+
+                # Calculate risk contribution
+                risk_multiplier = asset_risk_tier
+                total_risk_level += risk_multiplier * allocation_ratio
+                print(f"{asset} | {format_usd(supply)} | {allocation_ratio:.1%}")
+
+    # Check total risk level against threshold for vault risk level
+    if total_risk_level > MAX_RISK_THRESHOLDS[vault_risk_level]:
+        alerts.append(
+            f"🔺 High total risk level detected:\n"
+            f"📊 Total risk level: {total_risk_level:.1%}\n"
+            f"📈 Max acceptable risk: {MAX_RISK_THRESHOLDS[vault_risk_level]:.1%}\n"
+            f"💰 Total assets: {format_usd(total_supply)}"
+        )
+
+    if total_borrow / total_supply > DEBT_SUPPLY_RATIO:
+        alerts.append(
+            f"🔺 High borrow/supply ratio detected:\n"
+            f"📊 Total borrow/supply ratio: {total_borrow / total_supply:.1%}\n"
+            f"💰 Total assets: {format_usd(total_supply)}"
+        )
+
+    if alerts:
+        message = "\n\n".join(alerts)
+        send_telegram_message(message, PROTOCOL)
+
+    print("--------------------------------")
+    print(f"Total risk level: {total_risk_level:.1%}")
+    print("\n================================\n")
+
+
 def main():
     successfull = fetch_metric_from_gauntlet()
     if not successfull:
         # if both data sources are not working, send an alert
         send_telegram_message("🚨 Euler metrics cannot be fetched", PROTOCOL)
 
-    # TODO: implement checks for vault allocations
+    # Implement checks for vault allocations with their respective risk levels
+    fetch_borrow_metrics_from_gauntlet(
+        "ethereum-prime", 2
+    )  # Risk level 2 for prime vault
+    fetch_borrow_metrics_from_gauntlet(
+        "ethereum-yield", 3
+    )  # Risk level 3 for yield vault
+
 
 if __name__ == "__main__":
     main()
