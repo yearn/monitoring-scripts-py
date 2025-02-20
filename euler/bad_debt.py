@@ -13,47 +13,60 @@ USED_EULER_VAULTS_KEYS = ["ethereum-prime", "ethereum-yield"]
 
 SUPPLY_ASSETS = [
     # Risk Tier 1
-    ["USDS", 1],
-    ["mETH", 1],
-    ["USDT", 1],
-    ["cbETH", 1],
-    ["rETH", 1],
-    ["sUSDS", 1],
-    ["wstETH", 1],
-    ["cbBTC", 1],
     ["USDC", 1],
+    ["USDT", 1],
+    ["DAI", 1],
+    ["USDS", 1],
+    ["sUSDS", 1],
     ["WETH", 1],
     ["WBTC", 1],
+    ["mETH", 1],  # Pyth oracle mETH/ETH and chainlink ETH/USD
+    ["cbETH", 1],  # Rate cbETH/WETH and chainlink WETH/USD
+    ["rETH", 1],  # Rate rETH/WETH and chainlink WETH/USD
+    ["wstETH", 1],  # Rate wstETH/WETH and chainlink WETH/USD
+    ["cbBTC", 1],  # Chainlink oracle cbBTC/USD
+    ["sUSDe", 1],  # Rate sUSDe/USDe and chainlink USDe/USD
     # Risk Tier 2
     [
         "ETHx",
         2,
-    ],  # https://www.llamarisk.com/research/risk-addendum-to-collateral-risk-assessment-stader-ethx
-    ["PT-USDe-27MAR2025", 2],
+    ],  # Rate ETHx/WETH and chainlink WETH/USD https://www.llamarisk.com/research/risk-addendum-to-collateral-risk-assessment-stader-ethx
+    ["PT-USDe-27MAR2025", 2],  # Pendle PT to USDe and chainlink USDe/USD
+    ["PT-sUSDE-27MAR2025", 2],  # Pendle PT to USDe and chainlink USDe/USD
+    ["PT-sUSDE-29MAY2025", 2],  # Pendle PT to USDe and chainlink USDe/USD
+    ["PYUSD", 2],  # Pyth oracle PYUSD/USD and high liquidity (10M)
     # Risk Tier 3
-    [
-        "wUSDM",
-        3,
-    ],  # https://www.llamarisk.com/research/archive-llamarisk-asset-risk-assessment-mountain-protocol-usdm - https://mountainprotocol.com/usdm
-    ["eBTC", 3],
+    ["tBTC", 3],  # Uses chainlink oracle tBTC/USD
     [
         "ezETH",
         3,
-    ],  # https://www.llamarisk.com/research/risk-collateral-risk-assessment-renzo-restaked-eth-ezeth
+    ],  # Rate ezETH/WETH and chainlink WETH/USD https://www.llamarisk.com/research/risk-collateral-risk-assessment-renzo-restaked-eth-ezeth
     [
         "weETH",
         3,
-    ],  # or 2 https://www.llamarisk.com/research/risk-collateral-risk-assessment-wrapped-etherfi-eth-weeth
-    ["rsETH", 3],
-    ["LBTC", 3],  # or 3 https://defillama.com/protocol/lombard-finance#information
-    ["PYUSD", 3],  # TODO: think about paypal usd
+    ],  # Rate weeth/WETH and chainlink WETH/USD https://www.llamarisk.com/research/risk-collateral-risk-assessment-wrapped-etherfi-eth-weeth
+    ["rsETH", 3],  # Rate rsETH/WETH and chainlink WETH/USD
+    ["LBTC", 3],  # Uses chainlink oracle LBTC/BTC and BTC/USD
+    ["USD0", 3],  # pyth oracle USD0/USD and medium liquidity (6M)
     # Risk Tier 4
-    ["SolvBTC", 4],  # https://solv.finance/
-    ["USD0++", 4],
-    ["FDUSD", 4],  # TODO: check
+    [
+        "wUSDM",
+        4,
+    ],  # Rate wusdm/WETH and fixed rate USDM/USD https://www.llamarisk.com/research/archive-llamarisk-asset-risk-assessment-mountain-protocol-usdm - https://mountainprotocol.com/usdm
+    ["eBTC", 4],  # Rate eBTC/BTC and chainlink BTC/USD
+    [
+        "SolvBTC",
+        4,
+    ],  # Uses chainlink oracle solvBTC/BTC and BTC/USD https://solv.finance/
     # Risk Tier 5
-    ["mTBILL", 5],  # https://midas.app/
-    ["wM", 5],  # https://www.m0.org/
+    [
+        "USD0++",
+        5,
+    ],  # pyth oracle USD0++/USD but low liquidity to get usd0, below 1M without slippage and euler market size is 4M
+    ["FDUSD", 5],  # pyth oracle FDUSD/USD and low liquidity (100k)
+    ["mTBILL", 5],  # Euler Vault uses fixed rate oracle. https://midas.app/
+    ["wM", 5],  # Euler Vault uses fixed rate oracle. https://www.m0.org/
+    ["mBASIS", 5],
 ]
 
 # Convert SUPPLY_ASSETS list to dictionary for easier lookup
@@ -235,10 +248,10 @@ def main():
 
     # Implement checks for vault allocations with their respective risk levels
     fetch_borrow_metrics_from_gauntlet(
-        "ethereum-prime", 2
+        USED_EULER_VAULTS_KEYS[0], 2
     )  # Risk level 2 for prime vault
     fetch_borrow_metrics_from_gauntlet(
-        "ethereum-yield", 3
+        USED_EULER_VAULTS_KEYS[1], 3
     )  # Risk level 3 for yield vault
 
 
