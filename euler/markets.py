@@ -204,7 +204,7 @@ def fetch_borrow_metrics_from_gauntlet(market_key, vault_risk_level):
                 # Check if allocation exceeds threshold
                 if allocation_ratio > allocation_threshold:
                     alerts.append(
-                        f"🔺 High allocation detected for {asset}:\n"
+                        f"🔺 High allocation detected for {asset} in market {market_key}\n"
                         f"💹 Current allocation: {allocation_ratio:.1%}\n"
                         f"📊 Max acceptable allocation: {allocation_threshold:.1%}\n"
                         f"💰 Supply amount: {format_usd(supply)}"
@@ -218,7 +218,7 @@ def fetch_borrow_metrics_from_gauntlet(market_key, vault_risk_level):
     # Check total risk level against threshold for vault risk level
     if total_risk_level > MAX_RISK_THRESHOLDS[vault_risk_level]:
         alerts.append(
-            f"🔺 High total risk level detected:\n"
+            f"🔺 High total risk level detected in market {market_key}:\n"
             f"📊 Total risk level: {total_risk_level:.1%}\n"
             f"📈 Max acceptable risk: {MAX_RISK_THRESHOLDS[vault_risk_level]:.1%}\n"
             f"💰 Total assets: {format_usd(total_supply)}"
@@ -226,9 +226,10 @@ def fetch_borrow_metrics_from_gauntlet(market_key, vault_risk_level):
 
     if total_borrow / total_supply > DEBT_SUPPLY_RATIO:
         alerts.append(
-            f"🔺 High borrow/supply ratio detected:\n"
+            f"🔺 High borrow/supply ratio detected in market {market_key}:\n"
             f"📊 Total borrow/supply ratio: {total_borrow / total_supply:.1%}\n"
-            f"💰 Total assets: {format_usd(total_supply)}"
+            f"💰 Total assets: {format_usd(total_supply)}\n"
+            f"💸 Total borrow: {format_usd(total_borrow)}\n"
         )
 
     if alerts:
