@@ -98,10 +98,6 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
 
             target_contract = tx["to"]
 
-            if protocol == "EULER" and target_contract != "0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9":
-                # send message for txs that target only vaults that we use in our strategies
-                continue
-
             message = (
                 "🚨 QUEUED TX DETECTED 🚨\n"
                 f"🅿️ Protocol: {protocol}\n"
@@ -191,6 +187,7 @@ def main():
             "base-main",
             "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
         ],  # pause guardian of comptroller contract
+        # ["tETH", "mainnet", "0x22261B4D6F629D8cF946C3524df86bF7222901F6"], # owner of tETH
         # [
         #     "USD0",
         #     "mainnet",
