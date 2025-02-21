@@ -2,6 +2,7 @@ import requests
 import re
 from datetime import datetime, timedelta
 
+
 def get_gauntlet_build_id():
     """Get the latest build ID from Gauntlet dashboard"""
     try:
@@ -58,8 +59,11 @@ def get_markets_for_protocol(protocol, max_retries=3):
             print(f"🚨 Unexpected error: {str(e)}")
             return []
 
+
 def get_charts_for_protocol_market(protocol, market, max_retries=3):
-    base_url = "https://dashboards.gauntlet.xyz/_next/data/{}/protocols/{}/markets/{}.json"
+    base_url = (
+        "https://dashboards.gauntlet.xyz/_next/data/{}/protocols/{}/markets/{}.json"
+    )
 
     for attempt in range(max_retries):
         try:
@@ -81,7 +85,9 @@ def get_charts_for_protocol_market(protocol, market, max_retries=3):
 
         except requests.RequestException as e:
             if attempt == max_retries - 1:  # Last attempt
-                print(f"🚨 Error fetching Gauntlet charts after {max_retries} attempts: {str(e)}")
+                print(
+                    f"🚨 Error fetching Gauntlet charts after {max_retries} attempts: {str(e)}"
+                )
                 return []
             print(f"Attempt {attempt + 1} failed, retrying...")
             continue
@@ -91,6 +97,7 @@ def get_charts_for_protocol_market(protocol, market, max_retries=3):
         except Exception as e:
             print(f"🚨 Unexpected error: {str(e)}")
             return []
+
 
 def get_timestamp_before(hours: int):
     """Get timestamp from one hour ago in ISO format"""

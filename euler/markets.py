@@ -9,7 +9,10 @@ from utils.gauntlet import (
 PROTOCOL = "EULER"
 DEBT_SUPPLY_RATIO = 0.60  # 60%
 # available markets: https://dashboards.gauntlet.xyz/protocols/euler
-USED_EULER_VAULTS_KEYS = ["ethereum-prime", "ethereum-yield"]
+USED_EULER_VAULTS_KEYS = [
+    ["ethereum-prime", 2],
+    # ["ethereum-yield", 3], No active strategy for this vault
+]
 
 SUPPLY_ASSETS = [
     # Risk Tier 1
@@ -171,6 +174,14 @@ def fetch_borrow_metrics_from_gauntlet(market_key, vault_risk_level):
     cards = charts["scalarCards"]
     total_supply = cards[0]["value"]["amount"]
     total_borrow = cards[1]["value"]["amount"]
+    last_updated = cards[0]["lastUpdated"]
+    if last_updated < get_timestamp_before(hours=12):
+        # TODO: verify how long it takes for the market to be updated
+        send_telegram_message(
+            f"🚨 Market {market_key} is not updated for 12 hours. Last updated at {last_updated}",
+            PROTOCOL,
+        )
+        return
 
     charts = charts["charts"]
     total_risk_level = 0.0
@@ -248,12 +259,8 @@ def main():
         send_telegram_message("🚨 Euler metrics cannot be fetched", PROTOCOL)
 
     # Implement checks for vault allocations with their respective risk levels
-    fetch_borrow_metrics_from_gauntlet(
-        USED_EULER_VAULTS_KEYS[0], 2
-    )  # Risk level 2 for prime vault
-    fetch_borrow_metrics_from_gauntlet(
-        USED_EULER_VAULTS_KEYS[1], 3
-    )  # Risk level 3 for yield vault
+    for vault in USED_EULER_VAULTS_KEYS:
+        fetch_borrow_metrics_from_gauntlet(vault[0], vault[1])
 
 
 if __name__ == "__main__":
