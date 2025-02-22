@@ -81,8 +81,9 @@ jobs:
         run: python -m spark.main
       - name: Run Compound script
         run: python -m compound.main
-      - name: Run Compound Proposals script
-        run: python -m compound.proposals
+        # TODO: enable when Tally API is fixed
+      # - name: Run Compound Proposals script
+      #   run: python -m compound.proposals
       - name: Run Lido Matic script
         run: python -m lido.stmatic.main
       - name: Run Lido Ethereum script
