@@ -28,12 +28,12 @@ SUPPLY_ASSETS = [
     ["rETH", 1],  # Rate rETH/WETH and chainlink WETH/USD
     ["wstETH", 1],  # Rate wstETH/WETH and chainlink WETH/USD
     ["cbBTC", 1],  # Chainlink oracle cbBTC/USD
-    ["sUSDe", 1],  # Rate sUSDe/USDe and chainlink USDe/USD
     # Risk Tier 2
     [
         "ETHx",
         2,
     ],  # Rate ETHx/WETH and chainlink WETH/USD https://www.llamarisk.com/research/risk-addendum-to-collateral-risk-assessment-stader-ethx
+    ["sUSDe", 2],  # Rate sUSDe/USDe and chainlink USDe/USD
     ["PT-USDe-27MAR2025", 2],  # Pendle PT to USDe and chainlink USDe/USD
     ["PT-sUSDE-27MAR2025", 2],  # Pendle PT to USDe and chainlink USDe/USD
     ["PT-sUSDE-29MAY2025", 2],  # Pendle PT to USDe and chainlink USDe/USD
