@@ -1,7 +1,7 @@
 import requests
-from utils.telegram import send_telegram_message
-from utils.chains import Chain
 
+from utils.chains import Chain
+from utils.telegram import send_telegram_message
 
 API_URL = "https://blue-api.morpho.org/graphql"
 MORPHO_URL = "https://app.morpho.org"

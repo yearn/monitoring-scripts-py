@@ -1,7 +1,9 @@
-import requests
-from datetime import datetime, timedelta
-from utils.telegram import send_telegram_message
 import re
+from datetime import datetime, timedelta
+
+import requests
+
+from utils.telegram import send_telegram_message
 
 PROTOCOL = "MOONWELL"
 BASE_URL = "https://services.defirisk.intotheblock.com/metric/base/moonwell"

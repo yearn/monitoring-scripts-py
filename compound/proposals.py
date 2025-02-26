@@ -1,7 +1,11 @@
-import requests, os
-from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
-from utils.telegram import send_telegram_message
+import os
+
+import requests
 from dotenv import load_dotenv
+
+from utils.cache import (get_last_queued_id_from_file,
+                         write_last_queued_id_to_file)
+from utils.telegram import send_telegram_message
 
 load_dotenv()
 
@@ -69,6 +73,7 @@ def get_proposals():
             json={"query": query, "variables": variables},
             headers=headers,
         )
+        print(response)
         response.raise_for_status()
         data = response.json()
 

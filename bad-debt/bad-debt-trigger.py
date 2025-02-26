@@ -1,4 +1,8 @@
-import os, requests, datetime, locale
+import datetime
+import locale
+import os
+
+import requests
 
 url = os.environ["DATA_URL"]
 response = requests.get(url)
