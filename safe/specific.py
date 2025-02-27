@@ -1,8 +1,9 @@
+import json
+from typing import List, Tuple
+
 from eth_abi import decode
 from eth_utils import to_checksum_address
 from web3 import Web3
-from typing import List, Tuple
-import json
 
 
 class Call:

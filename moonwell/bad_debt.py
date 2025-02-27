@@ -1,6 +1,7 @@
 import requests
+
+from utils.gauntlet import format_usd, get_markets_for_protocol, get_timestamp_before
 from utils.telegram import send_telegram_message
-from utils.gauntlet import get_markets_for_protocol, format_usd, get_timestamp_before
 
 PROTOCOL = "MOONWELL"
 BASE_URL = "https://services.defirisk.intotheblock.com/metric/base/moonwell"

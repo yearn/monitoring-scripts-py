@@ -1,10 +1,10 @@
-from utils.telegram import send_telegram_message
 from utils.gauntlet import (
-    get_markets_for_protocol,
     format_usd,
-    get_timestamp_before,
     get_charts_for_protocol_market,
+    get_markets_for_protocol,
+    get_timestamp_before,
 )
+from utils.telegram import send_telegram_message
 
 PROTOCOL = "EULER"
 DEBT_SUPPLY_RATIO = 0.60  # 60%

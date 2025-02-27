@@ -1,6 +1,8 @@
-import requests
 import os
+
+import requests
 from dotenv import load_dotenv
+
 from utils.telegram import send_telegram_message
 
 load_dotenv()

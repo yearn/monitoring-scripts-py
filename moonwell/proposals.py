@@ -1,4 +1,5 @@
 import requests
+
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.telegram import send_telegram_message
 

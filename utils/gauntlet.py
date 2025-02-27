@@ -1,6 +1,7 @@
-import requests
 import re
 from datetime import datetime, timedelta
+
+import requests
 
 
 def get_gauntlet_build_id():

@@ -1,6 +1,8 @@
 import os
+
 from dotenv import load_dotenv
 from dune_client.client import DuneClient
+
 from utils.telegram import send_telegram_message
 
 load_dotenv()
