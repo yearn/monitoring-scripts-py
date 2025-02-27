@@ -12,7 +12,6 @@ DEBT_SUPPLY_RATIO = 0.70  # 70%
 def fetch_metric_from_gauntlet(max_retries=3):
     alerts = []
     markets = get_markets_for_protocol(PROTOCOL, max_retries)
-    print(markets)
 
     if not markets:
         return False
