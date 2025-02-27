@@ -3,8 +3,10 @@ from datetime import datetime
 
 from web3 import Web3
 
-from utils.cache import (get_last_executed_morpho_from_file,
-                         write_last_executed_morpho_to_file)
+from utils.cache import (
+    get_last_executed_morpho_from_file,
+    write_last_executed_morpho_to_file,
+)
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
@@ -28,12 +30,17 @@ VAULTS_BY_CHAIN = {
         ["Gauntlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458"],
         ["Gauntlet DAI Core", "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5"],
         ["Gauntlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2"],
+        # ["Gauntlet LRT Core", "0x7Db8c75A903d66D669b2002870975cc5aA842b6D"],
         ["LlamaRisk crvUSD Vault", "0x67315dd969B8Cd3a3520C245837Bf71f54579C75"],
     ],
     Chain.BASE: [
-        ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"],
-        ["Moonwell Flagship ETH", "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1"],
-        ["Moonwell Flagship EURC", "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026"],
+        # ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"],
+        # ["Moonwell Flagship ETH", "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1"],
+        # ["Moonwell Flagship EURC", "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026"],
+        # ["Moonwell Frontier cbBTC", "0x543257eF2161176D7C8cD90BA65C2d4CaEF5a796"],
+        # ["Seamless/Gauntlet USDC", "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738"],
+        # ["Seamless/Gauntlet WETH", "0x27D8c7273fd3fcC6956a0B370cE5Fd4A7fc65c18"],
+        # ["Seamless/Gauntlet cbBTC", "0x5a47C803488FE2BB0A0EAaf346b420e4dF22F3C7"],
     ],
 }
 

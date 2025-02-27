@@ -4,8 +4,10 @@ import requests
 from dotenv import load_dotenv
 
 from safe.specific import handle_pendle
-from utils.cache import (get_last_executed_nonce_from_file,
-                         write_last_executed_nonce_to_file)
+from utils.cache import (
+    get_last_executed_nonce_from_file,
+    write_last_executed_nonce_to_file,
+)
 from utils.telegram import send_telegram_message
 
 load_dotenv()
@@ -99,7 +101,10 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
 
             target_contract = tx["to"]
 
-            if protocol == "EULER" and target_contract != "0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9":
+            if (
+                protocol == "EULER"
+                and target_contract != "0x797DD80692c3b2dAdabCe8e30C07fDE5307D48a9"
+            ):
                 # send message for txs that target only vaults that we use in our strategies
                 continue
 

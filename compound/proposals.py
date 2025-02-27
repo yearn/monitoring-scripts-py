@@ -3,8 +3,7 @@ import os
 import requests
 from dotenv import load_dotenv
 
-from utils.cache import (get_last_queued_id_from_file,
-                         write_last_queued_id_to_file)
+from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.telegram import send_telegram_message
 
 load_dotenv()
@@ -122,6 +121,7 @@ def get_proposals():
     except requests.RequestException as e:
         message = f"Failed to fetch compound proposals: {e}"
         send_telegram_message(message, PROTOCOL)
+
 
 if __name__ == "__main__":
     get_proposals()

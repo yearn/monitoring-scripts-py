@@ -114,7 +114,9 @@ def fetch_metric_from_gauntlet(max_retries=3):
 
         except requests.RequestException as e:
             if attempt == max_retries - 1:  # Last attempt
-                print(f"🚨 Error fetching Gauntlet metrics after {max_retries} attempts: {str(e)}")
+                print(
+                    f"🚨 Error fetching Gauntlet metrics after {max_retries} attempts: {str(e)}"
+                )
                 return False
             print(f"Attempt {attempt + 1} failed, retrying...")
             continue

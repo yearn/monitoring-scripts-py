@@ -1,4 +1,12 @@
+"""
+Aave protocol monitoring script for tracking utilization rates of assets.
+
+This module tracks utilization rates across multiple chains and sends alerts
+when thresholds are exceeded.
+"""
+
 import json
+from typing import Any, Dict, List, Tuple
 
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
@@ -7,8 +15,7 @@ from utils.web3_wrapper import ChainManager
 PROTOCOL = "aave"
 
 
-# Load ABI
-def load_abi(file_path):
+def load_abi(file_path: str) -> List[Dict[str, Any]]:
     with open(file_path) as f:
         abi_data = json.load(f)
         if isinstance(abi_data, dict):
@@ -25,27 +32,95 @@ ABI_ATOKEN = load_abi("aave/abi/AToken.json")
 ADDRESSES_BY_CHAIN = {
     Chain.POLYGON: [
         # aToken, underlying, symbol
-        ("0x625E7708f30cA75bfd92586e17077590C60eb4cD", "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", "USDC.e"),
-        ("0xA4D94019934D8333Ef880ABFFbF2FDd611C762BD", "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", "USDC"),
-        ("0x6ab707Aca953eDAeFBc4fD23bA73294241490620", "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", "USDT"),
-        ("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE", "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063", "DAI"),
-        ("0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97", "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270", "MATIC"),
-        ("0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8", "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619", "WETH"),
+        (
+            "0x625E7708f30cA75bfd92586e17077590C60eb4cD",
+            "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+            "USDC.e",
+        ),
+        (
+            "0xA4D94019934D8333Ef880ABFFbF2FDd611C762BD",
+            "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+            "USDC",
+        ),
+        (
+            "0x6ab707Aca953eDAeFBc4fD23bA73294241490620",
+            "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+            "USDT",
+        ),
+        (
+            "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE",
+            "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+            "DAI",
+        ),
+        (
+            "0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97",
+            "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+            "MATIC",
+        ),
+        (
+            "0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8",
+            "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+            "WETH",
+        ),
     ],
     Chain.MAINNET: [
-        ("0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8", "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", "WETH"),
-        ("0x23878914EFE38d27C4D67Ab83ed1b93A74D4086a", "0xdAC17F958D2ee523a2206206994597C13D831ec7", "USDT"),
-        ("0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c", "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", "USDC"),
-        ("0x018008bfb33d285247A21d44E50697654f754e63", "0x6B175474E89094C44Da98b954EedeAC495271d0F", "DAI"),
-        ("0xb82fa9f31612989525992FCfBB09AB22Eff5c85A", "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E", "crvUSD"),
+        (
+            "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+            "WETH",
+        ),
+        (
+            "0x23878914EFE38d27C4D67Ab83ed1b93A74D4086a",
+            "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+            "USDT",
+        ),
+        (
+            "0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c",
+            "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "USDC",
+        ),
+        (
+            "0x018008bfb33d285247A21d44E50697654f754e63",
+            "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+            "DAI",
+        ),
+        (
+            "0xb82fa9f31612989525992FCfBB09AB22Eff5c85A",
+            "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E",
+            "crvUSD",
+        ),
     ],
     Chain.ARBITRUM: [
-        ("0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8", "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", "WETH"),
-        ("0x724dc807b04555b71ed48a6896b6F41593b8C637", "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "USDC"),
-        ("0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE", "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1", "DAI"),
-        ("0x625E7708f30cA75bfd92586e17077590C60eb4cD", "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8", "USDC.e"),
-        ("0x6ab707Aca953eDAeFBc4fD23bA73294241490620", "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", "USDT"),
-        ("0x6533afac2E7BCCB20dca161449A13A32D391fb00", "0x912CE59144191C1204E64559FE8253a0e49E6548", "ARB"),
+        (
+            "0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8",
+            "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+            "WETH",
+        ),
+        (
+            "0x724dc807b04555b71ed48a6896b6F41593b8C637",
+            "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+            "USDC",
+        ),
+        (
+            "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE",
+            "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
+            "DAI",
+        ),
+        (
+            "0x625E7708f30cA75bfd92586e17077590C60eb4cD",
+            "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
+            "USDC.e",
+        ),
+        (
+            "0x6ab707Aca953eDAeFBc4fD23bA73294241490620",
+            "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+            "USDT",
+        ),
+        (
+            "0x6533afac2E7BCCB20dca161449A13A32D391fb00",
+            "0x912CE59144191C1204E64559FE8253a0e49E6548",
+            "ARB",
+        ),
     ],
     # We don't use optimism - add if needed
     # Chain.OPTIMISM: [
@@ -68,7 +143,7 @@ THRESHOLD_UR = 0.99
 THRESHOLD_UR_NOTIFICATION = 0.99
 
 
-def print_stuff(chain_name, token_name, ur):
+def print_stuff(chain_name: str, token_name: str, ur: float) -> None:
     if ur > THRESHOLD_UR:
         message = (
             "🚨 **BEEP BOP** 🚨\n"
@@ -76,13 +151,11 @@ def print_stuff(chain_name, token_name, ur):
             f"📊 Utilization rate: {ur:.2%}\n"
             f"🌐 Chain: {chain_name}"
         )
-        disable_notification = True
-        if ur > THRESHOLD_UR_NOTIFICATION:
-            disable_notification = False
+        disable_notification = ur <= THRESHOLD_UR_NOTIFICATION
         send_telegram_message(message, PROTOCOL, disable_notification)
 
 
-def process_assets(chain: Chain):
+def process_assets(chain: Chain) -> None:
     client = ChainManager.get_client(chain)
     addresses = ADDRESSES_BY_CHAIN[chain]
 
@@ -118,10 +191,13 @@ def process_assets(chain: Chain):
         print_stuff(chain.name, token_symbol, ur)
 
 
-def main():
+def main() -> None:
     for chain in [Chain.MAINNET, Chain.POLYGON, Chain.ARBITRUM]:
         print(f"Processing {chain.name} assets...")
-        process_assets(chain)
+        try:
+            process_assets(chain)
+        except Exception as e:
+            print(f"Error processing {chain.name}: {str(e)}")
 
 
 if __name__ == "__main__":
