@@ -8,8 +8,8 @@ PROTOCOL = "moonwell"
 
 def fetch_moonwell_proposals():
     # Keep the original URL order but improve error handling
-    url = "https://ponder.moonwell.fi/graphql"
-    url_retry = "https://ponder-eu2.moonwell.fi/graphql"
+    url = "https://ponder-eu2.moonwell.fi/graphql"
+    url_retry = "https://ponder.moonwell.fi/graphql"
 
     # Use the query that we know is working with at least the backup URL
     query = """
