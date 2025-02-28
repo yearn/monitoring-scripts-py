@@ -868,7 +868,7 @@ requires-dist = [
     { name = "requests", specifier = "==2.32.3" },
     { name = "rlp", specifier = "==4.0.1" },
     { name = "ruff", specifier = "==0.9.9" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9.4" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9.9" },
     { name = "six", specifier = "==1.16.0" },
     { name = "tomli", specifier = "==2.0.2" },
     { name = "toolz", specifier = "==0.12.1" },
