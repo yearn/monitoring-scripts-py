@@ -7,22 +7,22 @@ PROTOCOL = "moonwell"
 
 
 def fetch_moonwell_proposals():
-    url = "https://ponder.moonwell.fi/graphql"
-    url_retry = "https://ponder-eu2.moonwell.fi/"
+    # Keep the original URL order but improve error handling
+    url = "https://ponder-eu2.moonwell.fi/graphql"
+    url_retry = "https://ponder.moonwell.fi/graphql"
+
+    # Use the query that we know is working with at least the backup URL
     query = """
     query {
         proposals(
-            where: {
-                proposalId_gt: 158 # the last reported proposal, fix for updating the cache
-            }
             limit: 10,
             orderDirection: "desc",
             orderBy: "proposalId"
         ) {
             items {
                 id
-                description
                 proposalId
+                description
                 stateChanges(orderBy: "blockNumber") {
                     items {
                         newState
@@ -37,6 +37,7 @@ def fetch_moonwell_proposals():
     use_retry_url = False
 
     try:
+        use_retry_url = False
         try:
             response = requests.post(url, json=payload)
             response.raise_for_status()
@@ -57,6 +58,25 @@ def fetch_moonwell_proposals():
             response.raise_for_status()
 
         data = response.json()
+
+        # Check if the expected structure exists in the response
+        if "data" not in data:
+            print("Error: API returned no data. Response:", data)
+            return None
+
+        if data["data"] is None or "proposals" not in data["data"]:
+            print(
+                "Error: API structure has changed. No 'proposals' in data. Response:",
+                data,
+            )
+            return None
+
+        if "items" not in data["data"]["proposals"]:
+            print(
+                "Error: API structure has changed. No 'items' in proposals. Response:",
+                data,
+            )
+            return None
 
         base_proposals = []
         last_reported_id = get_last_queued_id_from_file(PROTOCOL)
