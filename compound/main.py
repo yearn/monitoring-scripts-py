@@ -59,7 +59,9 @@ ADDRESSES_BY_CHAIN = {
 
 def print_stuff(chain_name, token_name, ur):
     if ur > THRESHOLD_UR:
-        message = f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
+        message = (
+            f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
+        )
         disable_notification = True if ur <= THRESHOLD_UR_NOTIFICATION else False
         send_telegram_message(message, PROTOCOL, disable_notification)
 

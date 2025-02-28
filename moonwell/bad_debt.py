@@ -182,7 +182,9 @@ def check_thresholds(metrics):
 
     # Check bad debt ratio
     if bad_debt_ratio > BAD_DEBT_RATIO:
-        alerts.append(f"🚨 High Bad Debt Alert:\n💀 Bad Debt Ratio: {bad_debt_ratio:.2%}\n💰 Bad Debt: ${bad_debt:,.2f}\n📊 TVL: ${tvl:,.2f}")
+        alerts.append(
+            f"🚨 High Bad Debt Alert:\n💀 Bad Debt Ratio: {bad_debt_ratio:.2%}\n💰 Bad Debt: ${bad_debt:,.2f}\n📊 TVL: ${tvl:,.2f}"
+        )
 
     # Check debt/supply ratio
     if debt_supply_ratio > DEBT_SUPPLY_RATIO:

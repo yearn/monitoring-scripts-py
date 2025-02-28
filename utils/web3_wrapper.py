@@ -32,7 +32,9 @@ def retry_with_provider_rotation(func):
                 time.sleep(self.backoff_factor * (2**attempt))
                 self._rotate_provider()
 
-        raise ProviderConnectionError(f"All providers failed. Errors:\n" + "\n".join(f"{url}: {err}" for url, err in errors.items()))
+        raise ProviderConnectionError(
+            "All providers failed. Errors:\n" + "\n".join(f"{url}: {err}" for url, err in errors.items())
+        )
 
     return wrapper
 

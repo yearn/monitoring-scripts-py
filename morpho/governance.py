@@ -158,7 +158,9 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 )
                 write_last_executed_morpho_to_file(vault_address, market, PENDING_CAP_TYPE, pending_cap_timestamp)
             else:
-                print(f"Skipping pending cap update for vault {name}({vault_url}) for market: {market_url} because it was already executed")
+                print(
+                    f"Skipping pending cap update for vault {name}({vault_url}) for market: {market_url} because it was already executed"
+                )
 
         # removable_at check
         removable_at = config[2]  # removable_at value is at index 2 in config struct
@@ -171,7 +173,9 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 )
                 write_last_executed_morpho_to_file(vault_address, market, REMOVABLE_AT_TYPE, removable_at)
             else:
-                print(f"Skipping removable_at update for vault {name}({vault_url}) for market: {market_url} because it was already executed")
+                print(
+                    f"Skipping removable_at update for vault {name}({vault_url}) for market: {market_url} because it was already executed"
+                )
 
 
 def check_pending_role_change(name, morpho_contract, role_type, timestamp, chain):

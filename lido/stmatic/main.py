@@ -64,7 +64,7 @@ def query_swap(balancer_query, balancer_vault, single_swap, fund_management):
     except Exception as e:
         message = ""
         if ASSET_BONDS_EXCEEDED in str(e):
-            message = f"⚠️ Asset bonds exceeded in balancer pool ⚠️ \n"
+            message = "⚠️ Asset bonds exceeded in balancer pool ⚠️ \n"
         else:
             message = f"Error calling query in balancer pool: {e}\n"
 
@@ -99,8 +99,12 @@ def main():
 
     # Initialize contracts
     stmatic = mainnet_client.eth.contract(address=ADDRESSES[Chain.MAINNET]["stmatic"], abi=ABI_STMATIC)
-    balancer_query = polygon_client.eth.contract(address=ADDRESSES[Chain.POLYGON]["balancer_query"], abi=ABI_BALANCER_QUERY)
-    balancer_vault = polygon_client.eth.contract(address=ADDRESSES[Chain.POLYGON]["balancer_vault"], abi=ABI_BALANCER_VAULT)
+    balancer_query = polygon_client.eth.contract(
+        address=ADDRESSES[Chain.POLYGON]["balancer_query"], abi=ABI_BALANCER_QUERY
+    )
+    balancer_vault = polygon_client.eth.contract(
+        address=ADDRESSES[Chain.POLYGON]["balancer_vault"], abi=ABI_BALANCER_VAULT
+    )
 
     validator_rate = int(stmatic.functions.convertStMaticToMatic(10**18).call()[0])
     human_readable_res = validator_rate / 1e18

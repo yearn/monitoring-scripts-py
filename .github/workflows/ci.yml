@@ -19,14 +19,18 @@ jobs:
           python-version: "3.10"
           cache: "pip"
 
-      - name: Install dependencies
+      - name: Install uv
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install uv
+
+      - name: Install dependencies
+        run: |
+          uv pip install .
 
       - name: Run tests
         run: |
-          pytest tests/
+          uv run pytest tests/
 
   lint:
     runs-on: ubuntu-latest
@@ -39,15 +43,19 @@ jobs:
           python-version: "3.10"
           cache: "pip"
 
+      - name: Install uv
+        run: |
+          python pip install --upgrade pip
+          pip install uv
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          uv pip install -e ".[dev]"
 
-      - name: Check imports with isort
+      - name: Check code with ruff
         run: |
-          isort --check .
+          uv run ruff check .
 
-      - name: Check formatting with black
+      - name: Check formatting with ruff
         run: |
-          black --check .
+          uv run ruff format --check .

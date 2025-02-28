@@ -39,7 +39,9 @@ ABI_SILO_LENS = load_abi("silo/abi/SiloLens.json")
 
 def print_stuff(chain_name, token_name, ur):
     if ur > THRESHOLD_UR:
-        message = f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
+        message = (
+            f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
+        )
         disable_notification = ur <= THRESHOLD_UR_NOTIFICATION
         send_telegram_message(message, PROTOCOL, disable_notification)
 

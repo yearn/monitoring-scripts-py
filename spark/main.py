@@ -64,7 +64,9 @@ THRESHOLD_UR_NOTIFICATION = 0.99
 def print_stuff(chain_name, token_name, ur):
     print(f"Chain: {chain_name}, Token: {token_name}, UR: {ur}")
     if ur > THRESHOLD_UR:
-        message = f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
+        message = (
+            f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
+        )
         disable_notification = True
         if ur > THRESHOLD_UR_NOTIFICATION:
             disable_notification = False

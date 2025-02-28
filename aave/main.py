@@ -6,7 +6,7 @@ when thresholds are exceeded.
 """
 
 import json
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
@@ -145,7 +145,9 @@ THRESHOLD_UR_NOTIFICATION = 0.99
 
 def print_stuff(chain_name: str, token_name: str, ur: float) -> None:
     if ur > THRESHOLD_UR:
-        message = f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
+        message = (
+            f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
+        )
         disable_notification = ur <= THRESHOLD_UR_NOTIFICATION
         send_telegram_message(message, PROTOCOL, disable_notification)
 

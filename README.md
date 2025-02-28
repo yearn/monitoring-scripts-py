@@ -34,7 +34,11 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 
 3. **Install dependencies**
    ```bash
-   uv pip install -r requirements.txt
+   # Install all dependencies
+   uv pip install .
+
+   # For development (includes type stubs and linting tools)
+   uv pip install -e ".[dev]"
    ```
 
    > Note: This project uses [uv](https://github.com/astral-sh/uv) for faster dependency installation. If you don't have uv installed, you can install it with `pip install uv` or follow the [installation instructions](https://github.com/astral-sh/uv#installation).
@@ -49,12 +53,12 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 
 Run a specific protocol monitor from the project root:
 ```bash
-python -m <protocol>.main
+python <protocol>.main
 ```
 
 Example:
 ```bash
-python -m aave.main
+python aave.main
 ```
 
 ## Code Style
@@ -62,11 +66,16 @@ python -m aave.main
 Format and lint code with ruff:
 ```bash
 # Format code
-ruff format .
+uv run ruff format .
 
 # Lint code
-ruff check .
+uv run ruff check .
 
 # Fix fixable lint issues
-ruff check --fix .
+uv run ruff check --fix .
+```
+
+Type checking with mypy:
+```bash
+uv run mypy .
 ```

@@ -7,7 +7,7 @@ This module checks Morpho markets for:
 3. Low liquidity
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import requests
 
@@ -351,7 +351,7 @@ def main() -> None:
     Check markets for low liquidity, high allocation and bad debt.
     Send telegram message if data cannot be fetched.
     """
-    print(f"Checking Morpho markets...")
+    print("Checking Morpho markets...")
 
     # Collect all vault addresses from all chains
     vault_addresses = []

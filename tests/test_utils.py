@@ -4,6 +4,8 @@ import os
 import unittest
 from unittest.mock import patch
 
+import requests
+
 from utils.config import Config, ProtocolConfig
 from utils.telegram import TelegramError, send_telegram_message
 
@@ -103,7 +105,7 @@ class TestTelegram(unittest.TestCase):
     @patch("utils.telegram.requests.get")
     def test_send_telegram_message_failure(self, mock_get):
         # Setup mock response for failure
-        mock_get.side_effect = Exception("Connection error")
+        mock_get.side_effect = requests.RequestException("Connection error")
 
         # Test with environment variables
         with patch.dict(
