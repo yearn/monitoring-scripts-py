@@ -34,13 +34,25 @@ def fetch_moonwell_proposals():
     }
     """
     payload = {"query": query}
+    use_retry_url = False
 
     try:
         try:
             response = requests.post(url, json=payload)
             response.raise_for_status()
-        except requests.exceptions.RequestException:
-            print(f"Primary URL failed, trying backup URL: {url_retry}")
+
+            # Check for the specific schema error even when status code is 200
+            data = response.json()
+            if "errors" in data and any(
+                'relation "Proposal" does not exist' in error.get("message", "") for error in data.get("errors", [])
+            ):
+                print(f"Primary URL returned schema error, switching to backup URL: {url_retry}")
+                use_retry_url = True
+                raise requests.exceptions.RequestException("Schema error detected")
+
+        except requests.exceptions.RequestException as e:
+            if not use_retry_url:
+                print(f"Primary URL failed with error: {str(e)}, trying backup URL: {url_retry}")
             response = requests.post(url_retry, json=payload)
             response.raise_for_status()
 
@@ -50,6 +62,10 @@ def fetch_moonwell_proposals():
         last_reported_id = get_last_queued_id_from_file(PROTOCOL)
 
         for proposal in data["data"]["proposals"]["items"]:
+            if "stateChanges" not in proposal or "items" not in proposal["stateChanges"]:
+                print(f"Skipping proposal {proposal.get('proposalId')} - missing stateChanges structure")
+                continue
+
             state_changes = proposal["stateChanges"]["items"]
             for state_change in reversed(state_changes):
                 if state_change["chainId"] == 8453:
