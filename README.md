@@ -53,12 +53,12 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 
 Run a specific protocol monitor from the project root:
 ```bash
-python <protocol>.main
+python <protocol>/main.py
 ```
 
 Example:
 ```bash
-python aave.main
+python aave/main.py
 ```
 
 ## Code Style

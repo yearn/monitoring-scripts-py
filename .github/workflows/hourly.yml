@@ -77,39 +77,39 @@ jobs:
         run: echo "hash=${{ hashFiles('cache-id.txt') }}" >> $GITHUB_OUTPUT
 
       - name: Run Aave script
-        run: python aave.main
+        run: python aave/main.py
       - name: Run Aave Proposals script
-        run: python aave.proposals
+        run: python aave/proposals.py
       - name: Run Spark script
-        run: python spark.main
+        run: python spark/main.py
       - name: Run Compound script
-        run: python compound.main
+        run: python compound/main.py
       - name: Run Compound Proposals script
-        run: python compound.proposals
+        run: python compound/proposals.py
       - name: Run Lido Matic script
-        run: python lido.stmatic.main
+        run: python lido/stmatic.main
       - name: Run Lido Ethereum script
-        run: python lido.steth.main
+        run: python lido/steth.main
       # - name: Run Stargate script
-      #   run: python stargate.main
+      #   run: python stargate/main.py
       - name: Run Silo Utilization script
-        run: python silo.ur_sniff
+        run: python silo/ur_sniff.py
       # - name: Run Silo Bad Debt script
-      #   run: python silo.main
+      #   run: python silo/main.py
       - name: Run Pendle price script
-        run: python pendle.main
+        run: python pendle/main.py
       - name: Run LRT Peg Checker Balancer
-        run: python lrt-pegs.balancer.main
+        run: python lrt-pegs/balancer/main.py
       - name: Run Morpho Governance Monitoring script
-        run: python morpho.governance
+        run: python morpho/governance.py
       - name: Run Morpho Bad Debt script
-        run: python morpho.markets
+        run: python morpho/markets.py
       - name: Run Moonwell Bad Debt script
-        run: python moonwell.bad_debt
+        run: python moonwell/bad_debt.py
       - name: Run Moonwell Proposals script
-        run: python moonwell.proposals
+        run: python moonwell/proposals.py
       # - name: Run USD0 Peg Price Checker
-      #   run: python usd0.price
+      #   run: python usd0/price.py
 
       # Check final hash
       - name: Check final hash

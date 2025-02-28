@@ -67,7 +67,7 @@ jobs:
         run: echo "hash=${{ hashFiles('nonces.txt') }}" >> $GITHUB_OUTPUT
 
       - name: Run Safe script
-        run: python safe.main
+        run: python safe/main.py
 
       # Check final hash
       - name: Check final hash

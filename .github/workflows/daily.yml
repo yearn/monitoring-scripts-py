@@ -29,4 +29,4 @@ jobs:
           uv pip install .
 
       # - name: Run USD0 script
-      #   run: python usd0.main
+      #   run: python usd0/main.py
