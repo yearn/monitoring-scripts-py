@@ -56,6 +56,18 @@ jobs:
         run: |
           uv run ruff check .
 
-      - name: Check formatting with ruff
+      - name: Show formatting diff with ruff
+        run: |
+          uv run ruff format --diff moonwell/bad_debt.py moonwell/proposals.py
+
+      - name: Fix formatting with ruff
+        run: |
+          uv run ruff format moonwell/bad_debt.py moonwell/proposals.py
+
+      - name: Verify formatting is fixed
         run: |
           uv run ruff format --check .
+
+      - name: Show git diff after formatting
+        run: |
+          git diff
