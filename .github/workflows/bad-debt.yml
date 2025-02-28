@@ -24,7 +24,7 @@ jobs:
           pip install uv
       - name: Install dependencies
         run: |
-          uv pip install .
+          uv pip install --system .
 
       ### Aave Bad Debt Triggers
       - name: Run Aave V3 Mainnet

@@ -59,7 +59,7 @@ jobs:
           pip install uv
       - name: Install dependencies
         run: |
-          uv pip install .
+          uv pip install --system .
 
       # restore file from cache
       - name: Get cache file
