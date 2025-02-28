@@ -28,14 +28,16 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 
 2. **Set up virtual environment**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
+   uv pip install -r requirements.txt
    ```
+
+   > Note: This project uses [uv](https://github.com/astral-sh/uv) for faster dependency installation. If you don't have uv installed, you can install it with `pip install uv` or follow the [installation instructions](https://github.com/astral-sh/uv#installation).
 
 4. **Environment setup**
    ```bash
@@ -57,12 +59,14 @@ python -m aave.main
 
 ## Code Style
 
-Format code with black:
+Format and lint code with ruff:
 ```bash
-black .
-```
+# Format code
+ruff format .
 
-Sort imports with isort:
-```bash
-isort .
+# Lint code
+ruff check .
+
+# Fix fixable lint issues
+ruff check --fix .
 ```

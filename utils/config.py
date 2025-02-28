@@ -7,7 +7,7 @@ interface for accessing environment variables and other configuration values.
 
 import os
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -47,9 +47,7 @@ class Config:
         try:
             return int(value)
         except ValueError:
-            print(
-                f"Warning: Invalid integer value for {key}: {value}. Using default {default}"
-            )
+            print(f"Warning: Invalid integer value for {key}: {value}. Using default {default}")
             return default
 
     @staticmethod
@@ -61,9 +59,7 @@ class Config:
         try:
             return float(value)
         except ValueError:
-            print(
-                f"Warning: Invalid float value for {key}: {value}. Using default {default}"
-            )
+            print(f"Warning: Invalid float value for {key}: {value}. Using default {default}")
             return default
 
     @staticmethod
@@ -79,15 +75,9 @@ class Config:
         """Get configuration for a specific protocol."""
         return ProtocolConfig(
             name=protocol,
-            alert_threshold=Config.get_env_float(
-                f"{protocol.upper()}_ALERT_THRESHOLD", 0.95
-            ),
-            critical_threshold=Config.get_env_float(
-                f"{protocol.upper()}_CRITICAL_THRESHOLD", 0.98
-            ),
-            enable_notifications=Config.get_env_bool(
-                f"{protocol.upper()}_ENABLE_NOTIFICATIONS", True
-            ),
+            alert_threshold=Config.get_env_float(f"{protocol.upper()}_ALERT_THRESHOLD", 0.95),
+            critical_threshold=Config.get_env_float(f"{protocol.upper()}_CRITICAL_THRESHOLD", 0.98),
+            enable_notifications=Config.get_env_bool(f"{protocol.upper()}_ENABLE_NOTIFICATIONS", True),
         )
 
     @classmethod

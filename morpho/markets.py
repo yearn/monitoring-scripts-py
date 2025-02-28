@@ -174,9 +174,7 @@ MAX_RISK_THRESHOLDS = {
 }
 
 
-def get_market_allocation_threshold(
-    market_risk_level: int, vault_risk_level: int
-) -> float:
+def get_market_allocation_threshold(market_risk_level: int, vault_risk_level: int) -> float:
     """
     Get allocation threshold based on market and vault risk levels.
     For higher vault risk levels, thresholds shift up (become more permissive).
@@ -235,9 +233,7 @@ def bad_debt_alert(markets: List[Dict[str, Any]], vault_name: str = "") -> None:
         # Alert if bad debt ratio exceeds threshold
         if bad_debt / borrowed_tvl > BAD_DEBT_RATIO:
             market_url = get_market_url(market)
-            market_name = (
-                f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
-            )
+            market_name = f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
 
             message = (
                 f"🚨 Bad debt detected for Morpho {vault_name}\n"
@@ -297,16 +293,12 @@ def check_high_allocation(vault_data):
         else:
             market_risk_level = 5
 
-        allocation_threshold = get_market_allocation_threshold(
-            market_risk_level, risk_level
-        )
+        allocation_threshold = get_market_allocation_threshold(market_risk_level, risk_level)
         risk_multiplier = market_risk_level
 
         if allocation_ratio > allocation_threshold:
             market_url = get_market_url(market)
-            market_name = (
-                f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
-            )
+            market_name = f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
             message = (
                 f"🔺 High allocation detected in [{vault_name}]({vault_url})\n"
                 f"💹 Market [{market_name}]({market_url})\n"
@@ -321,9 +313,7 @@ def check_high_allocation(vault_data):
         total_risk_level += risk_multiplier * allocation_ratio
 
     # print total risk level and vault name
-    print(
-        f"Total risk level: {total_risk_level:.1%}, vault: {vault_name} on {chain.name}"
-    )
+    print(f"Total risk level: {total_risk_level:.1%}, vault: {vault_name} on {chain.name}")
     if total_risk_level > MAX_RISK_THRESHOLDS[risk_level]:
         message = (
             f"🔺 High allocation detected in [{vault_name}]({vault_url})\n"
@@ -423,19 +413,13 @@ def main() -> None:
         response = requests.post(API_URL, json=json_data, timeout=30)
         response.raise_for_status()
     except requests.RequestException as e:
-        send_telegram_message(
-            f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨", PROTOCOL
-        )
+        send_telegram_message(f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨", PROTOCOL)
         return
 
     data = response.json()
     if "errors" in data:
-        error_msg = (
-            data["errors"][0]["message"] if data["errors"] else "Unknown GraphQL error"
-        )
-        send_telegram_message(
-            f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨", PROTOCOL
-        )
+        error_msg = data["errors"][0]["message"] if data["errors"] else "Unknown GraphQL error"
+        send_telegram_message(f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨", PROTOCOL)
         return
 
     vaults_data = data.get("data", {}).get("vaults", {}).get("items", [])
@@ -453,13 +437,7 @@ def main() -> None:
         # Check bad debt for each market in the vault
         vault_markets = []
         for allocation in vault_data["state"]["allocation"]:
-            if (
-                allocation["enabled"]
-                and allocation.get("market", {})
-                .get("state", {})
-                .get("supplyAssetsUsd", 0)
-                > 0
-            ):
+            if allocation["enabled"] and allocation.get("market", {}).get("state", {}).get("supplyAssetsUsd", 0) > 0:
                 market = allocation["market"]
                 if market["collateralAsset"] is not None:
                     # market without collateral asset is idle asset

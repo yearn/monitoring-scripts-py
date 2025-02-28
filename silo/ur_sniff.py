@@ -39,12 +39,7 @@ ABI_SILO_LENS = load_abi("silo/abi/SiloLens.json")
 
 def print_stuff(chain_name, token_name, ur):
     if ur > THRESHOLD_UR:
-        message = (
-            "🚨 **BEEP BOP** 🚨\n"
-            f"💎 Market asset: {token_name}\n"
-            f"📊 Utilization rate: {ur:.2%}\n"
-            f"🌐 Chain: {chain_name}"
-        )
+        message = f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
         disable_notification = ur <= THRESHOLD_UR_NOTIFICATION
         send_telegram_message(message, PROTOCOL, disable_notification)
 
@@ -56,15 +51,11 @@ def process_assets(chain: Chain):
 
     with client.batch_requests() as batch:
         for silo_name, silo_address in chain_data["silos"]:
-            batch.add(
-                silo_lens.functions.getUtilization(silo_address, chain_data["usdc_e"])
-            )
+            batch.add(silo_lens.functions.getUtilization(silo_address, chain_data["usdc_e"]))
 
         responses = client.execute_batch(batch)
         if len(responses) != len(chain_data["silos"]):
-            raise ValueError(
-                f"Expected {len(chain_data['silos'])} responses from batch, got: {len(responses)}"
-            )
+            raise ValueError(f"Expected {len(chain_data['silos'])} responses from batch, got: {len(responses)}")
 
         for (silo_name, _), ur in zip(chain_data["silos"], responses):
             human_readable_ur = ur / 1e18

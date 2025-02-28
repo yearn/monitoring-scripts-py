@@ -19,9 +19,7 @@ def run_query(query, variables):
     if response.status_code == 200:
         return response.json()
     else:
-        raise Exception(
-            f"Query failed with status code {response.status_code}: {response.text}"
-        )
+        raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
 
 
 def fetch_queued_proposals():

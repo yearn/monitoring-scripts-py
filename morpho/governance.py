@@ -147,66 +147,42 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 # skip if the pending cap is already in the past
                 continue
 
-            last_executed_morpho = get_last_executed_morpho_from_file(
-                vault_address, market, PENDING_CAP_TYPE
-            )
+            last_executed_morpho = get_last_executed_morpho_from_file(vault_address, market, PENDING_CAP_TYPE)
 
             if pending_cap_timestamp > last_executed_morpho:
-                difference_in_percentage = (
-                    (pending_cap_value - current_cap) / current_cap
-                ) * 100
-                time = datetime.fromtimestamp(pending_cap_timestamp).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+                difference_in_percentage = ((pending_cap_value - current_cap) / current_cap) * 100
+                time = datetime.fromtimestamp(pending_cap_timestamp).strftime("%Y-%m-%d %H:%M:%S")
                 send_telegram_message(
                     f"Updating cap to new cap {pending_cap_value}, current cap {current_cap}, difference: {difference_in_percentage:.2f}%. \nFor vault [{name}]({vault_url}) for market: [{market}]({market_url}). Queued for {time}",
                     PROTOCOL,
                 )
-                write_last_executed_morpho_to_file(
-                    vault_address, market, PENDING_CAP_TYPE, pending_cap_timestamp
-                )
+                write_last_executed_morpho_to_file(vault_address, market, PENDING_CAP_TYPE, pending_cap_timestamp)
             else:
-                print(
-                    f"Skipping pending cap update for vault {name}({vault_url}) for market: {market_url} because it was already executed"
-                )
+                print(f"Skipping pending cap update for vault {name}({vault_url}) for market: {market_url} because it was already executed")
 
         # removable_at check
         removable_at = config[2]  # removable_at value is at index 2 in config struct
         if removable_at > 0:
-            if removable_at > get_last_executed_morpho_from_file(
-                vault_address, market, REMOVABLE_AT_TYPE
-            ):
-                time = datetime.fromtimestamp(removable_at).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+            if removable_at > get_last_executed_morpho_from_file(vault_address, market, REMOVABLE_AT_TYPE):
+                time = datetime.fromtimestamp(removable_at).strftime("%Y-%m-%d %H:%M:%S")
                 send_telegram_message(
                     f"Vault [{name}]({vault_url}) queued to remove market: [{market}]({market_url}) at {time}",
                     PROTOCOL,
                 )
-                write_last_executed_morpho_to_file(
-                    vault_address, market, REMOVABLE_AT_TYPE, removable_at
-                )
+                write_last_executed_morpho_to_file(vault_address, market, REMOVABLE_AT_TYPE, removable_at)
             else:
-                print(
-                    f"Skipping removable_at update for vault {name}({vault_url}) for market: {market_url} because it was already executed"
-                )
+                print(f"Skipping removable_at update for vault {name}({vault_url}) for market: {market_url} because it was already executed")
 
 
 def check_pending_role_change(name, morpho_contract, role_type, timestamp, chain):
-    market_id = (
-        ""  # use empty string for all markets because the value is used per vault
-    )
-    if timestamp > get_last_executed_morpho_from_file(
-        morpho_contract.address, market_id, role_type
-    ):
+    market_id = ""  # use empty string for all markets because the value is used per vault
+    if timestamp > get_last_executed_morpho_from_file(morpho_contract.address, market_id, role_type):
         vault_url = get_vault_url_by_name(name, chain)
         send_telegram_message(
             f"{role_type.capitalize()} is changing for vault [{name}]({vault_url})",
             PROTOCOL,
         )
-        write_last_executed_morpho_to_file(
-            morpho_contract.address, market_id, role_type, timestamp
-        )
+        write_last_executed_morpho_to_file(morpho_contract.address, market_id, role_type, timestamp)
 
 
 def check_timelock_and_guardian(name, morpho_contract, chain, client):

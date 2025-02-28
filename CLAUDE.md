@@ -1,19 +1,19 @@
 # CLAUDE.md - Monitoring Scripts Python Codebase
 
 ## Commands
-- Install dependencies: `pip install -r requirements.txt`
+- Create virtual environment: `uv venv`
+- Activate virtual environment: `source .venv/bin/activate`
+- Install dependencies: `uv pip install -r requirements.txt`
 - Run script: `python <protocol>/main.py`
-- Format code: `black .`
-- Sort imports: `isort .`
-- Lint: `pycodestyle .`
+- Format and lint code: `ruff format . && ruff check .`
 - Type checking: `mypy .`
 
 ## Code Style Guidelines
-- **Imports**: Use isort for organizing imports (stdlib, third-party, local)
-- **Formatting**: Use black with default settings (line length 88)
+- **Imports**: Use ruff for organizing imports (stdlib, third-party, local)
+- **Formatting**: Use ruff format with line length 150
 - **Typing**: Use type hints for all functions (parameters and return values)
 - **Docstrings**: Google style docstrings for all functions and classes
-- **Naming**: 
+- **Naming**:
   - Snake case for functions/variables (`process_assets`)
   - UPPER_CASE for constants (`THRESHOLD_UR`)
   - PascalCase for classes (`ChainManager`)

@@ -64,12 +64,7 @@ THRESHOLD_UR_NOTIFICATION = 0.99
 def print_stuff(chain_name, token_name, ur):
     print(f"Chain: {chain_name}, Token: {token_name}, UR: {ur}")
     if ur > THRESHOLD_UR:
-        message = (
-            "🚨 **BEEP BOP** 🚨\n"
-            f"💎 Market asset: {token_name}\n"
-            f"📊 Utilization rate: {ur:.2%}\n"
-            f"🌐 Chain: {chain_name}"
-        )
+        message = f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
         disable_notification = True
         if ur > THRESHOLD_UR_NOTIFICATION:
             disable_notification = False
@@ -85,9 +80,7 @@ def process_assets(chain, addresses):
     with client.batch_requests() as batch:
         for atoken_address, underlying_token_address in addresses:
             atoken = client.eth.contract(address=atoken_address, abi=abi_atoken)
-            underlying_token = client.eth.contract(
-                address=underlying_token_address, abi=abi_atoken
-            )
+            underlying_token = client.eth.contract(address=underlying_token_address, abi=abi_atoken)
 
             # Add all calls to the batch
             batch.add(atoken.functions.totalSupply())
@@ -98,16 +91,12 @@ def process_assets(chain, addresses):
         responses = batch.execute()
         expected_responses = len(addresses) * 3
         if len(responses) != expected_responses:
-            raise ValueError(
-                f"Expected {expected_responses} responses from batch, got: {len(responses)}"
-            )
+            raise ValueError(f"Expected {expected_responses} responses from batch, got: {len(responses)}")
 
     # Process results
     expected_responses = len(addresses) * 3
     if len(responses) != expected_responses:
-        raise ValueError(
-            f"Expected {expected_responses} responses, got: {len(responses)}"
-        )
+        raise ValueError(f"Expected {expected_responses} responses, got: {len(responses)}")
 
     for i in range(0, len(responses), 3):
         ts = responses[i]  # totalSupply

@@ -145,12 +145,7 @@ THRESHOLD_UR_NOTIFICATION = 0.99
 
 def print_stuff(chain_name: str, token_name: str, ur: float) -> None:
     if ur > THRESHOLD_UR:
-        message = (
-            "🚨 **BEEP BOP** 🚨\n"
-            f"💎 Market asset: {token_name}\n"
-            f"📊 Utilization rate: {ur:.2%}\n"
-            f"🌐 Chain: {chain_name}"
-        )
+        message = f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
         disable_notification = ur <= THRESHOLD_UR_NOTIFICATION
         send_telegram_message(message, PROTOCOL, disable_notification)
 
@@ -164,9 +159,7 @@ def process_assets(chain: Chain) -> None:
     with client.batch_requests() as batch:
         for atoken_address, underlying_token_address, token_symbol in addresses:
             atoken = client.eth.contract(address=atoken_address, abi=ABI_ATOKEN)
-            underlying_token = client.eth.contract(
-                address=underlying_token_address, abi=ABI_ATOKEN
-            )
+            underlying_token = client.eth.contract(address=underlying_token_address, abi=ABI_ATOKEN)
             contracts.append((atoken, underlying_token))
 
             batch.add(atoken.functions.totalSupply())
@@ -176,9 +169,7 @@ def process_assets(chain: Chain) -> None:
         num_pairs = len(addresses)
         expected_responses = num_pairs * 2  # Now only 2 calls per token pair
         if len(responses) != expected_responses:
-            raise ValueError(
-                f"Expected {expected_responses} responses from batch, got: {len(responses)}"
-            )
+            raise ValueError(f"Expected {expected_responses} responses from batch, got: {len(responses)}")
 
     # Process results
     for i, (_, _, token_symbol) in enumerate(addresses):

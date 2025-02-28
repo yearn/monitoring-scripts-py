@@ -23,9 +23,7 @@ class TestConfig(unittest.TestCase):
             self.assertEqual(Config.get_env_int("TEST_INVALID", 10), 10)
 
     def test_get_env_float(self):
-        with patch.dict(
-            os.environ, {"TEST_FLOAT": "3.14", "TEST_INVALID": "not_a_float"}
-        ):
+        with patch.dict(os.environ, {"TEST_FLOAT": "3.14", "TEST_INVALID": "not_a_float"}):
             self.assertAlmostEqual(Config.get_env_float("TEST_FLOAT", 0.0), 3.14)
             self.assertAlmostEqual(Config.get_env_float("NONEXISTENT_VAR", 2.71), 2.71)
             self.assertAlmostEqual(Config.get_env_float("TEST_INVALID", 2.71), 2.71)
@@ -97,9 +95,7 @@ class TestTelegram(unittest.TestCase):
             # Should not raise exceptions but print a warning
             with patch("builtins.print") as mock_print:
                 send_telegram_message("Test message", "test")
-                mock_print.assert_any_call(
-                    "Warning: Missing Telegram credentials for test"
-                )
+                mock_print.assert_any_call("Warning: Missing Telegram credentials for test")
 
             # Verify no request was made
             mock_get.assert_not_called()

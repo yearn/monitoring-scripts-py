@@ -78,15 +78,13 @@ def main():
         for amount, curve_rate in zip(amounts, curve_rates):
             try:
                 validator_rate_scaled = validator_rate_unscaled * amount
-                if curve_rate is not None and check_peg(
-                    validator_rate_scaled, curve_rate
-                ):
+                if curve_rate is not None and check_peg(validator_rate_scaled, curve_rate):
                     human_readable_amount = amount / 1e18
                     human_readable_result = curve_rate / 1e18
                     message += f"📊 Swap result for amount {human_readable_amount:.5f}: {human_readable_result:.5f}"
                     send_telegram_message(message, PROTOCOL)
             except Exception as e:
-                error_message = f"Error processing curve pool rate for amount {amount/1e18:.2f}: {e}"
+                error_message = f"Error processing curve pool rate for amount {amount / 1e18:.2f}: {e}"
                 send_telegram_message(error_message, PROTOCOL)
 
 

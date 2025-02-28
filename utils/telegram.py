@@ -16,9 +16,7 @@ class TelegramError(Exception):
     pass
 
 
-def send_telegram_message(
-    message: str, protocol: str, disable_notification: bool = False
-) -> None:
+def send_telegram_message(message: str, protocol: str, disable_notification: bool = False) -> None:
     """
     Send a message to a Telegram chat using a bot.
 
@@ -62,6 +60,4 @@ def send_telegram_message(
         raise TelegramError(f"Failed to send telegram message: {e}")
 
     if response.status_code != 200:
-        raise TelegramError(
-            f"Failed to send telegram message: {response.status_code} - {response.text}"
-        )
+        raise TelegramError(f"Failed to send telegram message: {response.status_code} - {response.text}")

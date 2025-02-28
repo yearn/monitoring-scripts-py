@@ -28,26 +28,19 @@ def check_peg_usd0():
     client = ChainManager.get_client(Chain.MAINNET)
 
     # Initialize curve pool contract
-    curve_pool = client.eth.contract(
-        address="0x14100f81e33C33Ecc7CDac70181Fb45B6E78569F", abi=abi_curve_pool
-    )
+    curve_pool = client.eth.contract(address="0x14100f81e33C33Ecc7CDac70181Fb45B6E78569F", abi=abi_curve_pool)
 
     # Create batch request
     batch = client.batch_requests()
 
     # Add all get_dy calls to the batch
-    calls = [
-        (amount, batch.add(curve_pool.functions.get_dy(0, 1, int(amount))))
-        for amount in amounts
-    ]
+    calls = [(amount, batch.add(curve_pool.functions.get_dy(0, 1, int(amount)))) for amount in amounts]
 
     try:
         # Execute all calls at once
         responses = batch.execute()
         if len(responses) != len(amounts):
-            raise ValueError(
-                f"Expected {len(amounts)} responses from batch, got: {len(responses)}"
-            )
+            raise ValueError(f"Expected {len(amounts)} responses from batch, got: {len(responses)}")
 
         # Process results
         message = ""
