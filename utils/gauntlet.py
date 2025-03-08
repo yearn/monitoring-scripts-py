@@ -47,9 +47,7 @@ def get_markets_for_protocol(protocol, max_retries=3):
 
         except requests.RequestException as e:
             if attempt == max_retries - 1:  # Last attempt
-                print(
-                    f"🚨 Error fetching Gauntlet metrics after {max_retries} attempts: {str(e)}"
-                )
+                print(f"🚨 Error fetching Gauntlet metrics after {max_retries} attempts: {str(e)}")
                 return []
             print(f"Attempt {attempt + 1} failed, retrying...")
             continue
@@ -62,9 +60,7 @@ def get_markets_for_protocol(protocol, max_retries=3):
 
 
 def get_charts_for_protocol_market(protocol, market, max_retries=3):
-    base_url = (
-        "https://dashboards.gauntlet.xyz/_next/data/{}/protocols/{}/markets/{}.json"
-    )
+    base_url = "https://dashboards.gauntlet.xyz/_next/data/{}/protocols/{}/markets/{}.json"
 
     for attempt in range(max_retries):
         try:
@@ -86,9 +82,7 @@ def get_charts_for_protocol_market(protocol, market, max_retries=3):
 
         except requests.RequestException as e:
             if attempt == max_retries - 1:  # Last attempt
-                print(
-                    f"🚨 Error fetching Gauntlet charts after {max_retries} attempts: {str(e)}"
-                )
+                print(f"🚨 Error fetching Gauntlet charts after {max_retries} attempts: {str(e)}")
                 return []
             print(f"Attempt {attempt + 1} failed, retrying...")
             continue
@@ -110,9 +104,9 @@ def get_timestamp_before(hours: int):
 def format_usd(number: float) -> str:
     """Format number to readable USD string with K, M, B suffixes"""
     if number >= 1_000_000_000:
-        return f"${number/1_000_000_000:.2f}B"
+        return f"${number / 1_000_000_000:.2f}B"
     if number >= 1_000_000:
-        return f"${number/1_000_000:.2f}M"
+        return f"${number / 1_000_000:.2f}M"
     if number >= 1_000:
-        return f"${number/1_000:.2f}K"
+        return f"${number / 1_000:.2f}K"
     return f"${number:.2f}"

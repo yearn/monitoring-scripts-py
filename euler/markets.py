@@ -106,16 +106,12 @@ def fetch_metric_from_gauntlet(max_retries=3):
             market_data = market["data"]
             last_updated = market_data["borrow"]["lastUpdated"]
             if last_updated < get_timestamp_before(hours=6):
-                alerts.append(
-                    f"🚨 Market is not updated for {market['label']} - last updated {last_updated}"
-                )
+                alerts.append(f"🚨 Market is not updated for {market['label']} - last updated {last_updated}")
                 break
 
             borrow_amount = market_data["borrow"]["amount"]
             supply_amount = market_data["supply"]["amount"]
-            debt_supply_ratio = (
-                borrow_amount / supply_amount if supply_amount > 0 else 0
-            )
+            debt_supply_ratio = borrow_amount / supply_amount if supply_amount > 0 else 0
             if debt_supply_ratio > DEBT_SUPPLY_RATIO:
                 alerts.append(
                     f"🚨 Euler Market: {market['label']} is at risk:\n"
@@ -202,12 +198,8 @@ def fetch_borrow_metrics_from_gauntlet(market_key, vault_risk_level):
                     continue
 
                 # Use dictionary lookup instead of list indexing
-                asset_risk_tier = SUPPLY_ASSETS_DICT.get(
-                    asset, 5
-                )  # Default to tier 5 if asset not found
-                allocation_threshold = get_market_allocation_threshold(
-                    asset_risk_tier, vault_risk_level
-                )
+                asset_risk_tier = SUPPLY_ASSETS_DICT.get(asset, 5)  # Default to tier 5 if asset not found
+                allocation_threshold = get_market_allocation_threshold(asset_risk_tier, vault_risk_level)
 
                 # Calculate allocation ratio
                 allocation_ratio = supply / total_supply if total_supply > 0 else 0

@@ -29,9 +29,7 @@ def fetch_metric_from_gauntlet(max_retries=3):
 
             borrow_amount = market_data["borrow"]["amount"]
             supply_amount = market_data["supply"]["amount"]
-            debt_supply_ratio = (
-                borrow_amount / supply_amount if supply_amount > 0 else 0
-            )
+            debt_supply_ratio = borrow_amount / supply_amount if supply_amount > 0 else 0
             if debt_supply_ratio > DEBT_SUPPLY_RATIO:
                 alerts.append(
                     f"🚨 High Debt/Supply Ratio Alert:\n"
