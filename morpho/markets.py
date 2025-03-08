@@ -1,8 +1,20 @@
+"""
+Morpho markets monitoring script.
+
+This module checks Morpho markets for:
+1. Bad debt
+2. High allocation levels
+3. Low liquidity
+"""
+
+from typing import Any, Dict, List
+
 import requests
 
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 
+# Configuration constants
 API_URL = "https://blue-api.morpho.org/graphql"
 MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
@@ -24,6 +36,7 @@ VAULTS_BY_CHAIN = {
         ["Gauntlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458", 3],
         ["Gauntlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2", 3],
         ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658", 4],
+        ["Gauntlet LRT Core", "0x7Db8c75A903d66D669b2002870975cc5aA842b6D", 4],
         ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D", 5],
     ],
     Chain.BASE: [
@@ -169,48 +182,74 @@ MAX_RISK_THRESHOLDS = {
 }
 
 
-def get_market_allocation_threshold(market_risk_level, vault_risk_level):
+def get_market_allocation_threshold(market_risk_level: int, vault_risk_level: int) -> float:
     """
     Get allocation threshold based on market and vault risk levels.
     For higher vault risk levels, thresholds shift up (become more permissive).
     For example, if vault risk level is 2, then market risk level 1 is 0.80, market risk level 2 is 0.30, etc.
+
+    Args:
+        market_risk_level: Risk level of the market (1-5)
+        vault_risk_level: Risk level of the vault (1-5)
+
+    Returns:
+        Allocation threshold as a decimal (0-1)
     """
     # Shift market risk level down based on vault risk level
     adjusted_risk = max(1, market_risk_level - (vault_risk_level - 1))
     return ALLOCATION_TIERS[adjusted_risk]
 
 
-def get_chain_name(chain: Chain):
+def get_chain_name(chain: Chain) -> str:
+    """Convert chain to name used in Morpho URLs."""
     if chain == Chain.MAINNET:
         return "ethereum"
     else:
         return chain.name.lower()
 
 
-def get_market_url(market):
+def get_market_url(market: Dict[str, Any]) -> str:
+    """Generate URL for a Morpho market."""
     chain_id = market["collateralAsset"]["chain"]["id"]
     chain = Chain.from_chain_id(chain_id)
     return f"{MORPHO_URL}/{get_chain_name(chain)}/market/{market['uniqueKey']}"
 
 
-def get_vault_url(vault_data):
+def get_vault_url(vault_data: Dict[str, Any]) -> str:
+    """Generate URL for a Morpho vault."""
     chain_id = vault_data["chain"]["id"]
     chain = Chain.from_chain_id(chain_id)
     return f"{MORPHO_URL}/{get_chain_name(chain)}/vault/{vault_data['address']}"
 
 
-def bad_debt_alert(markets, vault_name=""):
+def bad_debt_alert(markets: List[Dict[str, Any]], vault_name: str = "") -> None:
     """
     Send telegram message if bad debt is detected in any market.
+
+    Args:
+        markets: List of market data
+        vault_name: Name of the vault (for alert message)
     """
     for market in markets:
         bad_debt = market["badDebt"]["usd"]
         borrowed_tvl = market["state"]["borrowAssetsUsd"]
+
+        # Skip markets with no borrows
         if borrowed_tvl == 0:
             continue
+
+        # Alert if bad debt ratio exceeds threshold
         if bad_debt / borrowed_tvl > BAD_DEBT_RATIO:
             market_url = get_market_url(market)
-            message = f"Bad debt for Morpho {vault_name} - [{market['uniqueKey']}]({market_url}) is {market['badDebt']['usd']} USD\n"
+            market_name = f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
+
+            message = (
+                f"🚨 Bad debt detected for Morpho {vault_name}\n"
+                f"💹 Market: [{market_name}]({market_url})\n"
+                f"💸 Bad debt: ${bad_debt:,.2f} USD\n"
+                f"📊 Bad debt ratio: {(bad_debt / borrowed_tvl):.2%}\n"
+            )
+
             send_telegram_message(message, PROTOCOL)
 
 
@@ -262,16 +301,12 @@ def check_high_allocation(vault_data):
         else:
             market_risk_level = 5
 
-        allocation_threshold = get_market_allocation_threshold(
-            market_risk_level, risk_level
-        )
+        allocation_threshold = get_market_allocation_threshold(market_risk_level, risk_level)
         risk_multiplier = market_risk_level
 
         if allocation_ratio > allocation_threshold:
             market_url = get_market_url(market)
-            market_name = (
-                f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
-            )
+            market_name = f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
             message = (
                 f"🔺 High allocation detected in [{vault_name}]({vault_url})\n"
                 f"💹 Market [{market_name}]({market_url})\n"
@@ -319,11 +354,13 @@ def check_low_liquidity(vault_data):
         send_telegram_message(message, PROTOCOL)
 
 
-def main():
+def main() -> None:
     """
     Check markets for low liquidity, high allocation and bad debt.
     Send telegram message if data cannot be fetched.
     """
+    print("Checking Morpho markets...")
+
     # Collect all vault addresses from all chains
     vault_addresses = []
     for chain, vaults in VAULTS_BY_CHAIN.items():
@@ -380,15 +417,20 @@ def main():
 
     json_data = {"query": query, "variables": {"addresses": vault_addresses}}
 
-    response = requests.post(API_URL, json=json_data)
-
-    if response.status_code != 200:
-        send_telegram_message(
-            "🚨 Problem with fetching data for Morpho markets 🚨", PROTOCOL
-        )
+    try:
+        response = requests.post(API_URL, json=json_data, timeout=30)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        send_telegram_message(f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨", PROTOCOL)
         return
 
-    vaults_data = response.json().get("data", {}).get("vaults", {}).get("items", [])
+    data = response.json()
+    if "errors" in data:
+        error_msg = data["errors"][0]["message"] if data["errors"] else "Unknown GraphQL error"
+        send_telegram_message(f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨", PROTOCOL)
+        return
+
+    vaults_data = data.get("data", {}).get("vaults", {}).get("items", [])
     if len(vaults_data) == 0:
         send_telegram_message("🚨 No vaults data found 🚨", PROTOCOL)
         return
@@ -403,13 +445,7 @@ def main():
         # Check bad debt for each market in the vault
         vault_markets = []
         for allocation in vault_data["state"]["allocation"]:
-            if (
-                allocation["enabled"]
-                and allocation.get("market", {})
-                .get("state", {})
-                .get("supplyAssetsUsd", 0)
-                > 0
-            ):
+            if allocation["enabled"] and allocation.get("market", {}).get("state", {}).get("supplyAssetsUsd", 0) > 0:
                 market = allocation["market"]
                 if market["collateralAsset"] is not None:
                     # market without collateral asset is idle asset

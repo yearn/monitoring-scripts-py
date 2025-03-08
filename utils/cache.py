@@ -30,15 +30,11 @@ def write_last_executed_nonce_to_file(safe_address, nonce):
 
 
 def get_last_executed_morpho_from_file(vault_address, market_id, value_type):
-    return get_last_value_for_key_from_file(
-        morpho_filename, morpho_key(vault_address, market_id, value_type)
-    )
+    return get_last_value_for_key_from_file(morpho_filename, morpho_key(vault_address, market_id, value_type))
 
 
 def write_last_executed_morpho_to_file(vault_address, market_id, value_type, value):
-    write_last_value_to_file(
-        morpho_filename, morpho_key(vault_address, market_id, value_type), value
-    )
+    write_last_value_to_file(morpho_filename, morpho_key(vault_address, market_id, value_type), value)
 
 
 def morpho_key(vault_address, market_id, value_type):

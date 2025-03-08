@@ -4,8 +4,10 @@ import requests
 from dotenv import load_dotenv
 
 from safe.specific import handle_pendle
-from utils.cache import (get_last_executed_nonce_from_file,
-                         write_last_executed_nonce_to_file)
+from utils.cache import (
+    get_last_executed_nonce_from_file,
+    write_last_executed_nonce_to_file,
+)
 from utils.telegram import send_telegram_message
 
 load_dotenv()
@@ -61,9 +63,7 @@ def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
 
 
 def get_last_executed_nonce(safe_address, network_name):
-    executed_txs = get_safe_transactions(
-        safe_address, network_name, executed=True, limit=1
-    )
+    executed_txs = get_safe_transactions(safe_address, network_name, executed=True, limit=1)
     if executed_txs:
         return executed_txs[0]["nonce"]
     return -1  # Return -1 if no executed transactions found
@@ -79,15 +79,11 @@ def get_pending_transactions_after_last_executed(safe_address, network_name):
 
 
 def get_safe_url(safe_address, network_name):
-    return (
-        f"{SAFE_WEBSITE_URL}{safe_address_network_prefix[network_name]}:{safe_address}"
-    )
+    return f"{SAFE_WEBSITE_URL}{safe_address_network_prefix[network_name]}:{safe_address}"
 
 
 def check_for_pending_transactions(safe_address, network_name, protocol):
-    pending_transactions = get_pending_transactions_after_last_executed(
-        safe_address, network_name
-    )
+    pending_transactions = get_pending_transactions_after_last_executed(safe_address, network_name)
 
     if pending_transactions:
         for tx in pending_transactions:
@@ -118,12 +114,8 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
             if protocol == "PENDLE":
                 hex_data = tx["data"]
                 # if hex data doesnt contain any of the proxy upgrade signatures, skip
-                if not any(
-                    signature in hex_data for signature in PROXY_UPGRADE_SIGNATURES
-                ):
-                    print(
-                        f"Skipping tx with nonce {nonce} as it does not contain any proxy upgrade signatures."
-                    )
+                if not any(signature in hex_data for signature in PROXY_UPGRADE_SIGNATURES):
+                    print(f"Skipping tx with nonce {nonce} as it does not contain any proxy upgrade signatures.")
                     continue
 
                 try:
@@ -134,15 +126,11 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
                 except Exception as e:
                     print(f"Cannot decode Pendle aggregate calls: {e}")
 
-            send_telegram_message(
-                message, protocol, False
-            )  # explicitly enable notification
+            send_telegram_message(message, protocol, False)  # explicitly enable notification
             # write the last executed nonce to file
             write_last_executed_nonce_to_file(safe_address, nonce)
     else:
-        print(
-            "No pending transactions found with higher nonce than the last executed transaction."
-        )
+        print("No pending transactions found with higher nonce than the last executed transaction.")
 
 
 def run_for_network(network_name, safe_address, protocol):

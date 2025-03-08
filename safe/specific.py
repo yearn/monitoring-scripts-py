@@ -47,7 +47,7 @@ def get_contract_name(w3: Web3, address: str) -> str:
     try:
         name = contract.functions.name().call()
         return name
-    except:
+    except Exception:
         return f"Unknown Contract at {address}"
 
 

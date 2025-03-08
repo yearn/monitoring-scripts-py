@@ -35,4 +35,13 @@ htmlcov/
 # Logs
 *.log
 
+# Type checking
+.mypy_cache/
+
+# Editor configs
 .cursorrules
+
+# Cache files
+cache-id.txt
+*.cache
+.uv/

@@ -3,8 +3,7 @@ from datetime import datetime
 
 import requests
 
-from utils.cache import (get_last_queued_id_from_file,
-                         write_last_queued_id_to_file)
+from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.telegram import send_telegram_message
 
 PROTOCOL = "aave"
@@ -20,9 +19,7 @@ def run_query(query, variables):
     if response.status_code == 200:
         return response.json()
     else:
-        raise Exception(
-            f"Query failed with status code {response.status_code}: {response.text}"
-        )
+        raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
 
 
 def fetch_queued_proposals():

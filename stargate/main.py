@@ -68,9 +68,7 @@ def process_assets(chain: Chain):
         # Batch all the calls
         with client.batch_requests() as batch:
             batch.add(strategy.functions.asset())
-            batch.add(
-                strategy.functions.availableWithdrawLimit(client.eth.address_zero)
-            )
+            batch.add(strategy.functions.availableWithdrawLimit(client.eth.address_zero))
             batch.add(strategy.functions.totalAssets())
             batch.add(strategy.functions.name())
             batch.add(strategy.functions.decimals())
@@ -84,9 +82,7 @@ def process_assets(chain: Chain):
         underlying_token_decimals = responses[4]
 
         # Get underlying token balance
-        underlying_token = client.eth.contract(
-            address=underlying_token_address, abi=ABI_STRATEGY
-        )
+        underlying_token = client.eth.contract(address=underlying_token_address, abi=ABI_STRATEGY)
         total_idle = underlying_token.functions.balanceOf(strategy_address).call()
 
         net_room = withdraw_room - total_idle

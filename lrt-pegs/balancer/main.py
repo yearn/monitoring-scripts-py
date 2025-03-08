@@ -54,9 +54,7 @@ def process_pools(chain: Chain = Chain.MAINNET):
 
         responses = client.execute_batch(batch)
         if len(responses) != len(POOL_CONFIGS):
-            raise ValueError(
-                f"Expected {len(POOL_CONFIGS)} responses from batch, got: {len(responses)}"
-            )
+            raise ValueError(f"Expected {len(POOL_CONFIGS)} responses from batch, got: {len(responses)}")
 
     # Process results
     for (pool_name, _, idx_lrt, is_nested), response in zip(POOL_CONFIGS, responses):

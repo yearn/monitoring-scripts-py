@@ -31,9 +31,7 @@ if response.status_code == 200:
     message = f"⚠️ {protocol} Bad Debt ratio: {ratio_of_bad_debt}% at {date} ⚠️\nDebt: {debt}\nTVL: {tvl}\nDeposits: {deposits}\nBorrows: {borrows}"
     print(message)
 
-    if (
-        threshold > 0 and total_bad_debt / 10**decimals > threshold
-    ) or ratio_of_bad_debt > threshold_ratio:
+    if (threshold > 0 and total_bad_debt / 10**decimals > threshold) or ratio_of_bad_debt > threshold_ratio:
         print("Sending telegram message...")
         bot_token = os.getenv("BAD_DEBT_TELEGRAM_TOKEN")
         chat_id = os.getenv("BAD_DEBT_TELEGRAM_CHAT_ID")
@@ -41,9 +39,7 @@ if response.status_code == 200:
         params = {"chat_id": chat_id, "text": message}
         response = requests.get(url, params=params)
         if response.status_code != 200:
-            raise Exception(
-                f"Failed to send telegram message: {response.status_code} - {response.text}"
-            )
+            raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
 
 else:
     print(f"Request failed with status code {response.status_code}")

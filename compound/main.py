@@ -60,10 +60,7 @@ ADDRESSES_BY_CHAIN = {
 def print_stuff(chain_name, token_name, ur):
     if ur > THRESHOLD_UR:
         message = (
-            "🚨 **BEEP BOP** 🚨\n"
-            f"💎 Market asset: {token_name}\n"
-            f"📊 Utilization rate: {ur:.2%}\n"
-            f"🌐 Chain: {chain_name}"
+            f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
         )
         disable_notification = True if ur <= THRESHOLD_UR_NOTIFICATION else False
         send_telegram_message(message, PROTOCOL, disable_notification)
@@ -84,9 +81,7 @@ def process_assets(chain: Chain):
         responses = client.execute_batch(batch)
         expected_responses = len(addresses) // 2
         if len(responses) != expected_responses:
-            raise ValueError(
-                f"Expected {expected_responses} responses from batch, got: {len(responses)}"
-            )
+            raise ValueError(f"Expected {expected_responses} responses from batch, got: {len(responses)}")
 
     for i, response in enumerate(responses):
         ur = int(response) / 1e18

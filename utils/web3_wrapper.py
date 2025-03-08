@@ -33,8 +33,7 @@ def retry_with_provider_rotation(func):
                 self._rotate_provider()
 
         raise ProviderConnectionError(
-            f"All providers failed. Errors:\n"
-            + "\n".join(f"{url}: {err}" for url, err in errors.items())
+            "All providers failed. Errors:\n" + "\n".join(f"{url}: {err}" for url, err in errors.items())
         )
 
     return wrapper
@@ -43,9 +42,7 @@ def retry_with_provider_rotation(func):
 class RetryProviders:
     """Base class for provider retry functionality"""
 
-    def __init__(
-        self, provider_urls: List[str], max_retries: int = 3, backoff_factor: float = 1
-    ):
+    def __init__(self, provider_urls: List[str], max_retries: int = 3, backoff_factor: float = 1):
         self.provider_urls = provider_urls
         self.max_retries = max_retries
         self.backoff_factor = backoff_factor
@@ -71,9 +68,7 @@ class MultiHTTPProvider(HTTPProvider, RetryProviders):
         RetryProviders.__init__(self, providers, max_retries, backoff_factor)
         self.request_kwargs = request_kwargs or {}
         self.request_kwargs.setdefault("timeout", 5000)
-        super().__init__(
-            endpoint_uri=self.endpoint_uri, request_kwargs=self.request_kwargs
-        )
+        super().__init__(endpoint_uri=self.endpoint_uri, request_kwargs=self.request_kwargs)
 
     def _validate_urls(self, urls: List[str]) -> List[str]:
         """Validate and filter provider URLs"""
@@ -110,9 +105,7 @@ class Web3Client(RetryProviders):
     def _initialize_web3(self) -> Web3:
         """Initialize Web3 with multi-provider setup"""
         provider_urls = self._get_provider_urls()
-        provider = MultiHTTPProvider(
-            providers=provider_urls, max_retries=3, backoff_factor=2
-        )
+        provider = MultiHTTPProvider(providers=provider_urls, max_retries=3, backoff_factor=2)
         return Web3(provider)
 
     def _get_provider_urls(self) -> List[str]:
@@ -140,9 +133,7 @@ class Web3Client(RetryProviders):
         try:
             return operation(*args, **kwargs)
         except Exception as e:
-            raise ProviderConnectionError(
-                f"Operation failed on {self.chain.name}: {str(e)}"
-            )
+            raise ProviderConnectionError(f"Operation failed on {self.chain.name}: {str(e)}")
 
     @property
     def eth(self):

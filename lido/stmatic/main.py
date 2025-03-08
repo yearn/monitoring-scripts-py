@@ -59,14 +59,12 @@ fund_management = {
 
 def query_swap(balancer_query, balancer_vault, single_swap, fund_management):
     try:
-        swap_res = balancer_query.functions.querySwap(
-            single_swap, fund_management
-        ).call()
+        swap_res = balancer_query.functions.querySwap(single_swap, fund_management).call()
         return swap_res
     except Exception as e:
         message = ""
         if ASSET_BONDS_EXCEEDED in str(e):
-            message = f"⚠️ Asset bonds exceeded in balancer pool ⚠️ \n"
+            message = "⚠️ Asset bonds exceeded in balancer pool ⚠️ \n"
         else:
             message = f"Error calling query in balancer pool: {e}\n"
 
@@ -100,9 +98,7 @@ def main():
     polygon_client = ChainManager.get_client(Chain.POLYGON)
 
     # Initialize contracts
-    stmatic = mainnet_client.eth.contract(
-        address=ADDRESSES[Chain.MAINNET]["stmatic"], abi=ABI_STMATIC
-    )
+    stmatic = mainnet_client.eth.contract(address=ADDRESSES[Chain.MAINNET]["stmatic"], abi=ABI_STMATIC)
     balancer_query = polygon_client.eth.contract(
         address=ADDRESSES[Chain.POLYGON]["balancer_query"], abi=ABI_BALANCER_QUERY
     )
@@ -120,9 +116,7 @@ def main():
         single_swap = single_swap_template.copy()
         single_swap["amount"] = int(amount)
         validator_rate = human_readable_res * amount
-        balancer_rate = query_swap(
-            balancer_query, balancer_vault, single_swap, fund_management
-        )
+        balancer_rate = query_swap(balancer_query, balancer_vault, single_swap, fund_management)
         if balancer_rate is None:
             break
         if check_peg(validator_rate, balancer_rate):

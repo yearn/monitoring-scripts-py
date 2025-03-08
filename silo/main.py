@@ -81,9 +81,7 @@ def check_positions():
         # Process each position
         for position in positions:
             wallet_address = position["account"]["id"]
-            input_token_symbol = position["silo"]["marketAssets"][0]["inputToken"][
-                "symbol"
-            ]
+            input_token_symbol = position["silo"]["marketAssets"][0]["inputToken"]["symbol"]
             silo_name = position["silo"]["name"]
             silo_id = position["silo"]["id"]
             risk_factor = position["riskFactor"]

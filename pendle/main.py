@@ -67,9 +67,7 @@ def process_assets(chain: Chain):
     with client.batch_requests() as batch:
         for strategies, _ in strategies_data:
             for strategy_address in strategies:
-                strategy = client.eth.contract(
-                    address=strategy_address, abi=ABI_STRATEGY
-                )
+                strategy = client.eth.contract(address=strategy_address, abi=ABI_STRATEGY)
                 batch.add(strategy.functions.totalAssets())
                 batch.add(strategy.functions.isExpired())
                 batch.add(strategy.functions.market())
@@ -106,9 +104,7 @@ def process_assets(chain: Chain):
         pt_ratio = responses[idx + 2] / 1e18
 
         if not is_expired:
-            expiry_date = datetime.datetime.fromtimestamp(expiry).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            expiry_date = datetime.datetime.fromtimestamp(expiry).strftime("%Y-%m-%d %H:%M:%S")
             if pt_ratio < THRESHOLD_RATIO:
                 message = (
                     "🚨 **Pendle PT Ratio** 🚨\n"
