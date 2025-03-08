@@ -60,10 +60,9 @@ def fetch_metric_from_gauntlet(max_retries=3):
                 if market["key"] == "base":
                     market_data = market["data"]
                     last_updated = market_data["borrow"]["lastUpdated"]
-                    if last_updated < get_timestamp_before(hours=6):
-                        # don't accept data older than 6 hours
-                        alerts.append(f"🚨 Market is not updated for {market['key']} - last updated {last_updated}")
-                        break
+                    if last_updated < get_timestamp_before(hours=12):
+                        # don't accept data older than 12 hours
+                        return False
 
                     borrow_amount = market_data["borrow"]["amount"]
                     supply_amount = market_data["supply"]["amount"]

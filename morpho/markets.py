@@ -120,7 +120,6 @@ MARKETS_RISK_3 = {
         "0x97bb820669a19ba5fa6de964a466292edd67957849f9631eb8b830c382f58b7f",  # MKR/USDC
         "0x718af3af39b183758849486340b69466e3e89b84b7884188323416621ee91cb7",  # UNI/USDC
         "0xe4cfbee9af4ad713b41bf79f009ca02b17c001a0c0e7bd2e6a89b1111b3d3f08",  # tBTC/USDC
-        "0xd925961ad5df1d12f677ff14cf20bac37ea5ef3b325d64d5a9f4c0cc013a1d47",  # stUSDC/USDC
         "0x61765602144e91e5ac9f9e98b8584eae308f9951596fd7f5e0f59f21cd2bf664",  # weETH/USDC
         "0x9c765f69d8a8e40d2174824bc5107d05d7f0d0f81181048c9403262aeb1ab457",  # LINK/USDC
         "0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28",  # sUSDe / DAI -> same asset but using hardcoded oracle
@@ -148,10 +147,19 @@ MARKETS_RISK_4 = {
         "0x7e9c708876fa3816c46aeb08937b51aa0461c2af3865ecb306433db8a80b1d1b",  # pufETH/USDC
         "0x514efda728a646dcafe4fdc9afe4ea214709e110ac1b2b78185ae00c1782cc82",  # swBTC/WBTC -> same asset, check swBTC liquidity before moving up
         "0x20c488469064c8e2f892dab33e8c7a631260817f0db57f7425d4ef1d126efccb",  # Re7wstETH/WETH -> unknown asset
+        "0xd925961ad5df1d12f677ff14cf20bac37ea5ef3b325d64d5a9f4c0cc013a1d47",  # stUSD/USDC -> lltv 96.5%, oracle: stUSD vault rate. Angle transmuter handles USDA -> USDC conversion.
     ],
     Chain.BASE: [
         "0x144bf18d6bf4c59602548a825034f73bf1d20177fc5f975fc69d5a5eba929b45",  # wsuperOETHb/WETH -> lltv 91.5%, oracle: Vault exchange rate. Unknown asset.
         "0x7f90d72667171d72d10d62b5828d6a5ef7254b1e33718fe0c1f7dcf56dd1edc7",  # bsdETH/WETH -> lltv 91.5%, oracle: bsdETH total supply. Unknown asset.
+        "0xff0f2bd52ca786a4f8149f96622885e880222d8bed12bbbf5950296be8d03f89",  # USR/USDC -> lltv 91.5%, oracle: pyth USR/USD and qoute pyth USDC/USD
+        "0x04f7605a25699d0eff9f92908d25da8702ff59596d159e8bb66eca24b021d99f",  # PT-USR-24APR2025/USDC -> lltv 91.5%, oracle: PendlePT exchange rate(PT to asset) * USR/USD redeption price from pyth, quote Chainlink USDC/USD
+    ],
+}
+
+MARKETS_RISK_5 = {
+    Chain.BASE: [
+        "0xcf21c3ca9434959fbf882f7d977f90fe22b7a79e6f39cada5702b56b25e58613",  # PT-USR-24APR2025/USDC -> lltv 91.5%, oracle: PendlePT exchange rate(PT to SY) * USR/USD redeption price from pyth. Problem: no USDC/USD quote, only USR/USD conversion.
     ],
 }
 
