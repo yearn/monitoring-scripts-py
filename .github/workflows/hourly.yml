@@ -87,9 +87,9 @@ jobs:
       - name: Run Compound Proposals script
         run: python compound/proposals.py
       - name: Run Lido Matic script
-        run: python lido/stmatic.main
+        run: python lido/stmatic/main.py
       - name: Run Lido Ethereum script
-        run: python lido/steth.main
+        run: python lido/steth/main.py
       # - name: Run Stargate script
       #   run: python stargate/main.py
       - name: Run Silo Utilization script
