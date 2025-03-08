@@ -108,6 +108,8 @@ jobs:
         run: python moonwell/bad_debt.py
       - name: Run Moonwell Proposals script
         run: python moonwell/proposals.py
+      - name: Run Euler Markets script
+        run: python euler/markets.py
       # - name: Run USD0 Peg Price Checker
       #   run: python usd0/price.py
 
