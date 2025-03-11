@@ -49,7 +49,7 @@ def fetch_metric_from_gauntlet(max_retries=3):
                 )
             # LaR conveys capital at risk due to liquidations when markets are under duress.
             liquidation_at_risk = market_data["lar"]["amount"]
-            if liquidation_at_risk / borrow_amount > 0.05:
+            if liquidation_at_risk / borrow_amount > 0.10:
                 # for more info check: https://www.gauntlet.xyz/resources/improved-var-methodology
                 alerts.append(
                     f"🚨 Liquidation at Risk Alert:\n"
