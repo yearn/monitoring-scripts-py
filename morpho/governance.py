@@ -13,6 +13,7 @@ from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "MORPHO"
 MORPHO_URL = "https://app.morpho.org"
+COMPOUND_URL = "https://compound.blue"
 
 PENDING_CAP_TYPE = "pending_cap"
 REMOVABLE_AT_TYPE = "removable_at"
@@ -42,6 +43,11 @@ VAULTS_BY_CHAIN = {
         # ["Seamless/Gauntlet WETH", "0x27D8c7273fd3fcC6956a0B370cE5Fd4A7fc65c18"],
         # ["Seamless/Gauntlet cbBTC", "0x5a47C803488FE2BB0A0EAaf346b420e4dF22F3C7"],
     ],
+    Chain.POLYGON: [
+        ["Compound WETH", "0xF5C81d25ee174d83f1FD202cA94AE6070d073cCF"],
+        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42"],
+        ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8"],
+    ],
 }
 
 
@@ -68,14 +74,20 @@ def get_chain_name(chain: Chain):
 
 
 def get_market_url(market, chain: Chain):
-    return f"{MORPHO_URL}/{get_chain_name(chain)}/market/{market}"
+    if chain == Chain.POLYGON:
+        return f"{COMPOUND_URL}/borrow/{market}"
+    else:
+        return f"{MORPHO_URL}/{get_chain_name(chain)}/market/{market}"
 
 
 def get_vault_url_by_name(vault_name, chain: Chain):
     vaults = VAULTS_BY_CHAIN[chain]
     for name, address in vaults:
         if name == vault_name:
-            return f"{MORPHO_URL}/{get_chain_name(chain)}/vault/{address}"
+            if chain == Chain.POLYGON:
+                return f"{COMPOUND_URL}/{address}"
+            else:
+                return f"{MORPHO_URL}/{get_chain_name(chain)}/vault/{address}"
     return None
 
 
@@ -220,6 +232,7 @@ def get_data_for_chain(chain: Chain):
 def main():
     get_data_for_chain(Chain.MAINNET)
     get_data_for_chain(Chain.BASE)
+    get_data_for_chain(Chain.POLYGON)
 
 
 if __name__ == "__main__":
