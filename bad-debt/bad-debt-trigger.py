@@ -55,13 +55,13 @@ def get_data():
 def accounts_with_bad_debt(data) -> str:
     # Sort users by bad debt (most negative first)
     sorted_users = sorted(data["users"], key=lambda x: int(x["badDebt"]))
-    # Get top 3 accounts
-    top_3 = sorted_users[:3]
+    # Get top 5 accounts (or all if less than 5)
+    top_accounts = sorted_users[:5]
     decimals = int(data["decimals"])
 
     # Format the message
-    message = "\nTop 3 accounts with bad debt:"
-    for user in top_3:
+    message = f"\nTop {len(top_accounts)} accounts with bad debt:"
+    for user in top_accounts:
         # Convert bad debt to USD with proper formatting using locale
         bad_debt_usd = abs(int(user["badDebt"])) / 10**decimals
         formatted_debt = locale.currency(bad_debt_usd, grouping=True)
