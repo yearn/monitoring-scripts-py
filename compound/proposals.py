@@ -72,7 +72,6 @@ def get_proposals():
             json={"query": query, "variables": variables},
             headers=headers,
         )
-        print(response)
         response.raise_for_status()
         data = response.json()
 
@@ -87,8 +86,11 @@ def get_proposals():
 
         print(f"Found {len(queued_proposals)} queued proposals")
 
+        # Sort queued proposals by onchainId from lowest to highest
+        queued_proposals.sort(key=lambda x: int(x["onchainId"]))
         last_reported_id = get_last_queued_id_from_file(PROTOCOL)
-        newest_queued_proposal_id = int(queued_proposals[0]["onchainId"])
+        newest_queued_proposal_id = int(queued_proposals[-1]["onchainId"])
+        print(f"Newest queued proposal id: {newest_queued_proposal_id}")
         if newest_queued_proposal_id <= last_reported_id:
             print(f"No new proposals, last reported id: {last_reported_id}")
             return
@@ -97,7 +99,8 @@ def get_proposals():
         for proposal in queued_proposals:
             proposal_id = int(proposal["onchainId"])
             if proposal_id <= last_reported_id:
-                break
+                # use continue instead of break because Comp can have unordered proposal ids
+                continue
 
             link = COMPOUND_TALLY_URL + str(proposal_id)
             message += f"📗 Proposal ID: {proposal_id}\n"
@@ -114,9 +117,8 @@ def get_proposals():
                     message += f"📝 Description: {summary}\n\n"
 
         send_telegram_message(message, PROTOCOL)
-        # write the last reported id
-        last_reported_id = int(queued_proposals[0]["onchainId"])
-        write_last_queued_id_to_file(PROTOCOL, last_reported_id)
+        # write the last reported id (highest ID since we sorted ascending)
+        write_last_queued_id_to_file(PROTOCOL, newest_queued_proposal_id)
 
     except requests.RequestException as e:
         message = f"Failed to fetch compound proposals: {e}"

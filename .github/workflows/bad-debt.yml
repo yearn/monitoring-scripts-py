@@ -5,7 +5,7 @@ on:
     - cron: "15 * * * *"
 
 env:
-  DEBT_THRESHOLD_RATIO: "0.1" # 0.1% debt threshold
+  DEBT_THRESHOLD_RATIO: "0.5" # 0.5% debt threshold
   BAD_DEBT_TELEGRAM_TOKEN: ${{ secrets.BAD_DEBT_TELEGRAM_TOKEN }}
 
 jobs:
@@ -49,14 +49,6 @@ jobs:
           PROTOCOL: "Maker DAO"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_maker.json"
           BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_MAKER }}
-
-      ### Compound Bad Debt Triggers
-      # - name: Run Comp V2 Mainnet
-      #   run: uv run bad-debt/bad-debt-trigger.py
-      #   env:
-      #     PROTOCOL: "Comp V2 Mainnet"
-      #     DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_compound.json"
-      #     BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
       - name: Run Comp V3 WETH Mainnet
         run: uv run bad-debt/bad-debt-trigger.py
         env:

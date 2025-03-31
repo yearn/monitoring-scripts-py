@@ -33,9 +33,9 @@ VAULTS_BY_CHAIN = {
         ["Gauntlet DAI Core", "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5", 2],
         ["LlamaRisk crvUSD Vault", "0x67315dd969B8Cd3a3520C245837Bf71f54579C75", 2],
         # these vaults are not used by yVaults
-        ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658", 3],
         ["Gauntlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458", 3],
         ["Gauntlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2", 3],
+        ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658", 4],
         ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D", 4],
     ],
     Chain.BASE: [
