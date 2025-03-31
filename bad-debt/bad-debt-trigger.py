@@ -36,9 +36,7 @@ def get_data():
 
     message = f"⚠️ {protocol} Bad Debt ratio: {ratio_of_bad_debt}% at {date} ⚠️\nDebt: {debt}\nTVL: {tvl}\nDeposits: {deposits}\nBorrows: {borrows}"
 
-    if (
-        threshold > 0 and total_bad_debt / 10**decimals > threshold
-    ) or ratio_of_bad_debt > threshold_ratio:
+    if (threshold > 0 and total_bad_debt / 10**decimals > threshold) or ratio_of_bad_debt > threshold_ratio:
         accounts = accounts_with_bad_debt(data)
         message += f"\n{accounts}"
         print("Sending telegram message...")
@@ -49,9 +47,7 @@ def get_data():
         params = {"chat_id": chat_id, "text": message}
         response = requests.get(url, params=params)
         if response.status_code != 200:
-            raise Exception(
-                f"Failed to send telegram message: {response.status_code} - {response.text}"
-            )
+            raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
     else:
         print("Thresholds not exceeded, no message sent")
 
