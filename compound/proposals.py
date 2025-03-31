@@ -72,9 +72,9 @@ def get_proposals():
             json={"query": query, "variables": variables},
             headers=headers,
         )
-        print(response)
         response.raise_for_status()
         data = response.json()
+        print(data)
 
         if "errors" in data:
             raise Exception(f"GraphQL errors: {data['errors']}")
@@ -97,7 +97,8 @@ def get_proposals():
         for proposal in queued_proposals:
             proposal_id = int(proposal["onchainId"])
             if proposal_id <= last_reported_id:
-                break
+                # use continue instead of break because Comp can have unordered proposal ids
+                continue
 
             link = COMPOUND_TALLY_URL + str(proposal_id)
             message += f"📗 Proposal ID: {proposal_id}\n"
