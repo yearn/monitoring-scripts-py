@@ -180,6 +180,11 @@ def main():
             "base-main",
             "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
         ],  # pause guardian of comptroller contract
+        [
+            "MORPHO",
+            "mainnet",
+            "0x84258B3C495d8e9b10D0d4A7867392F149Da4274",
+        ],  # eUSDe predeposit vault owner, token used by DAI vault on morpho
         # [
         #     "USD0",
         #     "mainnet",
