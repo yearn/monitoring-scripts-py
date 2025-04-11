@@ -134,6 +134,7 @@ MARKETS_RISK_3 = {
         "0x8e6aeb10c401de3279ac79b4b2ea15fc94b7d9cfc098d6c2a1ff7b2b26d9d02c",  # USDe / DAI -> lltv 91.5%, same value asset but using hardcoded oracle
         "0xbf02d6c6852fa0b8247d5514d0c91e6c1fbde9a168ac3fd2033028b5ee5ce6d0",  # LBTC/USDC -> lltv 86%, oracle: Redstone LBTC / BTC Redstone redemption price feed and Chainlink BTC/USD
         "0x1eda1b67414336cab3914316cb58339ddaef9e43f939af1fed162a989c98bc20",  # USD0++/USDC -> lltv 96.5%, oracle: Naked USD0++ price feed adapter
+        "0x21e55c99123958ff5667f824948c97d0f64dfaa6e2848062e72bc68d200d35f9",  # PT-eUSDE-29MAY2025/USDC -> lltv 91.5%, oracle is pt price upgreable proxy: PT eUSDe 29MAY2025 PtToSyRate adapter
     ],
     Chain.BASE: [
         "0x9a697eb760dd12aaea23699c96ea2ebbfe48b7af64138d92c4d232b9ed380024",  # PT-LBTC-29MAY2025/cbBTC -> lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle. Higher lltv than PT-LBTC-27MAR2025 / WBTC.
@@ -158,8 +159,9 @@ MARKETS_RISK_4 = {
         "0x514efda728a646dcafe4fdc9afe4ea214709e110ac1b2b78185ae00c1782cc82",  # swBTC/WBTC -> same asset, check swBTC liquidity before moving up
         "0x20c488469064c8e2f892dab33e8c7a631260817f0db57f7425d4ef1d126efccb",  # Re7wstETH/WETH -> unknown asset
         "0xd925961ad5df1d12f677ff14cf20bac37ea5ef3b325d64d5a9f4c0cc013a1d47",  # stUSD/USDC -> lltv 96.5%, oracle: stUSD vault rate. Angle transmuter handles USDA -> USDC conversion.
-        "0x21e55c99123958ff5667f824948c97d0f64dfaa6e2848062e72bc68d200d35f9",  # PT-eUSDE-29MAY2025/USDC -> lltv 91.5%, oracle is pt price upgreable proxy.
         "0x729badf297ee9f2f6b3f717b96fd355fc6ec00422284ce1968e76647b258cf44",  # syrupUSDC/USDC -> lltv 91.5%, oracle: syrupUSDC MaplePool vault rate. Oracle is using convertToAssets() to get the price but maple pool returns different amount, it should use convertToExitAssets() instead.
+        "0x0f9563442d64ab3bd3bcb27058db0b0d4046a4c46f0acd811dacae9551d2b129",  # sdeUSD/USDC -> lltv 91.5%, oracle: sdeUSD vault rate. Redstone oracle deusd/usd price, 24hour heartbeat, deviation 0.2%: https://app.redstone.finance/app/feeds/ethereum-mainnet/deusd_fundamental/
+        "0x4ef32e4877329436968f4a29b0c8285531d113dad29b727d88beafe5ed45be6a",  # PT-sdeUSD-1753142406/USDC -> lltv 91.5%, oracle: PT discounted price, sdeUSD vault rate. Redstone oracle deusd/usd price, 24hour heartbeat, deviation 0.2%. Chainlink USDC/USD.
     ],
     Chain.BASE: [
         "0x144bf18d6bf4c59602548a825034f73bf1d20177fc5f975fc69d5a5eba929b45",  # wsuperOETHb/WETH -> lltv 91.5%, oracle: Vault exchange rate. Unknown asset.
