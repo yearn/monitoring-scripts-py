@@ -354,8 +354,12 @@ def check_low_liquidity(vault_data):
     total_assets = vault_data["state"]["totalAssetsUsd"]
     liquidity = vault_data["liquidity"]["usd"]
 
-    if total_assets == 0:
+    # Return early if total_assets is None or 0
+    if not total_assets:
         return
+
+    # Default liquidity to 0 if it's None
+    liquidity = liquidity or 0
 
     liquidity_ratio = liquidity / total_assets
     if liquidity_ratio < LIQUIDITY_THRESHOLD:
@@ -459,7 +463,8 @@ def main() -> None:
         # Check bad debt for each market in the vault
         vault_markets = []
         for allocation in vault_data["state"]["allocation"]:
-            if allocation["enabled"] and allocation.get("market", {}).get("state", {}).get("supplyAssetsUsd", 0) > 0:
+            market_supply_usd = allocation.get("market", {}).get("state", {}).get("supplyAssetsUsd")
+            if allocation["enabled"] and (market_supply_usd or 0) > 0:
                 market = allocation["market"]
                 if market["collateralAsset"] is not None:
                     # market without collateral asset is idle asset
