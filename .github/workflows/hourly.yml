@@ -104,6 +104,8 @@ jobs:
         run: python morpho/governance.py
       - name: Run Morpho Bad Debt script
         run: python morpho/markets.py
+      - name: Run Morpho Markets Graph script
+        run: python morpho/markets_graph.py
       - name: Run Moonwell Bad Debt script
         run: python moonwell/bad_debt.py
       - name: Run Moonwell Proposals script
