@@ -45,8 +45,11 @@ def fetch_queued_proposals():
     variables = {"first": 10, "skip": 0}
     response = run_query(query, variables)
     if "errors" in response:
-        # don't send message or raise exception because graph is reliable
-        raise Exception(f"Query failed: {response['errors']}")
+        # send telegram message to notify, don't raise because the graph is not reliable
+        send_telegram_message(
+            f"Aave graph not stable, Governance Proposals Query failed: {response['errors']}", PROTOCOL
+        )
+        return []
 
     proposals = response["data"]["proposals"]
     return proposals
