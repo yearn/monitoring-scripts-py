@@ -1,8 +1,8 @@
 import json
 import os
 
-from utils.chains import Chain
 from utils.cache import get_last_value_for_key_from_file, write_last_value_to_file
+from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
@@ -93,7 +93,7 @@ def main():
     if basket_needed is not None and total_supply is not None:
         try:
             if total_supply == 0:  # Basket needed should be positive
-                print(f"⚠️ Warning: totalSupply is zero.")
+                print("⚠️ Warning: totalSupply is zero.")
             else:
                 coverage = basket_needed / total_supply
                 print(f"RToken Coverage: {coverage:.4f}")
