@@ -35,6 +35,7 @@ env:
   TELEGRAM_CHAT_ID_MORPHO: ${{ secrets.TELEGRAM_CHAT_ID_MORPHO }}
   TELEGRAM_CHAT_ID_USD0: ${{ secrets.TELEGRAM_CHAT_ID_USD0 }}
   TELEGRAM_CHAT_ID_MOONWELL: ${{ secrets.TELEGRAM_CHAT_ID_MOONWELL }}
+  TELEGRAM_CHAT_ID_RTOKEN: ${{ secrets.TELEGRAM_CHAT_ID_RTOKEN }}
   TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
   GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
   TALLY_API_KEY: ${{ secrets.TALLY_API_KEY }}
@@ -112,6 +113,8 @@ jobs:
         run: python moonwell/proposals.py
       - name: Run Euler Markets script
         run: python euler/markets.py
+      - name: Run RToken Monitoring script
+        run: python rtoken/monitor_rtoken.py
       # - name: Run USD0 Peg Price Checker
       #   run: python usd0/price.py
 
