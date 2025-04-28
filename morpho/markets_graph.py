@@ -33,7 +33,7 @@ GRAPH_BY_CHAIN = {
 VAULTS_BY_CHAIN = {
     Chain.POLYGON: [
         ["Compound WETH", "0xF5C81d25ee174d83f1FD202cA94AE6070d073cCF", 1],
-        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 1],
+        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 2],
         ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8", 1],
     ]
 }
@@ -60,7 +60,11 @@ MARKETS_RISK_2 = {
     ],
 }
 
-MARKETS_RISK_3 = {Chain.POLYGON: []}
+MARKETS_RISK_3 = {
+    Chain.POLYGON: [
+        "0x8513df298cab92cafba1bae394420b7150aa40a5fac649c7168404bd5174a54c",  # sACRED/USDC -> lltv 86%, oracle: Redstone ACRED/USD which is connect only to securitize-api. Using vault conversion rate for sACRED/ACRED
+    ],
+}
 
 MARKETS_RISK_4 = {Chain.POLYGON: []}
 
