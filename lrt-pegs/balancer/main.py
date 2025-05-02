@@ -40,6 +40,24 @@ POOL_CONFIGS = [
         1,
         True,
     ),
+    (
+        "Puffer pufETH-wstETH 50-50 Pool",
+        "0x63e0d47a6964ad1565345da9bfa66659f4983f02000000000000000000000681",
+        2,
+        True,
+    ),
+    (
+        "Ether.fi weETH-rETH 50-50 Pool",
+        "0x05ff47afada98a98982113758878f9a8b9fdda0a000000000000000000000645",
+        2,
+        True,
+    ),
+    (
+        "Stader ETHx-wstETH 50-50 Pool",
+        "0xb91159aa527d4769cb9faf3e4adb760c7e8c8ea700000000000000000000067c",
+        1,
+        True,
+    ),
 ]
 
 
@@ -66,6 +84,7 @@ def process_pools(chain: Chain = Chain.MAINNET):
             total += balances[i]
 
         percentage = (balances[idx_lrt] / total) * 100
+        print(f"{pool_name} ratio is {percentage:.2f}%")
         if percentage > PEG_THRESHOLD:
             message = f"🚨 Balancer Alert! {pool_name} ratio is {percentage:.2f}% 🚀 "
             send_telegram_message(message, PROTOCOL, True)

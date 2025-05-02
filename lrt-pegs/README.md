@@ -2,7 +2,7 @@
 
 ## Exchange rates
 
-Checks the main liquidity pools of LRTs to detect depegging, such as the ezETH-WETH and rsETH-WETH pools in Balancer. The bot monitors pool balances and sends a message if they become skewed.
+Checks the main liquidity pools of LRTs to detect depegging, such as the ezETH-WETH, rsETH-WETH, pufETH-wstETH, weETH-rETH and ETHx-wstETH pools in Balancer. The bot monitors pool balances and sends a message if they become skewed.
 
 ## Governance
 
