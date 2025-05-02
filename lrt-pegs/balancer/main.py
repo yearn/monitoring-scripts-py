@@ -52,6 +52,12 @@ POOL_CONFIGS = [
         2,
         True,
     ),
+    (
+        "Stader ETHx-wstETH 50-50 Pool",
+        "0xb91159aa527d4769cb9faf3e4adb760c7e8c8ea700000000000000000000067c",
+        1,
+        True,
+    ),
 ]
 
 
