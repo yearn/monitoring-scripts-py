@@ -172,7 +172,7 @@ def check_high_allocation(vault_data, chain: Chain):
             market_url = get_market_url(makret_id)
             market_name = f"{market['inputToken']['symbol']}/{market['borrowedToken']['symbol']}"
             message = (
-                f"🔺 High allocation detected in [{vault_name}]({vault_url})\n"
+                f"🔺 High allocation detected in [{vault_name}]({vault_url}) on {chain.name}\n"
                 f"💹 Market [{market_name}]({market_url})\n"
                 f"🔢 Allocation: {allocation_ratio:.1%} but max acceptable allocation is {allocation_threshold:.1%}\n"
             )
@@ -188,14 +188,14 @@ def check_high_allocation(vault_data, chain: Chain):
     print(f"Total risk level: {total_risk_level:.1%}, vault: {vault_name} on {chain.name}")
     if total_risk_level > MAX_RISK_THRESHOLDS[risk_level]:
         message = (
-            f"🔺 High allocation detected in [{vault_name}]({vault_url})\n"
+            f"🔺 High allocation detected in [{vault_name}]({vault_url}) on {chain.name}\n"
             f"🔢 Total risk level: {total_risk_level / 100:.3%} but max acceptable is {MAX_RISK_THRESHOLDS[risk_level]}\n"
             f"🔢 Total assets: {total_assets / 10**decimals:.2f} {symbol}\n"
         )
         send_telegram_message(message, PROTOCOL)
 
 
-def check_low_liquidity(vault_data):
+def check_low_liquidity(vault_data, chain: Chain):
     """
     Send telegram message if low liquidity is detected.
     """
@@ -217,7 +217,7 @@ def check_low_liquidity(vault_data):
     liquidity_ratio = liquidity / total_assets
     if liquidity_ratio < LIQUIDITY_THRESHOLD:
         message = (
-            f"⚠️ Low liquidity detected in [{vault_name}]({vault_url})\n"
+            f"⚠️ Low liquidity detected in [{vault_name}]({vault_url}) on {chain.name}\n"
             f"💰 Liquidity: {liquidity_ratio:.1%} of total assets\n"
             f"💵 Liquidity: {liquidity / 10**decimals:.2f} {symbol}\n"
             f"📊 Total Assets: {total_assets / 10**decimals:.2f} {symbol}\n"
@@ -345,7 +345,7 @@ def check_graph_data_for_chain(chain: Chain):
 
     check_bad_debt(data)
     for vault in vaults_data:
-        check_low_liquidity(vault)
+        check_low_liquidity(vault, chain)
         check_high_allocation(vault, chain)
     return
 

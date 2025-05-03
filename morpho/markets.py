@@ -96,11 +96,10 @@ MARKETS_RISK_1 = {
 MARKETS_RISK_2 = {
     Chain.MAINNET: [
         "0x85c7f4374f3a403b36d54cc284983b2b02bbd8581ee0f3c36494447b87d9fcab",  # sUSDe/USDC -> lltv 91.5%, oracle: sUSDe vault
-        "0x346afa2b6d528222a2f9721ded6e7e2c40ac94877a598f5dae5013c651d2a462",  # PT-sUSDE-27MAR2025 / USDC, lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle, aggresive interest rate on high utilization
         "0x27852bb453d4fe6ec918dd27b7136bb233d210aab1758a59ed8daaeec24f7b3d",  # PT-sUSDE-27FEB2025 / USDC, lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle, aggresive interest rate on high utilization
-        "0x5e3e6b1e01c5708055548d82d01db741e37d03b948a7ef9f3d4b962648bcbfa7",  # PT-sUSDE-27MAR2025 / DAI -> lltv 91.5%, using aggresive interest rate curve (~42% on 100% utilization) and using discounted oracle
-        "0x407d8c123443d362ffdfe73208068ef158a21d1a44a988c9acc23a51bade7905",  # PT-sUSDE-29MAY2025 / DAI -> lltv 91.5%, using aggresive interest rate curve ~31.88% on 100% utilization) and using discounted oracle
-        "0x8d177cc2597296e8ff4816be51fe2482add89de82bdfaba3118c7948a6b2bc02",  # PT-sUSDE-29MAY2025 / USDC -> lltv 91.5%, using aggresive interest rate curve (~40% on 100% utilization) and using discounted oracle
+        "0x5e3e6b1e01c5708055548d82d01db741e37d03b948a7ef9f3d4b962648bcbfa7",  # PT-sUSDE-27MAR2025 / DAI -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) eUSDE. No price oracle for DAI, USDe = DAI.
+        "0x407d8c123443d362ffdfe73208068ef158a21d1a44a988c9acc23a51bade7905",  # PT-sUSDE-29MAY2025 / DAI -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) eUSDE. No price oracle for DAI, USDe = DAI.
+        "0x8d177cc2597296e8ff4816be51fe2482add89de82bdfaba3118c7948a6b2bc02",  # PT-sUSDE-29MAY2025 / USDC -> lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle, aggresive interest rate on high utilization
         "0xab0dcab71e65c05b7f241ea79a33452c87e62db387129e4abe15e458d433e4d8",  # PT-USDe-27MAR2025 / DAI -> lltv 91.5%, using aggresive interest rate curve and using discounted oracle
         "0x74ef8d7022b0ef0c0e6dc001fbda3c8bd9a3e706f03bb559c833e1dce7302d3a",  # Curve TricryptoUSDC LP / crvUSD -> lltv 86%, collaterals: ETH, USDC, WBTC
         "0x1c4b9ce834604969d33dc277bd8473d8aee856e5a577c08427b6deeb97cc72d6",  # Curve TricryptoUSDT LP / crvUSD -> lltv 86%, collaterals: ETH, USDT, WBTC
@@ -108,14 +107,17 @@ MARKETS_RISK_2 = {
         "0xbd2a27358bdaf3fb902a0ad17f86d4633f9ac5377941298720b37a4d90deab96",  # Curve TriCRV LP / crvUSD -> lltv 86%, collaterals: crvUSD, ETH, crv
         "0x39d11026eae1c6ec02aa4c0910778664089cdd97c3fd23f68f7cd05e2e95af48",  # sUSDe / DAI -> lltv 86%, same value asset but using hardcoded oracle 1:1 USDe : DAI, sUSDe vault conversion for USDe
         "0xae4571cdcad4191b9a59d1bb27a10a1b05c92c84fe423e4886d5781a30a9c8f1",  # PT-eUSDE-29MAY2025 / DAI -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) eUSDE. No price oracle for DAI, USDe = DAI.
+        "0xb81eaed0df42ff6646c8daf4fe38afab93b13b6a89c9750d08e705223a45e2ef",  # PT-sUSDE-31JUL2025 / DAI -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) sUSDE. No price oracle for DAI, USDe = DAI.
         "0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28",  # sUSDe / DAI -> lltv 91.5%, same value asset but using hardcoded oracle 1:1 USDe : DAI, sUSDe vault conversion for USDe
         "0x8e6aeb10c401de3279ac79b4b2ea15fc94b7d9cfc098d6c2a1ff7b2b26d9d02c",  # USDe / DAI -> lltv 91.5%, same value asset but using hardcoded oracle
         "0x5f8a138ba332398a9116910f4d5e5dcd9b207024c5290ce5bc87bc2dbd8e4a86",  # ETH+/WETH -> lltv 94.5%, oracle: ETH+ / USD exchange rate adapter and Chainlink: ETH/USD. ETH+ token has monitoring.
+        "0xbc552f0b14dd6f8e60b760a534ac1d8613d3539153b4d9675d697e048f2edc7e",  # PT-sUSDE-31JUL2025 / USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) sUSDE. No price oracle for USDC, USDe = USDC.
     ],
     Chain.BASE: [
         "0x6aa81f51dfc955df598e18006deae56ce907ac02b0b5358705f1a28fcea23cc0",  # wstETH/WETH -> lltv 96.5%, oracle: Chainlink wstETH-stETH Exchange Rate
         "0x6600aae6c56d242fa6ba68bd527aff1a146e77813074413186828fd3f1cdca91",  # cbETH/WETH -> lltv 96.5%, oracle: cbETH-ETH logocbETH-ETH Exchange Rate
         "0x78d11c03944e0dc298398f0545dc8195ad201a18b0388cb8058b1bcb89440971",  # weETH/WETH -> lltv 91.5%, oracle: Chainlink weETH / eETH Exchange Rate
+        "0xdaa04f6819210b11fe4e3b65300c725c32e55755e3598671559b9ae3bac453d7",  # AERO/USDC -> lltv 62.5%, oracle: Chainlink AERO/USD and Chainlink USDC/USD
     ],
 }
 
@@ -326,7 +328,7 @@ def check_high_allocation(vault_data):
             market_url = get_market_url(market)
             market_name = f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
             message = (
-                f"🔺 High allocation detected in [{vault_name}]({vault_url})\n"
+                f"🔺 High allocation detected in [{vault_name}]({vault_url}) on {chain.name}\n"
                 f"💹 Market [{market_name}]({market_url})\n"
                 f"🔢 Allocation: {allocation_ratio:.1%} but max acceptable allocation is {allocation_threshold:.1%}\n"
             )
@@ -342,7 +344,7 @@ def check_high_allocation(vault_data):
     print(f"Total risk level: {total_risk_level:.1%}, vault: {vault_name} on {chain.name}")
     if total_risk_level > MAX_RISK_THRESHOLDS[risk_level]:
         message = (
-            f"🔺 High allocation detected in [{vault_name}]({vault_url})\n"
+            f"🔺 High allocation detected in [{vault_name}]({vault_url}) on {chain.name}\n"
             f"🔢 Total risk level: {total_risk_level:.1%} but max acceptable is {MAX_RISK_THRESHOLDS[risk_level]}\n"
             f"🔢 Total assets: ${total_assets:,.2f}\n"
         )
@@ -357,6 +359,7 @@ def check_low_liquidity(vault_data):
     vault_url = get_vault_url(vault_data)
     total_assets = vault_data["state"]["totalAssetsUsd"]
     liquidity = vault_data["liquidity"]["usd"]
+    chain = Chain.from_chain_id(vault_data["chain"]["id"])
 
     # Return early if total_assets is None or 0
     if not total_assets:
@@ -368,7 +371,7 @@ def check_low_liquidity(vault_data):
     liquidity_ratio = liquidity / total_assets
     if liquidity_ratio < LIQUIDITY_THRESHOLD:
         message = (
-            f"⚠️ Low liquidity detected in [{vault_name}]({vault_url})\n"
+            f"⚠️ Low liquidity detected in [{vault_name}]({vault_url}) on {chain.name}\n"
             f"💰 Liquidity: {liquidity_ratio:.1%} of total assets\n"
             f"💵 Liquidity: ${liquidity:,.2f}\n"
             f"📊 Total Assets: ${total_assets:,.2f}"
