@@ -45,8 +45,9 @@ def fetch_queued_proposals():
     variables = {"first": 10, "skip": 0}
     response = run_query(query, variables)
     if "errors" in response:
-        # don't send message or raise exception because graph is reliable
-        raise Exception(f"Query failed: {response['errors']}")
+        # NOTE: not raising error because the graph is not reliable. We have Tenderly alerts for this also
+        print(f"Error fetching proposals: {response['errors']}")
+        return []
 
     proposals = response["data"]["proposals"]
     return proposals

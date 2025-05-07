@@ -36,7 +36,9 @@ The overall risk level of a Morpho Vault is determined by the risk levels of its
 
 ### How to Add a New Vault
 
-To monitor a new vault, add its address to the `VAULTS_BY_CHAIN` variable in [markets.py#L13](./markets.py#L13). This ensures that both the vault's overall metrics and its individual markets are monitored.
+To monitor a new Morpho vault, add its address to the `VAULTS_BY_CHAIN` variable in [markets.py#L13](./markets.py#L13). This ensures that both the vault's overall metrics and its individual markets are monitored.
+
+For some chains, the Morpho GraphQL API is not available. In this case, alternative script is used [markets_graph.py](./markets_graph.py) which uses The Graph API. Be aware that this script will require additional setup as it uses a different URL for vaults and markets, depending on the curator and frontend. Also, if the new chain is added, it will need new subgraph url define in [`GRAPH_BY_CHAIN`](./markets_graph.py#L29) variable.
 
 ### Bad Debt
 

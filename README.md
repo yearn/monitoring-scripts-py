@@ -13,10 +13,15 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 - [Moonwell](./moonwell/README.md)
 - [Morpho](./morpho/README.md)
 - [Pendle](./pendle/README.md)
+- [RTokens](./rtoken/README.md)
 - [Silo](./silo/README.md)
 - [Spark](./spark/README.md)
 - [Stargate](./stargate/README.md)
 - [USD0 - Usual Money](./usd0/README.md)
+
+## Telegram Alerts
+
+- Invite SAM alerter bot to Telegram group using handle: `@sam_alerter_bot`
 
 ## Installation
 
