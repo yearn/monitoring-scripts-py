@@ -120,6 +120,7 @@ MARKETS_RISK_2 = {
         "0x6600aae6c56d242fa6ba68bd527aff1a146e77813074413186828fd3f1cdca91",  # cbETH/WETH -> lltv 96.5%, oracle: cbETH-ETH logocbETH-ETH Exchange Rate
         "0x78d11c03944e0dc298398f0545dc8195ad201a18b0388cb8058b1bcb89440971",  # weETH/WETH -> lltv 91.5%, oracle: Chainlink weETH / eETH Exchange Rate
         "0xdaa04f6819210b11fe4e3b65300c725c32e55755e3598671559b9ae3bac453d7",  # AERO/USDC -> lltv 62.5%, oracle: Chainlink AERO/USD and Chainlink USDC/USD
+        "0x5189c48e1d333d250642a96b90dc926c53f897d8b8f9e8fea71a4b14e9053fde",  # steakSUSDS/USDC -> lltv: 96.5%, oracle: Maker's SSR oracle for sUSDS / USDS and dummy oracle for USDC returns 1. USDS = USDC
     ],
 }
 
@@ -170,6 +171,7 @@ MARKETS_RISK_4 = {
         "0x729badf297ee9f2f6b3f717b96fd355fc6ec00422284ce1968e76647b258cf44",  # syrupUSDC/USDC -> lltv 91.5%, oracle: syrupUSDC MaplePool vault rate. Oracle is using convertToAssets() to get the price but maple pool returns different amount, it should use convertToExitAssets() instead.
         "0x0f9563442d64ab3bd3bcb27058db0b0d4046a4c46f0acd811dacae9551d2b129",  # sdeUSD/USDC -> lltv 91.5%, oracle: sdeUSD vault rate. Redstone oracle deusd/usd price, 24hour heartbeat, deviation 0.2%: https://app.redstone.finance/app/feeds/ethereum-mainnet/deusd_fundamental/
         "0x4ef32e4877329436968f4a29b0c8285531d113dad29b727d88beafe5ed45be6a",  # PT-sdeUSD-1753142406/USDC -> lltv 91.5%, oracle: PT discounted price, sdeUSD vault rate. Redstone oracle deusd/usd price, 24hour heartbeat, deviation 0.2%. Chainlink USDC/USD.
+        "0xbf6687cb042a09451e66ebc11d7716c49fb8ccc75f484f7fab0eed6624bd5838",  # mMEV/USDC -> lltv 91.5%, oracle: Midas price oracle mMEV/USD. More info at: https://docs.midas.app/defi-integration/price-oracle
     ],
     Chain.BASE: [
         "0x144bf18d6bf4c59602548a825034f73bf1d20177fc5f975fc69d5a5eba929b45",  # wsuperOETHb/WETH -> lltv 91.5%, oracle: Vault exchange rate. Unknown asset.
