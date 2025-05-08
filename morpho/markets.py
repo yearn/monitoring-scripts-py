@@ -32,13 +32,13 @@ VAULTS_BY_CHAIN = {
         ["Gauntlet USDT Prime", "0x8CB3649114051cA5119141a34C200D65dc0Faa73", 1],
         ["Gauntlet DAI Core", "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5", 2],
         ["LlamaRisk crvUSD Vault", "0x67315dd969B8Cd3a3520C245837Bf71f54579C75", 2],
-        # these vaults are not used by yVaults
-        ["Gauntlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458", 3],
-        ["Gauntlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2", 3],
-        ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658", 4],
-        ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D", 4],
         ["Yearn OG WETH", "0xE89371eAaAC6D46d4C3ED23453241987916224FC", 2],
         ["Yearn OG DAI", "0x3DC15A363f5Dcf3B9dB90a5C0e2a5Cdf8f1CD77E", 2],
+        # these vaults are not used by yVaults
+        ["Gauntlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2", 3],
+        ["Gauntlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458", 4],
+        ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658", 4],
+        ["MEV Capital USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D", 4],
     ],
     Chain.BASE: [
         ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca", 2],
@@ -172,6 +172,8 @@ MARKETS_RISK_4 = {
         "0x0f9563442d64ab3bd3bcb27058db0b0d4046a4c46f0acd811dacae9551d2b129",  # sdeUSD/USDC -> lltv 91.5%, oracle: sdeUSD vault rate. Redstone oracle deusd/usd price, 24hour heartbeat, deviation 0.2%: https://app.redstone.finance/app/feeds/ethereum-mainnet/deusd_fundamental/
         "0x4ef32e4877329436968f4a29b0c8285531d113dad29b727d88beafe5ed45be6a",  # PT-sdeUSD-1753142406/USDC -> lltv 91.5%, oracle: PT discounted price, sdeUSD vault rate. Redstone oracle deusd/usd price, 24hour heartbeat, deviation 0.2%. Chainlink USDC/USD.
         "0xbf6687cb042a09451e66ebc11d7716c49fb8ccc75f484f7fab0eed6624bd5838",  # mMEV/USDC -> lltv 91.5%, oracle: Midas price oracle mMEV/USD. More info at: https://docs.midas.app/defi-integration/price-oracle
+        "0x83b7ad16905809ea36482f4fbf6cfee9c9f316d128de9a5da1952607d5e4df5e",  # csUSDL/USDC -> lltv 96.5%, oracle: wUSDL / USDL vault rate.
+        "0xbfed072faee09b963949defcdb91094465c34c6c62d798b906274ef3563c9cac",  # srUSD/USDC -> lltv 91.5%, oracle: saving rate module price. rUSD(ripple USD) is underlying asset.
     ],
     Chain.BASE: [
         "0x144bf18d6bf4c59602548a825034f73bf1d20177fc5f975fc69d5a5eba929b45",  # wsuperOETHb/WETH -> lltv 91.5%, oracle: Vault exchange rate. Unknown asset.
