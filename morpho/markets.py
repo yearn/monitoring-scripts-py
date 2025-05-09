@@ -349,6 +349,8 @@ def check_high_allocation(vault_data):
 
     # print total risk level and vault name
     print(f"Total risk level: {total_risk_level:.1%}, vault: {vault_name} on {chain.name}")
+    # round total_risk_level to 2 decimal places
+    total_risk_level = round(total_risk_level, 2)
     if total_risk_level > MAX_RISK_THRESHOLDS[risk_level]:
         message = (
             f"🔺 High allocation detected in [{vault_name}]({vault_url}) on {chain.name}\n"
