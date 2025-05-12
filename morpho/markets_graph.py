@@ -48,13 +48,13 @@ MARKETS_RISK_1 = {
         "0x9eacb622c6ef9c2f0fa5f1fda58a8702eb8132d8f49783f6eea6acc3a398e741",  # WBTC/ETH-> lltv 86%, oracle: Chainlink BTC/USD and ETH/USD
         "0x267f344f5af0d85e95f253a2f250985a9fb9fca34a3342299e20c83b6906fc80",  # WPOL/USDT -> lltv 77%, oracle: Chainlink WPOL/USD, but there is no oracle for USDT/USD
         "0x7506b33817b57f686e37b87b5d4c5c93fdef4cffd21bbf9291f18b2f29ab0550",  # WPOL/USDC -> lltv 77%, oracle: Chainlink WPOL/USD, but there is no oracle for USDC/USD
+        "0xd1485762dd5256b99530b6b07ab9d20c8d31b605dd5f27ad0c6dec2a18179ac6",  # compWETH/USDC -> lltv 86%, oracle: Chainlink ETH/USD and vault conversion rate for compoundWETH metamorpho vault
+        "0xa8c2e5b31d1f3fb6c000bd49355d091f71e7c866fcb74a1cb2562ef67157bc2a",  # compWETH/USDT -> lltv 86%, oracle: Chainlink ETH/USD and vault conversion rate for compoundWETH metamorpho vault
     ],
 }
 
 MARKETS_RISK_2 = {
     Chain.POLYGON: [
-        "0xd1485762dd5256b99530b6b07ab9d20c8d31b605dd5f27ad0c6dec2a18179ac6",  # compWETH/USDC -> lltv 86%, oracle: Chainlink ETH/USD and vault conversion rate for compoundWETH metamorpho vault
-        "0xa8c2e5b31d1f3fb6c000bd49355d091f71e7c866fcb74a1cb2562ef67157bc2a",  # compWETH/USDT -> lltv 86%, oracle: Chainlink ETH/USD and vault conversion rate for compoundWETH metamorpho vault
         "0x41e537c46cc0e2f82aa69107cd72573f585602d8c33c9b440e08eaba5e8fded1",  # MATICX/USDT -> lltv 77%, oracle: Chainlink Calculated MaticX / USD, but there is no oracle for USDT/USD. Maticx has liquidity around 7M without slippage, around 1.7M USD. Withdrawing Matic will take 90 checkpoints (2-3 days) as per Polygon's native unstaking
         "0x1947267c49c3629c5ed59c88c411e8cf28c4d2afdb5da046dc8e3846a4761794",  # MATICX/USDC -> lltv 77%, oracle: Chainlink Calculated MaticX / USD, but there is no oracle for USDC/USD. Maticx has liquidity around 7M without slippage, around 1.7M USD. Withdrawing Matic will take 90 checkpoints (2-3 days) as per Polygon's native unstaking
     ],

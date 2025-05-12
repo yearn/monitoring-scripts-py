@@ -107,6 +107,7 @@ MARKETS_RISK_2 = {
         "0x1c4b9ce834604969d33dc277bd8473d8aee856e5a577c08427b6deeb97cc72d6",  # Curve TricryptoUSDT LP / crvUSD -> lltv 86%, collaterals: ETH, USDT, WBTC
         "0x42e157d3739f9ae3f418f5dd0977b7d51c3a677502afd9f3f594f46cc07dec6a",  # Curve TryLSD LP / crvUSD -> lltv 86%, collaterals: wstETH, rETH, sfrxETH
         "0xbd2a27358bdaf3fb902a0ad17f86d4633f9ac5377941298720b37a4d90deab96",  # Curve TriCRV LP / crvUSD -> lltv 86%, collaterals: crvUSD, ETH, crv
+        "0x0cd36e6ecd9d846cffd921d011d2507bc4c2c421929cec65205b3cd72925367c",  # Curve TricryptoLLAMA LP / crvUSD -> collaterals: crvUSD, wstETH, tBTC.
         "0x39d11026eae1c6ec02aa4c0910778664089cdd97c3fd23f68f7cd05e2e95af48",  # sUSDe / DAI -> lltv 86%, same value asset but using hardcoded oracle 1:1 USDe : DAI, sUSDe vault conversion for USDe
         "0xae4571cdcad4191b9a59d1bb27a10a1b05c92c84fe423e4886d5781a30a9c8f1",  # PT-eUSDE-29MAY2025 / DAI -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) eUSDE. No price oracle for DAI, USDe = DAI.
         "0xb81eaed0df42ff6646c8daf4fe38afab93b13b6a89c9750d08e705223a45e2ef",  # PT-sUSDE-31JUL2025 / DAI -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) sUSDE. No price oracle for DAI, USDe = DAI.
