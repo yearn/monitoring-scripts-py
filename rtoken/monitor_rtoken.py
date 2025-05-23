@@ -8,7 +8,7 @@ from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "RTOKEN"
 COVERAGE_THRESHOLD = 1.04
-ETH_REDEMPTION_THRESHOLD = 5000e18 # 50% of normal redemption amount
+ETH_REDEMPTION_THRESHOLD = 5000e18  # 50% of normal redemption amount
 
 # Contract Addresses
 RTOKEN_ADDRESS = "0xE72B141DF173b999AE7c1aDcbF60Cc9833Ce56a8"
@@ -76,7 +76,9 @@ def main():
                     basket_needed = None  # Invalidate for coverage check
                     total_supply = None
                 if not isinstance(redemption_available, int):
-                    print(f"Warning: Received non-integer value from RToken contract redemptionAvailable: {redemption_available}")
+                    print(
+                        f"Warning: Received non-integer value from RToken contract redemptionAvailable: {redemption_available}"
+                    )
                     redemption_available = None  # Invalidate for coverage check
                 if not isinstance(current_rate, int):
                     print(f"Warning: Received non-integer value from StRSR contract exchangeRate: {current_rate}")
