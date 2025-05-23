@@ -14,3 +14,4 @@ The script `rtoken/monitor_rtoken.py` runs [hourly via GitHub Actions](.github/w
 
 - **RToken Collateral Coverage**: Alerts if the `totalSupply` of the RToken drops below 104% of the required backing (`basketNeeded`), indicating potential undercollateralization. Threshold defined [here](monitor_rtoken.py#L11).
 - **StRSR Exchange Rate Stability**: Fetches the `exchangeRate` from the StRSR contract. On the first run, it caches this rate. On subsequent runs, it alerts if the current rate falls below the initial cached value, signalling potential depegging or risk. Caching logic [here](monitor_rtoken.py#L148-L157).
+- **RToken Redemption Available**: Alerts if the `redemptionAvailable` of the RToken is less than 5k ETH. Threshold defined [here](monitor_rtoken.py#L120).
