@@ -8,6 +8,7 @@ from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "RTOKEN"
 COVERAGE_THRESHOLD = 1.04
+ETH_REDEMPTION_THRESHOLD = 5000e18  # 50% of normal redemption amount
 
 # Contract Addresses
 RTOKEN_ADDRESS = "0xE72B141DF173b999AE7c1aDcbF60Cc9833Ce56a8"
@@ -48,22 +49,23 @@ def main():
     basket_needed = None
     total_supply = None
     current_rate = None
-
+    redemption_available = None
     # --- Combined Blockchain Calls ---
     try:
         with client.batch_requests() as batch:
             # Add RToken calls
             batch.add(rtoken.functions.basketsNeeded())
             batch.add(rtoken.functions.totalSupply())
+            batch.add(rtoken.functions.redemptionAvailable())
             # Add StRSR call
             batch.add(strsr.functions.exchangeRate())
 
             responses = client.execute_batch(batch)
 
-            if len(responses) == 3:
-                basket_needed, total_supply, current_rate = responses
+            if len(responses) == 4:
+                basket_needed, total_supply, redemption_available, current_rate = responses
                 print(
-                    f"Raw Data - Basket Needed: {basket_needed}, Total Supply: {total_supply}, StRSR Rate: {current_rate}"
+                    f"Raw Data - Basket Needed: {basket_needed}, Total Supply: {total_supply}, Redemption Available: {redemption_available}, StRSR Rate: {current_rate}"
                 )
 
                 # Validate response types
@@ -73,6 +75,11 @@ def main():
                     )
                     basket_needed = None  # Invalidate for coverage check
                     total_supply = None
+                if not isinstance(redemption_available, int):
+                    print(
+                        f"Warning: Received non-integer value from RToken contract redemptionAvailable: {redemption_available}"
+                    )
+                    redemption_available = None  # Invalidate for coverage check
                 if not isinstance(current_rate, int):
                     print(f"Warning: Received non-integer value from StRSR contract exchangeRate: {current_rate}")
                     current_rate = None  # Invalidate for rate check
@@ -91,28 +98,38 @@ def main():
 
     # --- RToken Coverage Check (using fetched data) ---
     if basket_needed is not None and total_supply is not None:
-        try:
-            if total_supply == 0:  # Basket needed should be positive
-                print("⚠️ Warning: totalSupply is zero.")
-            else:
-                coverage = basket_needed / total_supply
-                print(f"RToken Coverage: {coverage:.4f}")
-                if coverage < COVERAGE_THRESHOLD:
-                    message = (
-                        f"🚨 *{PROTOCOL} Alert* 🚨\\n"
-                        f"RToken coverage below threshold!\\n"
-                        f"Current Coverage: {coverage:.4f}\\n"
-                        f"Threshold: {COVERAGE_THRESHOLD:.2f}\\n"
-                        f"Total Supply: {total_supply / 1e18:.4f}\\n"
-                        f"Basket Needed: {basket_needed / 1e18:.4f}"
-                    )
-                    send_telegram_message(message, PROTOCOL)
-        except Exception as e:  # Catch potential division errors, though types are checked
-            error_message = f"Error calculating RToken coverage: {e}"
-            print(error_message)
-            send_telegram_message(error_message, PROTOCOL)
+        if total_supply == 0:  # Basket needed should be positive
+            send_telegram_message("⚠️ Warning: totalSupply is zero.", PROTOCOL)
+        else:
+            coverage = basket_needed / total_supply
+            print(f"RToken Coverage: {coverage:.4f}")
+            if coverage < COVERAGE_THRESHOLD:
+                message = (
+                    f"🚨 *{PROTOCOL} Alert* 🚨\\n"
+                    f"RToken coverage below threshold!\\n"
+                    f"Current Coverage: {coverage:.4f}\\n"
+                    f"Threshold: {COVERAGE_THRESHOLD:.2f}\\n"
+                    f"Total Supply: {total_supply / 1e18:.4f}\\n"
+                    f"Basket Needed: {basket_needed / 1e18:.4f}"
+                )
+                send_telegram_message(message, PROTOCOL)
     else:
-        print("Skipping RToken coverage check due to invalid data from batch.")
+        send_telegram_message("Skipping RToken coverage check due to invalid data from batch.", PROTOCOL)
+
+    # --- RToken Redemption Available Check (using fetched data) ---
+    if redemption_available is not None:
+        print(f"RToken Redemption Available: {redemption_available}")
+        if redemption_available < ETH_REDEMPTION_THRESHOLD:
+            print("⚠️ Warning: redemptionAvailable is less than 1k ETH.")
+            message = (
+                f"🚨 *{PROTOCOL} Alert* 🚨\\n"
+                f"RToken redemptionAvailable is less than 1k ETH!\\n"
+                f"Redemption Available: {redemption_available / 1e18:.4f} ETH\\n"
+                f"Threshold: {ETH_REDEMPTION_THRESHOLD / 1e18:.4f} ETH\\n"
+            )
+            send_telegram_message(message, PROTOCOL)
+    else:
+        send_telegram_message("Skipping RToken redemptionAvailable check due to invalid data from batch.", PROTOCOL)
 
     # --- StRSR Exchange Rate Check (using fetched data and cache) ---
     if current_rate is not None:
@@ -138,7 +155,7 @@ def main():
             error_message = f"Error processing StRSR exchange rate with cache: {e}"
             print(error_message)
     else:
-        print("Skipping StRSR exchange rate check due to invalid data from batch.")
+        send_telegram_message("Skipping StRSR exchange rate check due to invalid data from batch.", PROTOCOL)
 
 
 if __name__ == "__main__":
