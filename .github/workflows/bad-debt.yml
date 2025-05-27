@@ -28,13 +28,13 @@ jobs:
 
       ### Aave Bad Debt Triggers
       - name: Run Aave V3 Mainnet
-        run: python bad-debt/bad-debt-trigger.py
+        run: uv run bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Aave V3 Mainnet"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_aave%20v3.json"
           BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
       - name: Run Aave V3 Polygon
-        run: python bad-debt/bad-debt-trigger.py
+        run: uv run bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Aave V3 Polygon"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/polygon_aave%20v3.json"
@@ -42,7 +42,7 @@ jobs:
 
       ### Maker Bad Debt Trigger
       - name: Run Maker
-        run: python bad-debt/bad-debt-trigger.py
+        run: uv run bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Maker DAO"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_maker.json"
@@ -50,19 +50,19 @@ jobs:
 
       ### Compound Bad Debt Triggers
       - name: Run Comp V3 WETH Mainnet
-        run: python bad-debt/bad-debt-trigger.py
+        run: uv run bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V3 WETH Mainnet"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_compound%20v3_WETH.json"
           BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
       - name: Run Comp V3 USDC Mainnet
-        run: python bad-debt/bad-debt-trigger.py
+        run: uv run bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V3 USDC Mainnet"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/ethereum_compound%20v3_USDC.json"
           BAD_DEBT_TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
       - name: Run Comp V3 USDCe Polygon
-        run: python bad-debt/bad-debt-trigger.py
+        run: uv run bad-debt/bad-debt-trigger.py
         env:
           PROTOCOL: "Comp V3 USDCe Polygon"
           DATA_URL: "https://raw.githubusercontent.com/Risk-DAO/simulation-results/main/bad-debt/latest/polygon_compound%20v3_USDCe.json"

@@ -78,45 +78,45 @@ jobs:
         run: echo "hash=${{ hashFiles('cache-id.txt') }}" >> $GITHUB_OUTPUT
 
       - name: Run Aave script
-        run: python aave/main.py
+        run: uv run aave/main.py
       - name: Run Aave Proposals script
-        run: python aave/proposals.py
+        run: uv run aave/proposals.py
       - name: Run Spark script
-        run: python spark/main.py
+        run: uv run spark/main.py
       - name: Run Compound script
-        run: python compound/main.py
+        run: uv run compound/main.py
       - name: Run Compound Proposals script
-        run: python compound/proposals.py
+        run: uv run compound/proposals.py
       - name: Run Lido Matic script
-        run: python lido/stmatic/main.py
+        run: uv run lido/stmatic/main.py
       - name: Run Lido Ethereum script
-        run: python lido/steth/main.py
+        run: uv run lido/steth/main.py
       # - name: Run Stargate script
-      #   run: python stargate/main.py
+      #   run: uv run stargate/main.py
       - name: Run Silo Utilization script
-        run: python silo/ur_sniff.py
+        run: uv run silo/ur_sniff.py
       # - name: Run Silo Bad Debt script
-      #   run: python silo/main.py
+      #   run: uv run silo/main.py
       - name: Run Pendle price script
-        run: python pendle/main.py
+        run: uv run pendle/main.py
       - name: Run LRT Peg Checker Balancer
-        run: python lrt-pegs/balancer/main.py
+        run: uv run lrt-pegs/balancer/main.py
       - name: Run Morpho Governance Monitoring script
-        run: python morpho/governance.py
+        run: uv run morpho/governance.py
       - name: Run Morpho Bad Debt script
-        run: python morpho/markets.py
+        run: uv run morpho/markets.py
       - name: Run Morpho Markets Graph script
-        run: python morpho/markets_graph.py
+        run: uv run morpho/markets_graph.py
       - name: Run Moonwell Bad Debt script
-        run: python moonwell/bad_debt.py
+        run: uv run moonwell/bad_debt.py
       - name: Run Moonwell Proposals script
-        run: python moonwell/proposals.py
+        run: uv run moonwell/proposals.py
       - name: Run Euler Markets script
-        run: python euler/markets.py
+        run: uv run euler/markets.py
       - name: Run RToken Monitoring script
-        run: python rtoken/monitor_rtoken.py
+        run: uv run rtoken/monitor_rtoken.py
       # - name: Run USD0 Peg Price Checker
-      #   run: python usd0/price.py
+      #   run: uv run usd0/price.py
 
       # Check final hash
       - name: Check final hash
