@@ -13,7 +13,7 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 - [Moonwell](./moonwell/README.md)
 - [Morpho](./morpho/README.md)
 - [Pendle](./pendle/README.md)
-- [RTokens](./rtoken/README.md)
+- [RTokens - ETH+](./rtoken/README.md)
 - [Silo](./silo/README.md)
 - [Spark](./spark/README.md)
 - [Stargate](./stargate/README.md)
@@ -42,10 +42,6 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 3. **Install dependencies**
 
 ```bash
-# Install all dependencies
-uv pip install .
-
-# For development (includes type stubs and linting tools)
 uv pip install -e ".[dev]"
 ```
 
@@ -53,20 +49,15 @@ uv pip install -e ".[dev]"
 
 4. **Environment setup**
 
+Copy and edit example environment file:
+
 ```bash
 cp .env.example .env
-# Edit .env with your API keys and configuration
 ```
 
 ## Usage
 
-Run a specific protocol monitor from the project root:
-
-```bash
-uv run <protocol>/main.py
-```
-
-Example:
+Run a specific script for a protocol. Example:
 
 ```bash
 uv run aave/main.py
@@ -77,12 +68,6 @@ uv run aave/main.py
 Format and lint code with ruff:
 
 ```bash
-# Format code
 uv run ruff format .
-
-# Lint code
-uv run ruff check .
-
-# Fix fixable lint issues
 uv run ruff check --fix .
 ```
