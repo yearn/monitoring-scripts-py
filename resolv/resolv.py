@@ -1,28 +1,15 @@
-import json
 import time
 from datetime import datetime
 
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
+from utils.abi import load_abi
 
 PROTOCOL = "RESOLV"
 
 USR_PRICE_STORAGE = "0x7f45180d6fFd0435D8dD695fd01320E6999c261c"
 USR_REDEMPTION = "0x60A7B7915980ed34fDE6e239618fAdCf67897c37"
-
-
-# Load ABI files
-def load_abi(file_path):
-    with open(file_path) as f:
-        abi_data = json.load(f)
-        if isinstance(abi_data, dict):
-            return abi_data["result"]
-        elif isinstance(abi_data, list):
-            return abi_data
-        else:
-            raise ValueError("Invalid ABI format")
-
 
 ABI_USR_PRICE_STORAGE = load_abi("resolv/abi/usr_price_storage.json")
 ABI_USR_REDEMPTION = load_abi("resolv/abi/usr_redemption.json")
@@ -72,7 +59,6 @@ def main():
         return  # Cannot proceed if batch fails
 
     (usr_price, usr_supply, reserves, timestamp) = usr_last_price
-    print(f"USR Price: {usr_price}, USR Supply: {usr_supply}, Reserves: {reserves}, Timestamp: {timestamp}")
 
     if usr_price != 1e18:
         message = (
