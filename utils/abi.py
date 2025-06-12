@@ -1,6 +1,7 @@
 import json
 from typing import List, Dict, Any
 
+
 def load_abi(file_path: str) -> List[Dict[str, Any]]:
     """
     Load and parse an ABI file.

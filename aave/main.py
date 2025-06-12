@@ -4,6 +4,7 @@ Aave protocol monitoring script for tracking utilization rates of assets.
 This module tracks utilization rates across multiple chains and sends alerts
 when thresholds are exceeded.
 """
+
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager

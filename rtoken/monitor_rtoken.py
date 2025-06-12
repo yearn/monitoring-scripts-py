@@ -21,6 +21,7 @@ CACHE_FILENAME = os.getenv("CACHE_FILENAME", "cache-id.txt")
 ABI_RTOKEN = load_abi("rtoken/abi/rtoken.json")
 ABI_STRSR = load_abi("rtoken/abi/strsr.json")
 
+
 def main():
     client = ChainManager.get_client(Chain.MAINNET)
 
