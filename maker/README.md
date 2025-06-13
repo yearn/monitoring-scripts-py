@@ -16,7 +16,7 @@ To get the proposal data from the received alert:
 
 1. see the tx from alert on [Tenderly](https://dashboard.tenderly.co/yearn/sam/tx/mainnet/0x4d84206c92894f4c4b5865d9c85f42105e5655d4a9415f799867a67ea3686c39)
 2. get [DssSpell address](https://dashboard.tenderly.co/yearn/sam/tx/mainnet/0x4d84206c92894f4c4b5865d9c85f42105e5655d4a9415f799867a67ea3686c39?trace=0.1)
-3. check proposals on [Maker DAO voting site](https://vote.makerdao.com/executive)
+3. check proposals on [Maker DAO voting site](https://vote.makerdao.com/executive), after rebranding use [SKY DAO voting site](https://vote.sky.money/executive)
 4. [match proposal with spell address](https://vote.makerdao.com/executive/template-executive-vote-lite-psm-usdc-a-phase-2-setup-august-22-2024) with DssSpell address from tx
 
 Tenderly alert for [EOA wallet pocket](https://dashboard.tenderly.co/yearn/sam/alerts/rules/3fd3aa9f-5679-4f9d-8d58-a11c0439bd17) which holds USDC funds for PSM. It could remove approval for Maker LitePSM and break sUSDC strategy. This EOA is [Coinbase Web3 Wallet](https://forum.sky.money/t/litepsm-lite-psm-usdc-a-introduction-and-overview/24512).
