@@ -1,7 +1,7 @@
+from utils.abi import load_abi
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
-from utils.abi import load_abi
 
 THRESHOLD_UR = 0.94
 THRESHOLD_UR_NOTIFICATION = 0.98

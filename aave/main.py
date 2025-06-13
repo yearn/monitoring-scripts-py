@@ -5,10 +5,10 @@ This module tracks utilization rates across multiple chains and sends alerts
 when thresholds are exceeded.
 """
 
+from utils.abi import load_abi
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
-from utils.abi import load_abi
 
 PROTOCOL = "aave"
 

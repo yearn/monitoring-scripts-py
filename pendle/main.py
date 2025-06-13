@@ -1,9 +1,9 @@
 import datetime
 
+from utils.abi import load_abi
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
-from utils.abi import load_abi
 
 # Constants
 DURATION = 1800  # 30 minutes

@@ -1,10 +1,10 @@
 import os
 
+from utils.abi import load_abi
 from utils.cache import get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
-from utils.abi import load_abi
 
 PROTOCOL = "RTOKEN"
 COVERAGE_THRESHOLD = 1.04

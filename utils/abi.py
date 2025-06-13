@@ -1,5 +1,5 @@
 import json
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
 def load_abi(file_path: str) -> List[Dict[str, Any]]:

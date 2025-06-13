@@ -2,11 +2,11 @@ from datetime import datetime
 
 from web3 import Web3
 
+from utils.abi import load_abi
 from utils.cache import get_last_executed_morpho_from_file, write_last_executed_morpho_to_file
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
-from utils.abi import load_abi
 
 PROTOCOL = "MORPHO"
 MORPHO_URL = "https://app.morpho.org"
