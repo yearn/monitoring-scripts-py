@@ -117,6 +117,8 @@ jobs:
         run: uv run rtoken/monitor_rtoken.py
       # - name: Run USD0 Peg Price Checker
       #   run: uv run usd0/price.py
+      - name: Run Inverse script
+        run: uv run inverse/inverse.py
 
       # Check final hash
       - name: Check final hash
