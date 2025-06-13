@@ -18,3 +18,7 @@ The script `inverse/inverse.py` runs [hourly via GitHub Actions](../.github/work
 - **Exchange Rate Validation**: Verifies that the calculated exchange rate matches the reported rate from the API. Check defined [in code](inverse.py#L129).
 
 All API responses are validated to ensure data is not older than 2 hours. Timestamp validation logic defined [in code](inverse.py#L39).
+
+#### SDOLA Supply Monitoring
+
+Check SDOLA supply from the contract and verify it matches the supply from the API.

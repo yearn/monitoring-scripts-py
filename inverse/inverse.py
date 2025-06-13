@@ -1,10 +1,15 @@
-import requests
-from dataclasses import dataclass
-from utils.telegram import send_telegram_message
+import json
 import time
+from dataclasses import dataclass
 from datetime import datetime
+
+import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+from utils.chains import Chain
+from utils.telegram import send_telegram_message
+from utils.web3_wrapper import ChainManager
 
 PROTOCOL_NAME = "INVERSE"
 INVERSE_API_URL = "https://www.inverse.finance/api"
@@ -12,6 +17,20 @@ FED_OVERVIEW_URL = INVERSE_API_URL + "/transparency/fed-overview"
 DOLA_CIRCULATING_URL = INVERSE_API_URL + "/dola/circulating-supply"
 DOLA_STAKING_URL = INVERSE_API_URL + "/dola-staking"
 GOVERNANCE_URL = INVERSE_API_URL + "/governance-notifs"
+SDOLA_CONTRACT = "0xb45ad160634c528Cc3D2926d9807104FA3157305"
+
+# TODO: remove and use utils.abi.get_abi
+def load_abi(file_path):
+    with open(file_path) as f:
+        abi_data = json.load(f)
+        if isinstance(abi_data, dict):
+            return abi_data["result"]
+        elif isinstance(abi_data, list):
+            return abi_data
+        else:
+            raise ValueError("Invalid ABI format")
+
+SDOLA_ABI = load_abi("inverse/abi/sdola.json")
 
 @dataclass
 class FedOverview:
@@ -113,6 +132,10 @@ def get_dola_staking() -> Dolastaking:
     finally:
         session.close()
 
+def get_sdola_supply() -> int:
+    client = ChainManager.get_client(Chain.MAINNET)
+    contract = client.eth.contract(address=SDOLA_CONTRACT, abi=SDOLA_ABI)
+    return contract.functions.totalSupply().call()
 
 if __name__ == "__main__":
     fed_overview = get_fed_overview()
@@ -136,3 +159,8 @@ if __name__ == "__main__":
     ex_rate = dola_staking.s_dola_total_assets / dola_staking.s_dola_supply
     if ex_rate != dola_staking.s_dola_ex_rate:
         send_telegram_message(f"🚨 DOLA ex rate is not correct, calculated: {ex_rate} and target: {dola_staking.s_dola_ex_rate}", PROTOCOL_NAME)
+
+    # Verify backend is returning correct supply
+    sdola_supply = get_sdola_supply() / 1e18
+    if sdola_supply < dola_staking.s_dola_supply * 0.99 or sdola_supply > dola_staking.s_dola_supply * 1.01:
+        send_telegram_message(f"🚨 SDOLA supply is not correct, calculated: {sdola_supply} and target: {dola_staking.s_dola_supply}", PROTOCOL_NAME)
