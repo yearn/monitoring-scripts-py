@@ -185,6 +185,11 @@ def main():
             "mainnet",
             "0x84258B3C495d8e9b10D0d4A7867392F149Da4274",
         ],  # eUSDe predeposit vault owner, token used by DAI vault on morpho
+        [
+            "RESOLV",
+            "mainnet",
+            "0xD6889F307BE1b83Bb355d5DA7d4478FB0d2Af547",
+        ],  # timelock contract
         # [
         #     "USD0",
         #     "mainnet",

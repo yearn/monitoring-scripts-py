@@ -1,6 +1,6 @@
-import json
 import os
 
+from utils.abi import load_abi
 from utils.cache import get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
@@ -17,19 +17,6 @@ STRSR_ADDRESS = "0xffa151Ad0A0e2e40F39f9e5E9F87cF9E45e819dd"
 # NOTE: change cache key to addresses if more than one rtoken is monitored
 STRSR_RATE_CACHE_KEY = "rtoken+strsr+rate"
 CACHE_FILENAME = os.getenv("CACHE_FILENAME", "cache-id.txt")
-
-
-# Load ABI files
-def load_abi(file_path):
-    with open(file_path) as f:
-        abi_data = json.load(f)
-        if isinstance(abi_data, dict):
-            return abi_data["result"]
-        elif isinstance(abi_data, list):
-            return abi_data
-        else:
-            raise ValueError("Invalid ABI format")
-
 
 ABI_RTOKEN = load_abi("rtoken/abi/rtoken.json")
 ABI_STRSR = load_abi("rtoken/abi/strsr.json")

@@ -1,6 +1,6 @@
 import datetime
-import json
 
+from utils.abi import load_abi
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
@@ -28,14 +28,6 @@ VAULTS_BY_CHAIN = {
         "0x57fC2D9809F777Cd5c8C433442264B6E8bE7Fce4",  # sUSDe
     ],
 }
-
-
-# Load ABI files
-def load_abi(file_path):
-    with open(file_path) as f:
-        abi_data = json.load(f)
-        return abi_data["result"] if isinstance(abi_data, dict) else abi_data
-
 
 ABI_ORACLE = load_abi("pendle/abi/PendleYPLpOracle.json")
 ABI_VAULT = load_abi("common-abi/YearnV3Vault.json")

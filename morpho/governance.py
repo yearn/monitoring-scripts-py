@@ -1,8 +1,8 @@
-import json
 from datetime import datetime
 
 from web3 import Web3
 
+from utils.abi import load_abi
 from utils.cache import get_last_executed_morpho_from_file, write_last_executed_morpho_to_file
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
@@ -46,18 +46,6 @@ VAULTS_BY_CHAIN = {
         ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8"],
     ],
 }
-
-
-# Load ABI files
-def load_abi(file_path):
-    with open(file_path) as f:
-        abi_data = json.load(f)
-        if isinstance(abi_data, dict):
-            return abi_data["result"]
-        elif isinstance(abi_data, list):
-            return abi_data
-        else:
-            raise ValueError("Invalid ABI format")
 
 
 ABI_MORPHO = load_abi("morpho/abi/morpho.json")

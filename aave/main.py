@@ -5,26 +5,12 @@ This module tracks utilization rates across multiple chains and sends alerts
 when thresholds are exceeded.
 """
 
-import json
-from typing import Any, Dict, List
-
+from utils.abi import load_abi
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "aave"
-
-
-def load_abi(file_path: str) -> List[Dict[str, Any]]:
-    with open(file_path) as f:
-        abi_data = json.load(f)
-        if isinstance(abi_data, dict):
-            return abi_data["result"]
-        elif isinstance(abi_data, list):
-            return abi_data
-        else:
-            raise ValueError("Invalid ABI format")
-
 
 ABI_ATOKEN = load_abi("aave/abi/AToken.json")
 
