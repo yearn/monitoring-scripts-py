@@ -1,5 +1,4 @@
-import json
-
+from utils.abi import load_abi
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
@@ -7,18 +6,6 @@ from utils.web3_wrapper import ChainManager
 ASSET_BONDS_EXCEEDED = "GYR#357"
 PROTOCOL = "PEGS"
 PEG_THRESHOLD = 80
-
-
-def load_abi(file_path):
-    with open(file_path) as f:
-        abi_data = json.load(f)
-        if isinstance(abi_data, dict):
-            return abi_data["result"]
-        elif isinstance(abi_data, list):
-            return abi_data
-        else:
-            raise ValueError("Invalid ABI format")
-
 
 # Load Balancer Vault ABI
 ABI_BALANCER_VAULT = load_abi("common-abi/BalancerVault.json")

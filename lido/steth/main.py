@@ -1,23 +1,10 @@
-import json
-
+from utils.abi import load_abi
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "LIDO"
 PEG_THRESHOLD = 0.05  # 5% threshold
-
-
-def load_abi(file_path):
-    with open(file_path) as f:
-        abi_data = json.load(f)
-        if isinstance(abi_data, dict):
-            return abi_data["result"]
-        elif isinstance(abi_data, list):
-            return abi_data
-        else:
-            raise ValueError("Invalid ABI format")
-
 
 # Load ABIs
 ABI_CURVE_POOL = load_abi("common-abi/CurvePool.json")
