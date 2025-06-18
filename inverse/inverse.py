@@ -1,4 +1,3 @@
-import json
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -7,6 +6,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from utils.abi import load_abi
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
@@ -18,18 +18,6 @@ DOLA_CIRCULATING_URL = INVERSE_API_URL + "/dola/circulating-supply"
 DOLA_STAKING_URL = INVERSE_API_URL + "/dola-staking"
 GOVERNANCE_URL = INVERSE_API_URL + "/governance-notifs"
 SDOLA_CONTRACT = "0xb45ad160634c528Cc3D2926d9807104FA3157305"
-
-# TODO: remove and use utils.abi.get_abi
-def load_abi(file_path):
-    with open(file_path) as f:
-        abi_data = json.load(f)
-        if isinstance(abi_data, dict):
-            return abi_data["result"]
-        elif isinstance(abi_data, list):
-            return abi_data
-        else:
-            raise ValueError("Invalid ABI format")
-
 SDOLA_ABI = load_abi("inverse/abi/sdola.json")
 
 @dataclass
