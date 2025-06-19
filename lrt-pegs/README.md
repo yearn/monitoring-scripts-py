@@ -26,3 +26,6 @@ Monitor Lombard LBTC feed by [Redstone](https://docs.redstone.finance/docs/data/
 
 [pufETH](https://etherscan.io/address/0xD9A442856C234a39a81a089C06451EBAa4306a72#readProxyContract) contract is upgradable proxy. Contract [authority](https://etherscan.io/address/0xD9A442856C234a39a81a089C06451EBAa4306a72#readProxyContract#F7) is [AccessManager](https://etherscan.io/address/0x8c1686069474410E6243425f4a10177a94EBEE11#code) which admin is set to [Timelock contract](https://etherscan.io/address/0x3C28B7c7Ba1A1f55c9Ce66b263B33B204f2126eA). [Tenderly alert](https://dashboard.tenderly.co/yearn/sam/alerts/rules/f6654146-08d0-4a83-917a-23233be2314e) is set to notify when a new transaction is queued by calling [`queueTransaction()`](https://etherscan.io/address/0x3C28B7c7Ba1A1f55c9Ce66b263B33B204f2126eA#writeContract#F5).
 
+### Lombard Finance (LBTC)
+
+Monitoring [multisig of LBTC boring vault](https://etherscan.io/address/0xb7cB7131FFc18f87eEc66991BECD18f2FF70d2af) that can change all settings of Veda vault. [Tenderly alert](https://dashboard.tenderly.co/yearn/sam/alerts/rules/271040e6-85bc-4103-bf05-094a9912961a) is set to notify when a new transaction is scheduled, event CallScheduled emitted, in Lombard Timelock. This contract is the owner of [LBTC token](https://etherscan.io/token/0x8236a87084f8B84306f72007F36F2618A5634494#readProxyContract#F18).
