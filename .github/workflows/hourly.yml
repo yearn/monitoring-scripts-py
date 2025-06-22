@@ -122,7 +122,7 @@ jobs:
       - name: Run RESOLV Monitoring script
         run: uv run resolv/resolv.py
       - name: Run Ethena script
-        run: uv run ethena/main.py
+        run: uv run ethena/ethena.py
 
       # Check final hash
       - name: Check final hash
