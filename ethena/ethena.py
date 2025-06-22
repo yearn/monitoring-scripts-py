@@ -66,12 +66,12 @@ def _parse_timestamp(ts: str) -> datetime | None:
         return None
 
 
-def is_stale_timestamp(ts: str, max_age_days: int = 1) -> bool:
-    """Return True if `ts` is older than `max_age_days`. Un-parsable → considered stale."""
+def is_stale_timestamp(ts: str, max_age_hours: int = 3) -> bool:
+    """Return True if `ts` is older than `max_age_hours`. Un-parsable → considered stale."""
     dt = _parse_timestamp(ts)
     if dt is None:
         return True
-    return dt < datetime.utcnow() - timedelta(days=max_age_days)
+    return dt < datetime.utcnow() - timedelta(hours=max_age_hours)
 
 
 def get_usde_supply() -> float | None:
@@ -111,13 +111,15 @@ def get_llamarisk_data() -> LlamaRiskData | None:
     timestamp_chain = chain_metrics_raw["latest"]["timestamp"]
     timestamp_reserve = reserve_fund["latest"]["timestamp"]
 
-    if (
-        is_stale_timestamp(timestamp_collateral)
-        or is_stale_timestamp(timestamp_chain)
-        or is_stale_timestamp(timestamp_reserve)
-    ):
-        send_telegram_message(f"⚠️ {PROTOCOL}: LlamaRisk data is older than 1 day", PROTOCOL, True)
-        return None
+    hours_ago = 3
+    if is_stale_timestamp(timestamp_collateral, hours_ago):
+        send_telegram_message(f"⚠️ Collateral data is older than {hours_ago} hours", PROTOCOL, True)
+
+    if is_stale_timestamp(timestamp_chain, hours_ago):
+        send_telegram_message(f"⚠️ Chain data is older than {hours_ago} hours", PROTOCOL, True)
+
+    if is_stale_timestamp(timestamp_reserve, 12):
+        send_telegram_message(f"⚠️ Reserve data is older than 12 hours", PROTOCOL, True)
 
     # sum all collateral values
     collateral_metrics = collateral_metrics["latest"]["data"]["collateral"]

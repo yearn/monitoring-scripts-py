@@ -6,10 +6,11 @@ Ethena is a synthetic dollar protocol built on Ethereum that provides a crypto-n
 
 ## Monitoring
 
-The script [`ethena/ethena.py`](ethena.py) runs **hourly via GitHub Actions** to sanity-check that **USDe remains fully backed** and that the public data feeds are fresh and internally consistent.
-Data used is provided by Ethena on [transparency page](https://app.ethena.fi/dashboards/transparency).
+The script [`ethena/ethena.py`](ethena.py) runs **hourly via GitHub Actions** to sanity-check that **USDe remains fully backed** and that the public data feeds are fresh and internally consistent. Telegram messages are sent if some values are out of the expected range.
 
 ### Data Sources
+
+Data used is provided by Ethena on [transparency page](https://app.ethena.fi/dashboards/transparency) and LlamaRisk:
 
 1. **Ethena Transparency**
    • Collateral: `GET /positions/current/collateral?latest=true`
@@ -21,18 +22,11 @@ Data used is provided by Ethena on [transparency page](https://app.ethena.fi/das
 
 1. **Collateral Ratio**
    `totalBackingAssetsInUsd + reserveFund / totalUsdeSupply`
-   • Warn if ratio < **1.01** (≈ 1 % headroom).
+   • Warn if ratio < **1.01**
 
 2. **Dual-Source Consistency**
-   • Ethena vs LlamaRisk supply — alert if they differ by > 0.1 %.
-   • Ethena vs LlamaRisk collateral — alert if they differ by > 1 %.
+   • Ethena vs LlamaRisk supply — alert if they differ by > 0.1%
+   • Ethena vs LlamaRisk collateral — alert if they differ by > 0.1%
 
 3. **Data Freshness**
-   • Any timestamp older than 24 h from either API triggers a stale-data warning.
-
-4. **Reserve Fund Drift** *(future)*
-   • Placeholder for tracking large week-over-week drops.
-
-### Alert Channels
-
-Messages are sent via the shared `utils.telegram.send_telegram_message` helper to the `ETHENA` Telegram channel.
+   • If collateral or chain data is older than 3 h from either API triggers a stale-data warning. Also, if reserve data is older than 12 h, send a warning.
