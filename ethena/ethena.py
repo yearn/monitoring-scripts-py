@@ -13,9 +13,9 @@ COLLATERAL_URL = "https://app.ethena.fi/api/positions/current/collateral?latest=
 LLAMARISK_URL = "https://api.llamarisk.com/protocols/ethena/overview/all/?format=json"
 
 # Alert thresholds
-COLLATERAL_RATIO_TRIGGER = 1.01  # warn
+COLLATERAL_RATIO_TRIGGER = 1.01
 
-REQUEST_TIMEOUT = 10  # seconds
+REQUEST_TIMEOUT = 15  # seconds
 
 
 @dataclass
@@ -42,7 +42,7 @@ def fetch_json(url: str) -> dict | None:
         resp.raise_for_status()
         return resp.json()
     except Exception as exc:
-        send_telegram_message(f"❌ {PROTOCOL}: failed to fetch {url}\n{exc}", PROTOCOL)
+        send_telegram_message(f"Failed to fetch {url}\n{exc}", PROTOCOL, True)
         return None
 
 
@@ -111,7 +111,7 @@ def get_llamarisk_data() -> LlamaRiskData | None:
     timestamp_chain = chain_metrics_raw["latest"]["timestamp"]
     timestamp_reserve = reserve_fund["latest"]["timestamp"]
 
-    hours_ago = 3
+    hours_ago = 6
     if is_stale_timestamp(timestamp_collateral, hours_ago):
         send_telegram_message(f"⚠️ Collateral data is older than {hours_ago} hours", PROTOCOL, True)
 
