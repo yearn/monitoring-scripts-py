@@ -119,7 +119,7 @@ def get_llamarisk_data() -> LlamaRiskData | None:
         send_telegram_message(f"⚠️ Chain data is older than {hours_ago} hours", PROTOCOL, True)
 
     if is_stale_timestamp(timestamp_reserve, 12):
-        send_telegram_message(f"⚠️ Reserve data is older than 12 hours", PROTOCOL, True)
+        send_telegram_message("⚠️ Reserve data is older than 12 hours", PROTOCOL, True)
 
     # sum all collateral values
     collateral_metrics = collateral_metrics["latest"]["data"]["collateral"]
@@ -160,7 +160,7 @@ def main():
         return  # early exit, errors already reported
 
     if supply == 0:
-        send_telegram_message(f"⚠️ USDe: supply reported as 0", PROTOCOL)
+        send_telegram_message("⚠️ USDe: supply reported as 0", PROTOCOL)
         return
 
     value_diff_trigger = 0.001  # 0.1%
