@@ -160,13 +160,13 @@ def main():
         return  # early exit, errors already reported
 
     if supply == 0:
-        send_telegram_message(f"⚠️ {PROTOCOL}: supply reported as 0", PROTOCOL)
+        send_telegram_message(f"⚠️ USDe: supply reported as 0", PROTOCOL)
         return
 
     value_diff_trigger = 0.001  # 0.1%
     if abs(supply - llama_risk.chain_metrics.total_usde_supply) / supply > value_diff_trigger:
         send_telegram_message(
-            f"⚠️ {PROTOCOL}: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}",
+            f"⚠️ USDe: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}",
             PROTOCOL,
             True,
         )
@@ -174,7 +174,7 @@ def main():
 
     if abs(collateral - llama_risk.collateral_value) / collateral > value_diff_trigger:
         send_telegram_message(
-            f"⚠️ {PROTOCOL}: collateral values are not similar: ethena {collateral} != llama_risk {llama_risk.collateral_value}",
+            f"⚠️ USDe: collateral values are not similar: ethena {collateral} != llama_risk {llama_risk.collateral_value}",
             PROTOCOL,
             True,
         )
