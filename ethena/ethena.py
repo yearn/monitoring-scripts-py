@@ -17,6 +17,7 @@ COLLATERAL_RATIO_TRIGGER = 1.01  # warn
 
 REQUEST_TIMEOUT = 10  # seconds
 
+
 @dataclass
 class ChainMetrics:
     total_usde_supply: float
@@ -25,13 +26,13 @@ class ChainMetrics:
     usde_price: float
     susde_price: float
 
+
 @dataclass
 class LlamaRiskData:
     timestamp: str
     collateral_value: float
     chain_metrics: ChainMetrics
     reserve_fund: float
-
 
 
 def fetch_json(url: str) -> dict | None:
@@ -43,6 +44,7 @@ def fetch_json(url: str) -> dict | None:
     except Exception as exc:
         send_telegram_message(f"❌ {PROTOCOL}: failed to fetch {url}\n{exc}", PROTOCOL)
         return None
+
 
 def _parse_timestamp(ts: str) -> datetime | None:
     """Parse various timestamp formats returned by Ethena & LlamaRisk APIs."""
@@ -71,6 +73,7 @@ def is_stale_timestamp(ts: str, max_age_days: int = 1) -> bool:
         return True
     return dt < datetime.utcnow() - timedelta(days=max_age_days)
 
+
 def get_usde_supply() -> float | None:
     """Return total circulating USDe supply in USD terms (raw token amount / 1e18)."""
     data = fetch_json(SUPPLY_URL)
@@ -82,7 +85,7 @@ def get_usde_supply() -> float | None:
         send_telegram_message(f"⚠️ {PROTOCOL}: supply data is older than 1 day", PROTOCOL, True)
         return None
 
-    return float(data["supply"])  / 1e18
+    return float(data["supply"]) / 1e18
 
 
 def get_total_collateral_usd() -> float | None:
@@ -108,7 +111,11 @@ def get_llamarisk_data() -> LlamaRiskData | None:
     timestamp_chain = chain_metrics_raw["latest"]["timestamp"]
     timestamp_reserve = reserve_fund["latest"]["timestamp"]
 
-    if is_stale_timestamp(timestamp_collateral) or is_stale_timestamp(timestamp_chain) or is_stale_timestamp(timestamp_reserve):
+    if (
+        is_stale_timestamp(timestamp_collateral)
+        or is_stale_timestamp(timestamp_chain)
+        or is_stale_timestamp(timestamp_reserve)
+    ):
         send_telegram_message(f"⚠️ {PROTOCOL}: LlamaRisk data is older than 1 day", PROTOCOL, True)
         return None
 
@@ -156,11 +163,19 @@ def main():
 
     value_diff_trigger = 0.001  # 0.1%
     if abs(supply - llama_risk.chain_metrics.total_usde_supply) / supply > value_diff_trigger:
-        send_telegram_message(f"⚠️ {PROTOCOL}: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}", PROTOCOL, True)
+        send_telegram_message(
+            f"⚠️ {PROTOCOL}: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}",
+            PROTOCOL,
+            True,
+        )
         return
 
     if abs(collateral - llama_risk.collateral_value) / collateral > value_diff_trigger:
-        send_telegram_message(f"⚠️ {PROTOCOL}: collateral values are not similar: ethena {collateral} != llama_risk {llama_risk.collateral_value}", PROTOCOL, True)
+        send_telegram_message(
+            f"⚠️ {PROTOCOL}: collateral values are not similar: ethena {collateral} != llama_risk {llama_risk.collateral_value}",
+            PROTOCOL,
+            True,
+        )
         return
 
     total_backing_assets = llama_risk.collateral_value + llama_risk.reserve_fund
@@ -168,13 +183,15 @@ def main():
 
     if ratio < COLLATERAL_RATIO_TRIGGER:
         send_telegram_message(
-            f"🚨 USDe is almost not fully backed!\n"
-            f"Collateral/Supply ratio = {ratio:.4f}",
+            f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}",
             PROTOCOL,
         )
 
-    print(f"[{llama_risk.timestamp}] Ethena – collateral: {collateral:,.2f} USD | "
-        f"supply: {supply:,.2f} | ratio: {ratio:.4f}")
+    print(
+        f"[{llama_risk.timestamp}] Ethena – collateral: {collateral:,.2f} USD | "
+        f"supply: {supply:,.2f} | ratio: {ratio:.4f}"
+    )
+
 
 if __name__ == "__main__":
     main()
