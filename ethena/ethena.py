@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import requests
-import json
 
 from utils.telegram import send_telegram_message
 
@@ -39,41 +38,27 @@ class LlamaRiskData:
 def fetch_json(url: str) -> dict | None:
     """Helper that fetches JSON with basic error handling."""
     headers = {
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json, */*",
         "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+        "If-None-Match": "",  # Force fresh response
+        "If-Modified-Since": "",  # Force fresh response
     }
 
     try:
         resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=headers)
+        print(resp.text)
         if resp.status_code != 200:
             print(f"HTTP {resp.status_code} for {url}")
             return None
 
         # Use resp.json() directly - requests handles encoding automatically
         return resp.json()
-
-    except requests.exceptions.JSONDecodeError as e:
-        print(f"Failed to parse JSON from {url}: {e}")
-        # Try to clean the response text as fallback
-        try:
-            response_text = resp.text.strip()
-            # Handle corrupted responses by finding first valid JSON character
-            json_start = next((i for i, char in enumerate(response_text) if char in "{["), -1)
-
-            if json_start > 0:
-                print(f"Warning: Trimming {json_start} corrupted characters from response")
-                response_text = response_text[json_start:]
-                return json.loads(response_text)
-            else:
-                print(f"Response content: {response_text[:200]}...")
-                return None
-        except Exception:
-            return None
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed for {url}: {e}")
-        return None
     except Exception as e:
-        print(f"Unexpected error fetching {url}: {e}")
+        print(f"Failed to fetch {url}\n{e}")
         return None
 
 
