@@ -2,12 +2,12 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import requests
-import json
 
 from utils.telegram import send_telegram_message
 
 PROTOCOL = "ETHENA"
 
+# NOTE: ethena cannot be used because it blocked for Github Actions IP
 # Ethena transparency API endpoints
 SUPPLY_URL = "https://app.ethena.fi/api/solvency/token-supply?symbol=USDe"
 COLLATERAL_URL = "https://app.ethena.fi/api/positions/current/collateral?latest=true"
@@ -38,42 +38,15 @@ class LlamaRiskData:
 
 def fetch_json(url: str) -> dict | None:
     """Helper that fetches JSON with basic error handling."""
-    headers = {
-        "Accept": "application/json, */*",
-        "Accept-Language": "en-US,en;q=0.9",
-    }
-
     try:
-        resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=headers)
+        resp = requests.get(url, timeout=REQUEST_TIMEOUT)
         if resp.status_code != 200:
             print(f"HTTP {resp.status_code} for {url}")
+            print(resp.text)
             return None
-
-        # Use resp.json() directly - requests handles encoding automatically
         return resp.json()
-
-    except requests.exceptions.JSONDecodeError as e:
-        print(f"Failed to parse JSON from {url}: {e}")
-        # Try to clean the response text as fallback
-        try:
-            response_text = resp.text.strip()
-            # Handle corrupted responses by finding first valid JSON character
-            json_start = next((i for i, char in enumerate(response_text) if char in "{["), -1)
-
-            if json_start > 0:
-                print(f"Warning: Trimming {json_start} corrupted characters from response")
-                response_text = response_text[json_start:]
-                return json.loads(response_text)
-            else:
-                print(f"Response content: {response_text[:200]}...")
-                return None
-        except Exception:
-            return None
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed for {url}: {e}")
-        return None
     except Exception as e:
-        print(f"Unexpected error fetching {url}: {e}")
+        print(f"Failed to fetch {url}\n{e}")
         return None
 
 
@@ -183,24 +156,22 @@ def get_llamarisk_data() -> LlamaRiskData | None:
 
 
 def main():
-    supply = get_usde_supply()
-    collateral = get_total_collateral_usd()
+    # supply = get_usde_supply()
+    # collateral = get_total_collateral_usd()
     llama_risk = get_llamarisk_data()
 
-    if supply is None or collateral is None or llama_risk is None:
+    if llama_risk is None:
         send_telegram_message("⚠️ Failed to fetch data", PROTOCOL, True)
         return
 
-    if supply == 0:
-        send_telegram_message("⚠️ USDe: supply reported as 0", PROTOCOL)
-        return
-
+    # NOTE: ethena data is not available, so we use llama_risk data only
     value_diff_trigger = 0.001  # 0.1%
+    supply = llama_risk.chain_metrics.total_usde_supply
+    collateral = llama_risk.collateral_value
     if abs(supply - llama_risk.chain_metrics.total_usde_supply) / supply > value_diff_trigger:
         send_telegram_message(
             f"⚠️ USDe: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}",
             PROTOCOL,
-            True,
         )
         return
 
@@ -208,7 +179,6 @@ def main():
         send_telegram_message(
             f"⚠️ USDe: collateral values are not similar: ethena {collateral} != llama_risk {llama_risk.collateral_value}",
             PROTOCOL,
-            True,
         )
         return
 
