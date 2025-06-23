@@ -37,14 +37,10 @@ class LlamaRiskData:
 
 def fetch_json(url: str) -> dict | None:
     """Helper that fetches JSON with basic error handling."""
-    try:
-        resp = requests.get(url, timeout=REQUEST_TIMEOUT)
-        resp.raise_for_status()
-        return resp.json()
-    except Exception as exc:
-        send_telegram_message(f"Failed to fetch {url}\n{exc}", PROTOCOL, True)
+    resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+    if resp.status_code != 200:
         return None
-
+    return resp.json()
 
 def _parse_timestamp(ts: str) -> datetime | None:
     """Parse various timestamp formats returned by Ethena & LlamaRisk APIs."""
@@ -157,7 +153,8 @@ def main():
     llama_risk = get_llamarisk_data()
 
     if supply is None or collateral is None or llama_risk is None:
-        return  # early exit, errors already reported
+        send_telegram_message("⚠️ Failed to fetch data", PROTOCOL, True)
+        return
 
     if supply == 0:
         send_telegram_message("⚠️ USDe: supply reported as 0", PROTOCOL)
