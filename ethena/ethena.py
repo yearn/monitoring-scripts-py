@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import requests
+import json
 
 from utils.telegram import send_telegram_message
 
@@ -37,10 +38,44 @@ class LlamaRiskData:
 
 def fetch_json(url: str) -> dict | None:
     """Helper that fetches JSON with basic error handling."""
-    resp = requests.get(url, timeout=REQUEST_TIMEOUT)
-    if resp.status_code != 200:
+    headers = {
+        "Accept": "application/json, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    try:
+        resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=headers)
+        if resp.status_code != 200:
+            print(f"HTTP {resp.status_code} for {url}")
+            return None
+
+        # Use resp.json() directly - requests handles encoding automatically
+        return resp.json()
+
+    except requests.exceptions.JSONDecodeError as e:
+        print(f"Failed to parse JSON from {url}: {e}")
+        # Try to clean the response text as fallback
+        try:
+            response_text = resp.text.strip()
+            # Handle corrupted responses by finding first valid JSON character
+            json_start = next((i for i, char in enumerate(response_text) if char in "{["), -1)
+
+            if json_start > 0:
+                print(f"Warning: Trimming {json_start} corrupted characters from response")
+                response_text = response_text[json_start:]
+                return json.loads(response_text)
+            else:
+                print(f"Response content: {response_text[:200]}...")
+                return None
+        except Exception:
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed for {url}: {e}")
         return None
-    return resp.json()
+    except Exception as e:
+        print(f"Unexpected error fetching {url}: {e}")
+        return None
+
 
 def _parse_timestamp(ts: str) -> datetime | None:
     """Parse various timestamp formats returned by Ethena & LlamaRisk APIs."""
