@@ -18,6 +18,8 @@ Data used is provided by Ethena on [transparency page](https://app.ethena.fi/das
 2. **LlamaRisk Dashboard**
    `GET https://api.llamarisk.com/protocols/ethena/overview/all/?format=json`
 
+> NOTE: Ethena data is not available when running on Github Actions, so we use LlamaRisk data only.
+
 ### What We Monitor
 
 1. **Collateral Ratio**

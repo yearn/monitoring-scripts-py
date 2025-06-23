@@ -7,6 +7,7 @@ from utils.telegram import send_telegram_message
 
 PROTOCOL = "ETHENA"
 
+# NOTE: ethena cannot be used because it blocked for Github Actions IP
 # Ethena transparency API endpoints
 SUPPLY_URL = "https://app.ethena.fi/api/solvency/token-supply?symbol=USDe"
 COLLATERAL_URL = "https://app.ethena.fi/api/positions/current/collateral?latest=true"
@@ -37,25 +38,12 @@ class LlamaRiskData:
 
 def fetch_json(url: str) -> dict | None:
     """Helper that fetches JSON with basic error handling."""
-    headers = {
-        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json, */*",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
-        "If-None-Match": "",  # Force fresh response
-        "If-Modified-Since": "",  # Force fresh response
-    }
-
     try:
-        resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=headers)
-        print(resp.text)
+        resp = requests.get(url, timeout=REQUEST_TIMEOUT)
         if resp.status_code != 200:
             print(f"HTTP {resp.status_code} for {url}")
+            print(resp.text)
             return None
-
-        # Use resp.json() directly - requests handles encoding automatically
         return resp.json()
     except Exception as e:
         print(f"Failed to fetch {url}\n{e}")
@@ -168,24 +156,22 @@ def get_llamarisk_data() -> LlamaRiskData | None:
 
 
 def main():
-    supply = get_usde_supply()
-    collateral = get_total_collateral_usd()
+    # supply = get_usde_supply()
+    # collateral = get_total_collateral_usd()
     llama_risk = get_llamarisk_data()
 
-    if supply is None or collateral is None or llama_risk is None:
+    if llama_risk is None:
         send_telegram_message("⚠️ Failed to fetch data", PROTOCOL, True)
         return
 
-    if supply == 0:
-        send_telegram_message("⚠️ USDe: supply reported as 0", PROTOCOL)
-        return
-
+    # NOTE: ethena data is not available, so we use llama_risk data only
     value_diff_trigger = 0.001  # 0.1%
+    supply = llama_risk.chain_metrics.total_usde_supply
+    collateral = llama_risk.collateral_value
     if abs(supply - llama_risk.chain_metrics.total_usde_supply) / supply > value_diff_trigger:
         send_telegram_message(
             f"⚠️ USDe: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}",
             PROTOCOL,
-            True,
         )
         return
 
@@ -193,7 +179,6 @@ def main():
         send_telegram_message(
             f"⚠️ USDe: collateral values are not similar: ethena {collateral} != llama_risk {llama_risk.collateral_value}",
             PROTOCOL,
-            True,
         )
         return
 
