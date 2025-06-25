@@ -124,13 +124,17 @@ def get_llamarisk_data() -> LlamaRiskData | None:
 
     hours_ago = 6
     if is_stale_timestamp(timestamp_collateral, hours_ago):
-        send_telegram_message(f"⚠️ Collateral data is older than {hours_ago} hours", PROTOCOL, True)
+        send_telegram_message(
+            f"⚠️ Collateral data is older than {hours_ago} hours. Timestamp: {timestamp_collateral}", PROTOCOL, True
+        )
 
     if is_stale_timestamp(timestamp_chain, hours_ago):
-        send_telegram_message(f"⚠️ Chain data is older than {hours_ago} hours", PROTOCOL, True)
+        send_telegram_message(
+            f"⚠️ Chain data is older than {hours_ago} hours. Timestamp: {timestamp_chain}", PROTOCOL, True
+        )
 
     if is_stale_timestamp(timestamp_reserve, 12):
-        send_telegram_message("⚠️ Reserve data is older than 12 hours", PROTOCOL, True)
+        send_telegram_message(f"⚠️ Reserve data is older than 12 hours. Timestamp: {timestamp_reserve}", PROTOCOL, True)
 
     # sum all collateral values
     collateral_metrics = collateral_metrics["latest"]["data"]["collateral"]
@@ -162,7 +166,7 @@ def get_llamarisk_data() -> LlamaRiskData | None:
     )
 
 
-def get_tokens_supply() -> tuple[float, float]:
+def get_tokens_supply() -> tuple[float, float] | tuple[None, None]:
     client = ChainManager.get_client(Chain.MAINNET)
 
     try:
@@ -187,22 +191,16 @@ def get_tokens_supply() -> tuple[float, float]:
                 usde_supply, susde_supply = responses
                 print(f"Raw Data - USDe Supply: {usde_supply}, Susde Supply: {susde_supply}")
             else:
-                error_message = f"Batch Call: Expected 3 responses, got {len(responses)}"
-                print(error_message)
-                send_telegram_message(error_message, PROTOCOL)
-                return  # Cannot proceed without expected data
+                raise Exception(f"Batch Call: Expected 3 responses, got {len(responses)}")
 
-    except Exception as e:
-        error_message = f"Error during batch blockchain calls: {e}"
-        send_telegram_message(error_message, PROTOCOL)
-        return  # Cannot proceed if batch fails
+    except Exception:
+        send_telegram_message("Error during batch blockchain calls", PROTOCOL)
+        return None, None  # Cannot proceed if batch fails
 
     return usde_supply, susde_supply
 
 
 def main():
-    # supply = get_usde_supply()
-    # collateral = get_total_collateral_usd()
     llama_risk = get_llamarisk_data()
 
     if llama_risk is None:
@@ -210,9 +208,11 @@ def main():
         return
 
     # NOTE: ethena data is not available, so we use llama_risk data only
-    value_diff_trigger = 0.001  # 0.1%
+    # supply = get_usde_supply()
+    # collateral = get_total_collateral_usd()
     supply = llama_risk.chain_metrics.total_usde_supply
     collateral = llama_risk.collateral_value
+    value_diff_trigger = 0.001  # 0.1%
     if abs(supply - llama_risk.chain_metrics.total_usde_supply) / supply > value_diff_trigger:
         send_telegram_message(
             f"⚠️ USDe: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}",
@@ -231,35 +231,50 @@ def main():
     ratio = total_backing_assets / supply
 
     if ratio < COLLATERAL_RATIO_TRIGGER:
-        send_telegram_message(
-            f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}",
-            PROTOCOL,
-        )
+        send_telegram_message(f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}", PROTOCOL)
 
     print(
         f"[{llama_risk.timestamp}] Ethena – collateral: {collateral:,.2f} USD | "
         f"supply: {supply:,.2f} | ratio: {ratio:.4f}"
     )
 
+    # NOTE: don't check on-chain data if llama_risk data is old because it will be out of sync
+    parsed_timestamp = _parse_timestamp(llama_risk.chain_metrics.timestamp)
+    if parsed_timestamp is None or datetime.now() - parsed_timestamp > timedelta(hours=3):
+        print("LlamaRisk data is old, skipping on-chain data check")
+        return
+
     # Validate LlamaRisk data with on-chain data
     usde_supply, susde_supply = get_tokens_supply()
+    if usde_supply is None or susde_supply is None:
+        print("Failed to get on-chain data, skipping on-chain data check")
+        return
+
     # remove decimasl because llama risk values are without it
     usde_supply = usde_supply / 1e18
     susde_supply = susde_supply / 1e18
     # NOTE: set higher value_diff_trigger because on-chain and off-chain values are not in sync
     value_diff_trigger = 0.005  # 0.5%
     print(f"USDe Supply: {usde_supply}, Susde Supply: {susde_supply}")
+
+    error_messages = []
+
     if abs(usde_supply - supply) / supply > value_diff_trigger:
-        send_telegram_message(
-            f"⚠️ USDe: supply values are not similar: ethena {usde_supply} != llama_risk {supply}",
-            PROTOCOL,
+        error_messages.append(
+            "USDe supply values are not similar onchain diffrent from LlamaRisk: "
+            f"{supply} != {usde_supply} (diff: {abs(usde_supply - supply) / supply})"
         )
-        return
+
     if abs(susde_supply - llama_risk.chain_metrics.total_susde_supply) / susde_supply > value_diff_trigger:
-        send_telegram_message(
-            f"⚠️ Susde: supply values are not similar: ethena {susde_supply} != llama_risk {llama_risk.chain_metrics.total_susde_supply}",
-            PROTOCOL,
+        error_messages.append(
+            "sUSDe supply values are not similar onchain diffrent from LlamaRisk: "
+            f"{susde_supply} != {llama_risk.chain_metrics.total_susde_supply} "
+            f"(diff: {abs(susde_supply - llama_risk.chain_metrics.total_susde_supply) / susde_supply})"
         )
+
+    if error_messages:
+        message = "⚠️ " + "\n".join(error_messages)
+        send_telegram_message(message, PROTOCOL)
         return
 
 
