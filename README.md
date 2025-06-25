@@ -6,6 +6,7 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 
 - [Aave V3](./aave/README.md)
 - [Compound V3](./compound/README.md)
+- [Ethena](./ethena/README.md)
 - [Euler](./euler/README.md)
 - [Lido](./lido/README.md)
 - [LRTs](./lrt-pegs/README.md)
@@ -13,6 +14,7 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 - [Moonwell](./moonwell/README.md)
 - [Morpho](./morpho/README.md)
 - [Pendle](./pendle/README.md)
+- [Resolv](./resolv/README.md)
 - [RTokens - ETH+](./rtoken/README.md)
 - [Silo](./silo/README.md)
 - [Spark](./spark/README.md)

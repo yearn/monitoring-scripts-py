@@ -190,6 +190,11 @@ def main():
             "mainnet",
             "0xD6889F307BE1b83Bb355d5DA7d4478FB0d2Af547",
         ],  # timelock contract
+        [
+            "LRT",
+            "mainnet",
+            "0xb7cB7131FFc18f87eEc66991BECD18f2FF70d2af",
+        ],  # LBTC boring vault big boss
         # [
         #     "USD0",
         #     "mainnet",
