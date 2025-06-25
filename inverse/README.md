@@ -19,6 +19,10 @@ The script `inverse/inverse.py` runs [hourly via GitHub Actions](../.github/work
 
 All API responses are validated to ensure data is not older than 2 hours. Timestamp validation logic defined [in code](inverse.py#L39).
 
+#### DOLA Supply Monitoring
+
+DOLA supply is checked from the contract and verified it matches the supply from the API. API data is calculated by summing all values from FED list. If the difference is greater than 0.5%, telegram alert is sent.
+
 #### SDOLA Supply Monitoring
 
-Check SDOLA supply from the contract and verify it matches the supply from the API.
+Check SDOLA supply from the contract and verify it matches the supply from the API, if the difference is greater than 0.5%, telegram alert is sent.
