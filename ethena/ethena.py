@@ -3,7 +3,9 @@ from datetime import datetime, timedelta
 
 import requests
 
+from utils.abi import load_abi
 from utils.telegram import send_telegram_message
+from utils.web3_wrapper import Chain, ChainManager
 
 PROTOCOL = "ETHENA"
 
@@ -12,6 +14,11 @@ PROTOCOL = "ETHENA"
 SUPPLY_URL = "https://app.ethena.fi/api/solvency/token-supply?symbol=USDe"
 COLLATERAL_URL = "https://app.ethena.fi/api/positions/current/collateral?latest=true"
 LLAMARISK_URL = "https://api.llamarisk.com/protocols/ethena/overview/all/?format=json"
+
+USDE_ADDRESS = "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3"
+SUSDE_ADDRESS = "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497"
+
+ABI_ERC20 = load_abi("common-abi/ERC20.json")
 
 # Alert thresholds
 COLLATERAL_RATIO_TRIGGER = 1.01
@@ -155,6 +162,44 @@ def get_llamarisk_data() -> LlamaRiskData | None:
     )
 
 
+def get_tokens_supply() -> tuple[float, float]:
+    client = ChainManager.get_client(Chain.MAINNET)
+
+    try:
+        usde = client.eth.contract(address=USDE_ADDRESS, abi=ABI_ERC20)
+        susde = client.eth.contract(address=SUSDE_ADDRESS, abi=ABI_ERC20)
+    except Exception as e:
+        error_message = f"Error creating contract instances: {e}. Check ABI paths and contract addresses."
+        print(error_message)
+        return  # Cannot proceed without contracts
+
+    usde_supply = None
+    susde_supply = None
+    # --- Combined Blockchain Calls ---
+    try:
+        with client.batch_requests() as batch:
+            batch.add(usde.functions.totalSupply())
+            batch.add(susde.functions.totalSupply())
+
+            responses = client.execute_batch(batch)
+
+            if len(responses) == 2:
+                usde_supply, susde_supply = responses
+                print(f"Raw Data - USDe Supply: {usde_supply}, Susde Supply: {susde_supply}")
+            else:
+                error_message = f"Batch Call: Expected 3 responses, got {len(responses)}"
+                print(error_message)
+                send_telegram_message(error_message, PROTOCOL)
+                return  # Cannot proceed without expected data
+
+    except Exception as e:
+        error_message = f"Error during batch blockchain calls: {e}"
+        send_telegram_message(error_message, PROTOCOL)
+        return  # Cannot proceed if batch fails
+
+    return usde_supply, susde_supply
+
+
 def main():
     # supply = get_usde_supply()
     # collateral = get_total_collateral_usd()
@@ -195,6 +240,27 @@ def main():
         f"[{llama_risk.timestamp}] Ethena – collateral: {collateral:,.2f} USD | "
         f"supply: {supply:,.2f} | ratio: {ratio:.4f}"
     )
+
+    # Validate LlamaRisk data with on-chain data
+    usde_supply, susde_supply = get_tokens_supply()
+    # remove decimasl because llama risk values are without it
+    usde_supply = usde_supply / 1e18
+    susde_supply = susde_supply / 1e18
+    # NOTE: set higher value_diff_trigger because on-chain and off-chain values are not in sync
+    value_diff_trigger = 0.005  # 0.5%
+    print(f"USDe Supply: {usde_supply}, Susde Supply: {susde_supply}")
+    if abs(usde_supply - supply) / supply > value_diff_trigger:
+        send_telegram_message(
+            f"⚠️ USDe: supply values are not similar: ethena {usde_supply} != llama_risk {supply}",
+            PROTOCOL,
+        )
+        return
+    if abs(susde_supply - llama_risk.chain_metrics.total_susde_supply) / susde_supply > value_diff_trigger:
+        send_telegram_message(
+            f"⚠️ Susde: supply values are not similar: ethena {susde_supply} != llama_risk {llama_risk.chain_metrics.total_susde_supply}",
+            PROTOCOL,
+        )
+        return
 
 
 if __name__ == "__main__":

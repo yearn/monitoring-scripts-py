@@ -10,6 +10,8 @@ The script [`ethena/ethena.py`](ethena.py) runs **hourly via GitHub Actions** to
 
 ### Data Sources
 
+#### Off-Chain
+
 Data used is provided by Ethena on [transparency page](https://app.ethena.fi/dashboards/transparency) and LlamaRisk:
 
 1. **Ethena Transparency**
@@ -19,6 +21,13 @@ Data used is provided by Ethena on [transparency page](https://app.ethena.fi/das
    `GET https://api.llamarisk.com/protocols/ethena/overview/all/?format=json`
 
 > NOTE: Ethena data is not available when running on Github Actions, so we use LlamaRisk data only.
+
+#### On-Chain
+
+1. **USDe Supply**
+   `totalSupply` for USDe token
+2. **sUSDe Supply**
+   `totalSupply` for sUSDe token
 
 ### What We Monitor
 
@@ -32,3 +41,6 @@ Data used is provided by Ethena on [transparency page](https://app.ethena.fi/das
 
 3. **Data Freshness**
    • If collateral or chain data is older than 6h from either API triggers a stale-data warning. Also, if reserve data is older than 12 h, send a warning.
+
+4. **On-Chain Supply**
+   • Ethena vs LlamaRisk supply for USDe and sUSDe — alert if they differ by > 0.5%
