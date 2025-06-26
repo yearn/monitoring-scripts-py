@@ -40,7 +40,8 @@ Data used is provided by Ethena on [transparency page](https://app.ethena.fi/das
    • Ethena vs LlamaRisk collateral — alert if they differ by > 0.1%
 
 3. **Data Freshness**
-   • If collateral or chain data is older than 6h from either API triggers a stale-data warning. Also, if reserve data is older than 12 h, send a warning.
+   • If collateral or chain data is older than 12h from either API triggers a stale-data warning. Also, if reserve data is older than 12 h, send a warning.
 
 4. **On-Chain Supply**
    • Ethena vs LlamaRisk supply for USDe and sUSDe — alert if they differ by > 0.5%
+   • If chain data is old, use on-chain data for validating backings
