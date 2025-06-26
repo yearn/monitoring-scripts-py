@@ -99,8 +99,8 @@ jobs:
         run: uv run silo/ur_sniff.py
       # - name: Run Silo Bad Debt script
       #   run: uv run silo/main.py
-      - name: Run Pendle price script
-        run: uv run pendle/main.py
+      # - name: Run Pendle price script
+      #   run: uv run pendle/main.py
       - name: Run LRT Peg Checker Balancer
         run: uv run lrt-pegs/balancer/main.py
       - name: Run Morpho Governance Monitoring script
