@@ -76,14 +76,14 @@ def classify_fed_type(protocol: str) -> FedType:
     """Classify Fed type based on protocol and name"""
     if protocol == "FiRM":
         return FedType.FIRM
-    elif protocol in ["Frontier", "Fuse6", "Fuse24"]:
+    elif protocol in ["Frontier", "Fuse", "Fuse24", "Badger", "0xb1", "Yearn", "Scream"]:
         return FedType.DEPRECATED
-    elif protocol in ["Badger", "0xb1", "Yearn", "Convex", "Scream", "Velo", "Aura", "AuraEuler", "Aero", "FraxPyusd"]:
-        return FedType.AMM
     elif protocol in ["ArbiFed", "BaseCCTP", "OptiCCTP", "Gearbox"]:
         return FedType.CROSS_CHAIN
-    else:
+    elif protocol in ["Velodrome", "Aerodrome", "Convex", "Aura", "AuraEuler", "Aero"]:
         return FedType.AMM  # Default to AMM for unknown protocols
+    else:
+        return FedType.AMM
 
 
 def get_all_feds_overview() -> List[FedInfo]:
@@ -207,6 +207,8 @@ def calculate_fed_metrics(feds: List[FedInfo], dola_price: float) -> FedMonitori
     if firm_feds:
         firm_fed = firm_feds[0]  # Should only be one FiRM Fed
         firm_utilization = firm_fed.utilization_ratio or 0.0
+    else:
+        raise Exception("No FiRM Fed found")
 
     # AMM Feds backing ratios
     amm_feds_backing = {}
@@ -253,10 +255,11 @@ def monitor_firm_fed(fed: FedInfo) -> None:
 
 def monitor_overall_risk(metrics: FedMonitoringMetrics, dola_price: float, dola_supply: float) -> None:
     """Monitor overall system risk"""
-    if metrics.firm_utilization > 0.8:
+    print(f"Firm utilization: {metrics.firm_utilization:.1%}")
+    if metrics.firm_utilization > 0.80:
         send_telegram_message(
             f"🚨 FiRM utilization is high: {metrics.firm_utilization:.1%}. "
-            f"TVL: ${metrics.total_fed_supply:,.0f}, Borrows: ${metrics.total_fed_supply:,.0f}",
+            f"TVL: ${metrics.total_fed_supply:,.0f}, Borrows: ${metrics.total_fed_borrows:,.0f}",
             PROTOCOL_NAME,
         )
     # DOLA price alerts
@@ -284,9 +287,52 @@ def monitor_deprecated_feds(feds: List[FedInfo]) -> None:
                     f"⚠️ Frontier Fed has significant supply: ${fed.supply:,.0f}. Above the last recorded value.",
                     PROTOCOL_NAME,
                 )
-        elif fed.supply > 1000:
+            if fed.borrows > 6157168:
+                send_telegram_message(
+                    f"⚠️ Frontier Fed has significant borrows: ${fed.borrows:,.0f}. Above the last recorded value.",
+                    PROTOCOL_NAME,
+                )
+            continue
+        if fed.supply > 1000:
             send_telegram_message(
-                f"⚠️ Deprecated {fed.protocol} Fed has significant supply: ${fed.supply:,.0f}. Above the last recorded value.",
+                f"⚠️ Deprecated {fed.protocol} ({fed.name}) Fed has significant supply: ${fed.supply:,.0f}. Above the last recorded value.",
+                PROTOCOL_NAME,
+            )
+        if fed.borrows > 0:
+            if fed.name == "Fuse6 Fed" and fed.borrows < 5432:
+                continue
+            if fed.name == "Badger Fed" and fed.borrows < 11717:
+                continue
+            if fed.name == "0xb1 Fed" and fed.borrows < 174619:
+                continue
+            send_telegram_message(
+                f"⚠️ Deprecated {fed.protocol} ({fed.name}) Fed has significant borrows: ${fed.borrows:,.0f}. Above the last recorded value.",
+                PROTOCOL_NAME,
+            )
+        if fed.circSupply > 0:
+            send_telegram_message(
+                f"⚠️ Deprecated {fed.protocol}({fed.name}) Fed has circSupply: ${fed.circSupply:,.0f}",
+                PROTOCOL_NAME,
+            )
+
+
+def monitor_amm_feds(feds: List[FedInfo]) -> None:
+    """Monitor AMM Feds for unexpected activity"""
+    amm_feds = [fed for fed in feds if fed.fed_type == FedType.AMM]
+    for fed in amm_feds:
+        if fed.circSupply > 0:
+            send_telegram_message(
+                f"⚠️ AMM {fed.protocol} Fed has circSupply: ${fed.circSupply:,.0f}",
+                PROTOCOL_NAME,
+            )
+        if fed.supply > 0:
+            send_telegram_message(
+                f"⚠️ AMM {fed.protocol} Fed has supply: ${fed.supply:,.0f}",
+                PROTOCOL_NAME,
+            )
+        if fed.borrows > 0:
+            send_telegram_message(
+                f"⚠️ AMM {fed.protocol} Fed has borrows: ${fed.borrows:,.0f}",
                 PROTOCOL_NAME,
             )
 
@@ -295,9 +341,12 @@ def monitor_total_fed_supply_borrows(feds: List[FedInfo]) -> None:
     """Monitor total Fed supply for unexpected activity"""
     total_fed_supply = sum(fed.supply for fed in feds)
     total_fed_borrows = sum(fed.borrows for fed in feds)
-    if total_fed_borrows > total_fed_supply * 0.8:
+    print(
+        f"Total Fed supply: {total_fed_supply:,.0f}, Total Fed borrows: {total_fed_borrows:,.0f}, ratio: {total_fed_borrows / total_fed_supply:.1%}"
+    )
+    if total_fed_borrows > total_fed_supply * 0.75:
         send_telegram_message(
-            f"🚨 Total Fed borrows is greater than supply: ${total_fed_borrows:,.0f} > ${total_fed_supply:,.0f} * 0.8",
+            f"🚨 Total Fed borrows is greater than supply: ${total_fed_borrows:,.0f} > ${total_fed_supply:,.0f} * 0.75",
             PROTOCOL_NAME,
         )
 
@@ -364,6 +413,7 @@ if __name__ == "__main__":
         dola_supply, sdola_supply, sdola_assets = get_tokens_supply()
         monitor_overall_risk(metrics, dola_staking.dola_price_usd, dola_supply)
         monitor_deprecated_feds(feds)
+        monitor_amm_feds(feds)
         monitor_total_fed_supply_borrows(feds)
         monitor_dola_staking(dola_staking, sdola_supply, sdola_assets)
         print(f"✅ Monitoring completed successfully. Checked {len(feds)} Feds.")
