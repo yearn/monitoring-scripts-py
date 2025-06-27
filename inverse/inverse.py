@@ -22,6 +22,7 @@ GOVERNANCE_URL = INVERSE_API_URL + "/governance-notifs"
 DOLA_CONTRACT = "0x865377367054516e17014CcdED1e7d814EDC9ce4"
 SDOLA_CONTRACT = "0xb45ad160634c528Cc3D2926d9807104FA3157305"
 ERC20_ABI = load_abi("common-abi/ERC20.json")
+ERC4626_ABI = load_abi("common-abi/YearnV3Vault.json")
 
 
 class FedType(Enum):
@@ -179,20 +180,21 @@ def get_dola_staking() -> DolaStaking:
         session.close()
 
 
-def get_tokens_supply() -> tuple[float, float]:
+def get_tokens_supply() -> tuple[float, float, float]:
     client = ChainManager.get_client(Chain.MAINNET)
     dola_contract = client.eth.contract(address=DOLA_CONTRACT, abi=ERC20_ABI)
-    sdola_contract = client.eth.contract(address=SDOLA_CONTRACT, abi=ERC20_ABI)
+    sdola_contract = client.eth.contract(address=SDOLA_CONTRACT, abi=ERC4626_ABI)
 
     with client.batch_requests() as batch:
         batch.add(dola_contract.functions.totalSupply())
         batch.add(sdola_contract.functions.totalSupply())
+        batch.add(sdola_contract.functions.totalAssets())
         responses = client.execute_batch(batch)
-        if len(responses) == 2:
-            dola_supply, sdola_supply = responses
-            return dola_supply / 1e18, sdola_supply / 1e18
+        if len(responses) == 3:
+            dola_supply, sdola_supply, sdola_assets = responses
+            return dola_supply / 1e18, sdola_supply / 1e18, sdola_assets / 1e18
         else:
-            raise Exception(f"Expected 2 responses, got {len(responses)} from blockchain batch call")
+            raise Exception(f"Expected 3 responses, got {len(responses)} from blockchain batch call")
 
 
 def calculate_fed_metrics(feds: List[FedInfo], dola_price: float) -> FedMonitoringMetrics:
@@ -300,8 +302,9 @@ def monitor_total_fed_supply_borrows(feds: List[FedInfo]) -> None:
         )
 
 
-def monitor_dola_staking(dola_staking: DolaStaking, sdola_supply_onchain: float) -> None:
+def monitor_dola_staking(dola_staking: DolaStaking, sdola_supply_onchain: float, sdola_assets_onchain: float) -> None:
     """Monitor DOLA staking for unexpected activity"""
+    max_diff = 0.001  # 0.1%
     # DOLA Staking monitoring (existing logic)
     if dola_staking.s_dola_total_assets < dola_staking.s_dola_supply:
         send_telegram_message(
@@ -309,21 +312,38 @@ def monitor_dola_staking(dola_staking: DolaStaking, sdola_supply_onchain: float)
             f"< Supply {dola_staking.s_dola_supply:,.0f}",
             PROTOCOL_NAME,
         )
-
-    # Exchange rate validation
+    # Exchange rate validation off chain data
     calculated_ex_rate = dola_staking.s_dola_total_assets / dola_staking.s_dola_supply
-    if abs(calculated_ex_rate - dola_staking.s_dola_ex_rate) > 0.001:
+    calculated_ex_rate_diff = abs(calculated_ex_rate - dola_staking.s_dola_ex_rate) / calculated_ex_rate
+    if calculated_ex_rate_diff > max_diff:
         send_telegram_message(
-            f"🚨 sDOLA exchange rate mismatch: Calculated {calculated_ex_rate:.4f} "
-            f"vs API {dola_staking.s_dola_ex_rate:.4f}",
+            f"🚨 sDOLA exchange rate mismatch: Calculated with off chain data {calculated_ex_rate:.4f} "
+            f"vs API {dola_staking.s_dola_ex_rate:.4f} ({calculated_ex_rate_diff / calculated_ex_rate:.1%}%)",
+            PROTOCOL_NAME,
+        )
+    # Exchange rate validation on chain data
+    onchain_exchange_rate = sdola_assets_onchain / sdola_supply_onchain
+    onchain_exchange_rate_diff = abs(onchain_exchange_rate - dola_staking.s_dola_ex_rate) / onchain_exchange_rate
+    if onchain_exchange_rate_diff > max_diff:
+        send_telegram_message(
+            f"🚨 sDOLA exchange rate mismatch: On-chain{onchain_exchange_rate:.4f} "
+            f"vs API {dola_staking.s_dola_ex_rate:.4f} ({onchain_exchange_rate_diff / onchain_exchange_rate:.1%}%)",
             PROTOCOL_NAME,
         )
     # sDOLA supply verification
-    supply_diff_pct = abs(sdola_supply_onchain - dola_staking.s_dola_supply) / dola_staking.s_dola_supply
-    if supply_diff_pct > 0.01:  # 1% tolerance
+    sdola_supply_diff = abs(sdola_supply_onchain - dola_staking.s_dola_supply) / sdola_supply_onchain
+    if sdola_supply_diff > max_diff:
         send_telegram_message(
             f"🚨 sDOLA supply mismatch: On-chain {sdola_supply_onchain:,.0f} "
-            f"vs API {dola_staking.s_dola_supply:,.0f} ({supply_diff_pct:.1%} diff)",
+            f"vs API {dola_staking.s_dola_supply:,.0f} ({sdola_supply_diff / sdola_supply_onchain:.1%}%)",
+            PROTOCOL_NAME,
+        )
+    # sDOLA assets verification
+    sdola_assets_diff = abs(sdola_assets_onchain - dola_staking.s_dola_total_assets) / sdola_assets_onchain
+    if sdola_assets_diff > max_diff:
+        send_telegram_message(
+            f"🚨 sDOLA assets mismatch: On-chain {sdola_assets_onchain:,.0f} "
+            f"vs API {dola_staking.s_dola_total_assets:,.0f} ({sdola_assets_diff / sdola_assets_onchain:.1%}%)",
             PROTOCOL_NAME,
         )
 
@@ -341,11 +361,11 @@ if __name__ == "__main__":
                 monitor_firm_fed(fed)
 
         # Monitor overall risk
-        dola_supply, sdola_supply = get_tokens_supply()
+        dola_supply, sdola_supply, sdola_assets = get_tokens_supply()
         monitor_overall_risk(metrics, dola_staking.dola_price_usd, dola_supply)
         monitor_deprecated_feds(feds)
         monitor_total_fed_supply_borrows(feds)
-        monitor_dola_staking(dola_staking, sdola_supply)
+        monitor_dola_staking(dola_staking, sdola_supply, sdola_assets)
         print(f"✅ Monitoring completed successfully. Checked {len(feds)} Feds.")
 
     except Exception as e:
