@@ -26,3 +26,8 @@ DOLA supply is checked from the contract and verified it matches the supply from
 #### SDOLA Supply Monitoring
 
 Check SDOLA supply from the contract and verify it matches the supply from the API, if the difference is greater than 0.5%, telegram alert is sent. Exchange rate is also verified from the contract and API.
+
+## Governance
+
+- Monitor [Governance timelock contract](https://etherscan.io/address/0xe082EB109fAd53eA8DB9827ce6b8ef74882734fc#readContract#F3) using Tenderly alerts. TODO: add tenderly before merging
+- Monitor [chair multisig](https://etherscan.io/address/0xe082EB109fAd53eA8DB9827ce6b8ef74882734fc#readContract#F1) which can mint and burn additional liquidity.
