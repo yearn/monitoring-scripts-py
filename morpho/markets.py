@@ -55,6 +55,16 @@ VAULTS_BY_CHAIN = {
         ["Yearn OG WETH", "0x1D795E29044A62Da42D927c4b179269139A28A6B", 2],
         ["Yearn OG USDC", "0xef417a2512C5a41f69AE4e021648b69a7CdE5D03", 2],
     ],
+    Chain.KATANA: [
+        ["Yearn OG WETH", "0xFaDe0C546f44e33C134c4036207B314AC643dc2E", 1],
+        ["Yearn OG USDC", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7", 1],
+        ["Yearn OG USDT", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7", 1],
+        ["Gauntlet USDC Vault", "0xE4248e2105508FcBad3fe95691551d1AF14015f7", 1],
+        ["SteakhouseHigh Yield USDC", "0x1445A01a57D7B7663CfD7B4EE0a8Ec03B379aabD", 1],
+        ["GauntletUSDT Vault USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E", 2],
+        ["SteakhousePrime USDC", "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d", 1],
+        ["GauntletWETH Vault", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf", 1],
+    ],
 }
 
 MARKETS_RISK_1 = {
@@ -94,6 +104,10 @@ MARKETS_RISK_1 = {
         "0xdc69cf2caae7b7d1783fb5a9576dc875888afad17ab3d1a3fc102f741441c165",  # rETH/WETH -> lltv 94.5%, oracle: Chainlink rETH/ETH
         "0x78d11c03944e0dc298398f0545dc8195ad201a18b0388cb8058b1bcb89440971",  # USDC/WETH -> lltv 86.5%, oracle: Chainlink ETH/USD and Chainlink USDC/USD
     ],
+    Chain.KATANA: [
+        "0xcd2dc555dced7422a3144a4126286675449019366f83e9717be7c2deb3daae3e",  # vbWBTC/vbUSDC -> lltv 86%, oracle: Chainlink WBTC/BTC, Chainlink BTC/USD and Chainlink USDC/USD
+        "0x2fb14719030835b8e0a39a1461b384ad6a9c8392550197a7c857cf9fcbd6c534",  # vbETH/vbUSDC -> lltv 86%, oracle: Chainlink ETH/USD and Chainlink USDC/USD
+    ],
 }
 
 MARKETS_RISK_2 = {
@@ -131,6 +145,10 @@ MARKETS_RISK_2 = {
         "0x5189c48e1d333d250642a96b90dc926c53f897d8b8f9e8fea71a4b14e9053fde",  # steakSUSDS/USDC -> lltv: 96.5%, oracle: Maker's SSR oracle for sUSDS / USDS and dummy oracle for USDC returns 1. USDS = USDC
         "0xdba352d93a64b17c71104cbddc6aef85cd432322a1446b5b65163cbbc615cd0c",  # cbETH/USDC -> lltv 86.5%, oracle: Chainlink cbETH/ETH and Chainlink ETH/USD and Chainlink USDC/USD -> but low liquidity
     ],
+    Chain.KATANA: [
+        "0xd4ab732112fa9087c9c3c3566cd25bc78ee7be4f1b8bdfe20d6328debb818656",  # vbWBTC/vbUSDT -> lltv 86%, oracle: Chainlink WBTC/USD
+        "0x9e03fc0dc3110daf28bc6bd23b32cb20b150a6da151856ead9540d491069db1c",  # vbETH/vbUSDT -> lltv 86%, oracle: Chainlink ETH/USD
+    ]
 }
 
 MARKETS_RISK_3 = {
