@@ -148,7 +148,7 @@ MARKETS_RISK_2 = {
     Chain.KATANA: [
         "0xd4ab732112fa9087c9c3c3566cd25bc78ee7be4f1b8bdfe20d6328debb818656",  # vbWBTC/vbUSDT -> lltv 86%, oracle: Chainlink WBTC/USD
         "0x9e03fc0dc3110daf28bc6bd23b32cb20b150a6da151856ead9540d491069db1c",  # vbETH/vbUSDT -> lltv 86%, oracle: Chainlink ETH/USD
-    ]
+    ],
 }
 
 MARKETS_RISK_3 = {
