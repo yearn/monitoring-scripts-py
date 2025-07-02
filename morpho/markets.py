@@ -59,11 +59,12 @@ VAULTS_BY_CHAIN = {
         ["Yearn OG WETH", "0xFaDe0C546f44e33C134c4036207B314AC643dc2E", 1],
         ["Yearn OG USDC", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7", 1],
         ["Yearn OG USDT", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7", 1],
+        ["Yearn OG WBTC", "0xe107cCdeb8e20E499545C813f98Cc90619b29859", 2],
         ["Gauntlet USDC Vault", "0xE4248e2105508FcBad3fe95691551d1AF14015f7", 1],
         ["SteakhouseHigh Yield USDC", "0x1445A01a57D7B7663CfD7B4EE0a8Ec03B379aabD", 1],
-        ["GauntletUSDT Vault USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E", 2],
+        ["GauntletUSDT Vault USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E", 1],
         ["SteakhousePrime USDC", "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d", 1],
-        ["GauntletWETH Vault", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf", 1],
+        ["GauntletWETH Vault", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf", 2],
     ],
 }
 
@@ -148,6 +149,7 @@ MARKETS_RISK_2 = {
     Chain.KATANA: [
         "0xd4ab732112fa9087c9c3c3566cd25bc78ee7be4f1b8bdfe20d6328debb818656",  # vbWBTC/vbUSDT -> lltv 86%, oracle: Chainlink WBTC/USD
         "0x9e03fc0dc3110daf28bc6bd23b32cb20b150a6da151856ead9540d491069db1c",  # vbETH/vbUSDT -> lltv 86%, oracle: Chainlink ETH/USD
+        "0x60b54e17d55b765955a20908ed5143192a48df7fd3833f7f7fe86504bf6c4c1a",  # LBTC/vbBTC -> lltv 91.5%,  oracle: RedStone Price Feed for LBTC_FUNDAMENTAL
     ],
 }
 
@@ -180,9 +182,10 @@ MARKETS_RISK_3 = {
         "0x214c2bf3c899c913efda9c4a49adff23f77bbc2dc525af7c05be7ec93f32d561",  # wrsETH/WETH -> lltv 94.5%, oracle: Chainlink wrsETH/ETH exchange rate
         "0x6a331b22b56c9c0ee32a1a7d6f852d2c682ea8b27a1b0f99a9c484a37a951eb7",  # weETH/USDC -> lltv 77%, oracle: Chainlink weETH / eETH Exchange Rate and Chainlink ETH/USD and Chainlink USDC/USD
         "0x52a2a376586d0775e3e80621facc464f6e96d81c8cb70fd461527dde195a079f",  # LBTC/USDC -> lltv 86%, oracle: RedStone Price Feed for LBTC/BTC  and Chainlink BTC/USD
-        "0x30767836635facec1282e6ef4a5981406ed4e72727b3a63a3a72c74e8279a8d7",  # LBTC/cbBTC -> lltv 94.5%, oracle: RedStone Price Feed for LBTC_FUNDAMENTAL... verify this oracle: https://app.redstone.finance/app/feeds/base/lbtc_fundamental/
+        "0x30767836635facec1282e6ef4a5981406ed4e72727b3a63a3a72c74e8279a8d7",  # LBTC/cbBTC -> lltv 94.5%, oracle: RedStone Price Feed for LBTC_FUNDAMENTAL: https://app.redstone.finance/app/feeds/base/lbtc_fundamental/
         "0x7f90d72667171d72d10d62b5828d6a5ef7254b1e33718fe0c1f7dcf56dd1edc7",  # bsdETH/WETH -> lltv 91.5%, oracle: bsdETH total supply. rToken implementation: https://app.reserve.org/base/token/0xcb327b99ff831bf8223cced12b1338ff3aa322ff/overview
     ],
+    Chain.KATANA: [],
 }
 
 MARKETS_RISK_4 = {
@@ -212,12 +215,15 @@ MARKETS_RISK_4 = {
         "0xff0f2bd52ca786a4f8149f96622885e880222d8bed12bbbf5950296be8d03f89",  # USR/USDC -> lltv 91.5%, oracle: pyth USR/USD and qoute pyth USDC/USD
         "0x04f7605a25699d0eff9f92908d25da8702ff59596d159e8bb66eca24b021d99f",  # PT-USR-24APR2025/USDC -> lltv 91.5%, oracle: PendlePT exchange rate(PT to asset) * USR/USD redeption price from pyth, quote Chainlink USDC/USD
     ],
+    Chain.KATANA: [],
 }
 
 MARKETS_RISK_5 = {
+    Chain.MAINNET: [],
     Chain.BASE: [
         "0xcf21c3ca9434959fbf882f7d977f90fe22b7a79e6f39cada5702b56b25e58613",  # PT-USR-24APR2025/USDC -> lltv 91.5%, oracle: PendlePT exchange rate(PT to SY) * USR/USD redeption price from pyth. Problem: no USDC/USD quote, only USR/USD conversion.
     ],
+    Chain.KATANA: [],
 }
 
 # Define base allocation tiers
