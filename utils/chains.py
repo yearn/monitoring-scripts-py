@@ -7,6 +7,7 @@ class Chain(Enum):
     BASE = (8453, "base", "base")
     ARBITRUM = (42161, "arbitrum", "arb")
     POLYGON = (137, "polygon", "matic")
+    KATANA = (747474, "katana", "kat")
 
     def __init__(self, chain_id: int, network_name: str, symbol: str):
         self.chain_id = chain_id
