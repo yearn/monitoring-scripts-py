@@ -108,13 +108,13 @@ def get_proposals():
 
             metadata = proposal["metadata"]
             title = metadata["title"]
-            description = metadata["description"]
+            # description = metadata["description"]
             if title:
                 message += f"📝 Title: {title}\n"
-            if description:
-                summary = extract_summary_from_description(description)
-                if summary:
-                    message += f"📝 Description: {summary}\n\n"
+            # if description:
+            #     summary = extract_summary_from_description(description)
+            #     if summary:
+            #         message += f"📝 Description: {summary}\n\n"
 
         send_telegram_message(message, PROTOCOL)
         # write the last reported id (highest ID since we sorted ascending)
