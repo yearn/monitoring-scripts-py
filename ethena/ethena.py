@@ -130,9 +130,8 @@ def get_llamarisk_data() -> LlamaRiskData | None:
         )
 
     if is_stale_timestamp(timestamp_chain, hours_ago):
-        send_telegram_message(
-            f"⚠️ Chain data is older than {hours_ago} hours. Timestamp: {timestamp_chain}", PROTOCOL, True
-        )
+        # NOTE: don't send telegram message because there is a problem with the API
+        print(f"⚠️ Chain data is older than {hours_ago} hours. Timestamp: {timestamp_chain}")
 
     if is_stale_timestamp(timestamp_reserve, hours_ago):
         send_telegram_message(
