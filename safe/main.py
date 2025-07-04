@@ -195,6 +195,11 @@ def main():
             "mainnet",
             "0xb7cB7131FFc18f87eEc66991BECD18f2FF70d2af",
         ],  # LBTC boring vault big boss
+        [
+            "INVERSE",
+            "mainnet",
+            "0x8F97cCA30Dbe80e7a8B462F1dD1a51C32accDfC8",
+        ],  # chair multisig contract that can mint and burn additional liquidity for Gearbox
         # [
         #     "USD0",
         #     "mainnet",
