@@ -115,6 +115,10 @@ MARKETS_RISK_1 = {
         "0x2fb14719030835b8e0a39a1461b384ad6a9c8392550197a7c857cf9fcbd6c534",  # vbETH/vbUSDC -> lltv 86%, oracle: Chainlink ETH/USD and Chainlink USDC/USD
         "0x60b54e17d55b765955a20908ed5143192a48df7fd3833f7f7fe86504bf6c4c1a",  # LBTC/vbBTC -> lltv 91.5%,  oracle: RedStone Price Feed for LBTC_FUNDAMENTAL -> Katana WBTC vault bridge accepts LBTC markets as collateral, no additional risk when using LBTC on Katana chain
         "0xd3b3c992070b5a6271b11acde46cdad575e4187e499782e084d73e523153f1ed",  # wstETH/vbUSDC -> lltv 86%, oracle: Chainlink wsteth/ETH, Chainlink ETH/USD and Chainlink USDC/USD
+        "0x4b7a328d4c03ea974acac4a4c5f092870afe707df88aa4c5d834f93d96894050",  # vbETH/vbUSDC -> lltv 86%, oracle: Api3 ETH/USD and Api3 USDC/USD
+        "0x499a1b2827cff06de432a00b5e8c4509d4c2a7eafc638c0df6a09a8fa1c8d649",  # vbWBTC/vbUSDC -> lltv 86%, oracle: Api3 BTC/USD and Api3 USDC/USD
+        "0x4bc9c84a5271f5196357c0ed18af783614851f23ac11652e78b9934e34baa5d1",  # vbETH/vbUSDT -> lltv 86%, oracle: Api3 ETH/USD and Api3 USDT/USD
+        "0x9c95ce191559ba7652c7a2d74568590824c1166a2994fcef696b413c18efe7ee",  # vbWBTC/vbUSDT -> lltv 86%, oracle: Api3 BTC/USD and Api3 USDT/USD
     ],
 }
 
@@ -159,6 +163,7 @@ MARKETS_RISK_2 = {
         "0xd4ab732112fa9087c9c3c3566cd25bc78ee7be4f1b8bdfe20d6328debb818656",  # vbWBTC/vbUSDT -> lltv 86%, oracle: Chainlink WBTC/USD
         "0x9e03fc0dc3110daf28bc6bd23b32cb20b150a6da151856ead9540d491069db1c",  # vbETH/vbUSDT -> lltv 86%, oracle: Chainlink ETH/USD
         "0xfe6cb1b88d8830a884f2459962f4b96ae6e38416af086b8ae49f5d0f7f9fc0cd",  # POL/vbUSDC -> lltv 77%, oracle: Chainlink POL/USD and Chainlink USDC/USD
+        "0xa0cd6b9d1fcc6baded4f7f8f93697dbe7f24f6e1fc22602a625c7a80b8e8e6ef",  # LBTC/vbUSDC -> lltv 86%, oracle: Chainlink LBTC/USD and Chainlink USDC/USD
     ],
 }
 
