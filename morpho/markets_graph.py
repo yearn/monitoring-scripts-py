@@ -122,7 +122,7 @@ def check_high_allocation(vault_data, chain: Chain):
     Send telegram message if high allocation is detected in any market.
     Send another message if total risk level is too high.
     """
-    total_assets = int(vault_data["lastTotalAssets"])
+    total_assets = int(vault_data.get("lastTotalAssets", 0))
     if total_assets == 0:
         return
 
@@ -147,7 +147,7 @@ def check_high_allocation(vault_data, chain: Chain):
     for market_data in vault_data["markets"]:
         market = market_data["market"]
         makret_id = market["id"]
-        market_supply = int(market["totalSupply"])
+        market_supply = int(market.get("totalSupply", 0))
         allocation_ratio = market_supply / total_assets
         idle_market = market["inputToken"]["id"] == "0x0000000000000000000000000000000000000000"
         decimals = market["borrowedToken"]["decimals"]
