@@ -34,6 +34,8 @@ VAULTS_BY_CHAIN = {
         ["LlamaRisk crvUSD Vault", "0x67315dd969B8Cd3a3520C245837Bf71f54579C75", 2],
         ["Yearn OG WETH", "0xE89371eAaAC6D46d4C3ED23453241987916224FC", 2],
         ["Yearn OG DAI", "0x3DC15A363f5Dcf3B9dB90a5C0e2a5Cdf8f1CD77E", 2],
+        ["Yearn OG USDC", "0xF9bdDd4A9b3A45f980e11fDDE96e16364dDBEc49", 2],
+        ["Yearn Degen USDC", "0xdC2Dd5189F70Fe2832D9caf7b17d27AA3D79dbE1", 3],
         # these vaults are not used by yVaults
         ["Gauntlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2", 3],
         ["Gauntlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458", 4],
@@ -149,6 +151,8 @@ MARKETS_RISK_2 = {
         "0x85ab69d50add7daa0934b5224889af0a882f2e3b4572d82c771dd0875f4eaa9b",  # pufETH/WETH -> lltv 94.5%, oracle: pufETH vault exchange rate. Alike assets.
         "0xbf02d6c6852fa0b8247d5514d0c91e6c1fbde9a168ac3fd2033028b5ee5ce6d0",  # LBTC/USDC -> lltv 86%, oracle: Redstone LBTC / BTC Redstone redemption price feed and Chainlink BTC/USD. More info on LBTC/BTC: https://docs.redstone.finance/docs/data/lombard/#how-redstone-delivers-lbtcbtc-fundamental-price
         "0xf6a056627a51e511ec7f48332421432ea6971fc148d8f3c451e14ea108026549",  # LBTC/WBTC -> lltv 94.5%, oracle: readstone exchange rate LBTC/BTC and chainlink WBTC/BTC
+        "0xdb8938f97571aeab0deb0c34cf7e6278cff969538f49eebe6f4fc75a9a111293",  # ETH+/USDC -> lltv 86%, oracle: ETH+ / USD exchange rate adapter and Chainlink: USDC/USD. ETH+ token has monitoring.
+        "0xc6ae8e71e11ef511acee3f6cc6ad2af67b862877d459e3789905f537c85db5e3",  # PT-sUSDE-25SEP2025/DAI -> lltv 91.5%, oracle: PendleSparkLinearDiscountOracle with linear discount oracle for sUSDE. No price oracle for DAI, USDe = DAI.
     ],
     Chain.BASE: [
         "0x6aa81f51dfc955df598e18006deae56ce907ac02b0b5358705f1a28fcea23cc0",  # wstETH/WETH -> lltv 96.5%, oracle: Chainlink wstETH-stETH Exchange Rate
@@ -158,6 +162,7 @@ MARKETS_RISK_2 = {
         "0xdaa04f6819210b11fe4e3b65300c725c32e55755e3598671559b9ae3bac453d7",  # AERO/USDC -> lltv 62.5%, oracle: Chainlink AERO/USD and Chainlink USDC/USD
         "0x5189c48e1d333d250642a96b90dc926c53f897d8b8f9e8fea71a4b14e9053fde",  # steakSUSDS/USDC -> lltv: 96.5%, oracle: Maker's SSR oracle for sUSDS / USDS and dummy oracle for USDC returns 1. USDS = USDC
         "0xdba352d93a64b17c71104cbddc6aef85cd432322a1446b5b65163cbbc615cd0c",  # cbETH/USDC -> lltv 86.5%, oracle: Chainlink cbETH/ETH and Chainlink ETH/USD and Chainlink USDC/USD -> but low liquidity
+        "0x7f90d72667171d72d10d62b5828d6a5ef7254b1e33718fe0c1f7dcf56dd1edc7",  # bsdETH/WETH -> lltv 91.5%, oracle: bsdETH total supply. bsdETH token has internal monitoring.
     ],
     Chain.KATANA: [
         "0xd4ab732112fa9087c9c3c3566cd25bc78ee7be4f1b8bdfe20d6328debb818656",  # vbWBTC/vbUSDT -> lltv 86%, oracle: Chainlink WBTC/USD
@@ -187,6 +192,8 @@ MARKETS_RISK_3 = {
         "0xeec6c7e2ddb7578f2a7d86fc11cf9da005df34452ad9b9189c51266216f5d71b",  # PT-wstUSR-25SEP2025/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) wstUSR. USR/USD chainlink and USDC/USD chainlink.
         "0x729badf297ee9f2f6b3f717b96fd355fc6ec00422284ce1968e76647b258cf44",  # syrupUSDC/USDC -> lltv 91.5%, oracle: syrupUSDC MaplePool vault rate. Oracle is using convertToAssets() to get the price but maple pool returns different amount, it should use convertToExitAssets() instead.
         "0xa3819a7d2aee958ca0e7404137d012b51ea47d051db69d94656956eff8c80c23",  # PT-syrupUSDC-28AUG2025/USDC -> lltv 86%, oracle: Pendle PT exchange rate(PT to asset) syrupUSDC.
+        "0xfae6c3fca4d2fe61c62d29541e84a728b660a0dbc99217750c1080a8fc7d0e45",  # PT-eUSDE-14AUG2025/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) eUSDE. No price oracle for USDC, USDe = USDC.
+        "0x53ed197357128ed96070e20ba9f5af4250cda6c67dcac5246876beb483f51303",  # sDOLA/USDC -> lltv 91.5%, oracle: sDOLA vault rate. DOLA = USDC hardcoded oracle.
     ],
     Chain.BASE: [
         "0x9a697eb760dd12aaea23699c96ea2ebbfe48b7af64138d92c4d232b9ed380024",  # PT-LBTC-29MAY2025/cbBTC -> lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle. Higher lltv than PT-LBTC-27MAR2025 / WBTC.
@@ -195,7 +202,6 @@ MARKETS_RISK_3 = {
         "0x6a331b22b56c9c0ee32a1a7d6f852d2c682ea8b27a1b0f99a9c484a37a951eb7",  # weETH/USDC -> lltv 77%, oracle: Chainlink weETH / eETH Exchange Rate and Chainlink ETH/USD and Chainlink USDC/USD
         "0x52a2a376586d0775e3e80621facc464f6e96d81c8cb70fd461527dde195a079f",  # LBTC/USDC -> lltv 86%, oracle: RedStone Price Feed for LBTC/BTC  and Chainlink BTC/USD
         "0x30767836635facec1282e6ef4a5981406ed4e72727b3a63a3a72c74e8279a8d7",  # LBTC/cbBTC -> lltv 94.5%, oracle: RedStone Price Feed for LBTC_FUNDAMENTAL: https://app.redstone.finance/app/feeds/base/lbtc_fundamental/
-        "0x7f90d72667171d72d10d62b5828d6a5ef7254b1e33718fe0c1f7dcf56dd1edc7",  # bsdETH/WETH -> lltv 91.5%, oracle: bsdETH total supply. rToken implementation: https://app.reserve.org/base/token/0xcb327b99ff831bf8223cced12b1338ff3aa322ff/overview
     ],
     Chain.KATANA: [],
 }
