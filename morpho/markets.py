@@ -424,8 +424,8 @@ def check_low_liquidity(vault_data):
     liquidity = vault_data["liquidity"]["usd"]
     chain = Chain.from_chain_id(vault_data["chain"]["id"])
 
-    # Return early if total_assets is None or 0
-    if not total_assets:
+    # Return early if total_assets is None or 0 or less than 10k
+    if not total_assets or total_assets < 10_000:
         return
 
     # Default liquidity to 0 if it's None
