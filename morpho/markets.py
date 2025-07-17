@@ -121,6 +121,8 @@ MARKETS_RISK_1 = {
         "0x499a1b2827cff06de432a00b5e8c4509d4c2a7eafc638c0df6a09a8fa1c8d649",  # vbWBTC/vbUSDC -> lltv 86%, oracle: Api3 BTC/USD and Api3 USDC/USD
         "0x4bc9c84a5271f5196357c0ed18af783614851f23ac11652e78b9934e34baa5d1",  # vbETH/vbUSDT -> lltv 86%, oracle: Api3 ETH/USD and Api3 USDT/USD
         "0x9c95ce191559ba7652c7a2d74568590824c1166a2994fcef696b413c18efe7ee",  # vbWBTC/vbUSDT -> lltv 86%, oracle: Api3 BTC/USD and Api3 USDT/USD
+        "0x1e74d36ffbda65b8a45d72754b349cdd5ce807c5fa814f91ba8e3cd27881c34b",  # weETH/vbETH -> lltv 91.5%, oracle: Redstone weETH/ETH fundamental price
+        "0x22f9f76056c10ee3496dea6fefeaf2f98198ef597eda6f480c148c6d3aaa70db",  # wstETH/vbETH -> lltv 91.5%, oracle: Redstone wstETH/ETH fundamental price
     ],
 }
 
