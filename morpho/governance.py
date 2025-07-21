@@ -45,6 +45,13 @@ VAULTS_BY_CHAIN = {
         ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42"],
         ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8"],
     ],
+    Chain.KATANA: [
+        ["Gauntlet WBTC", "0xf243523996ADbb273F0B237B53f30017C4364bBC"],
+        ["Gauntlet USDC", "0xE4248e2105508FcBad3fe95691551d1AF14015f7"],
+        ["Gauntlet USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E"],
+        ["Gauntlet WETH", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf"],
+        ["Steakhouse Prime USDC", "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d"],
+    ],
 }
 
 
@@ -216,8 +223,10 @@ def get_data_for_chain(chain: Chain):
 
 def main():
     get_data_for_chain(Chain.MAINNET)
-    # get_data_for_chain(Chain.BASE)
     get_data_for_chain(Chain.POLYGON)
+    get_data_for_chain(Chain.KATANA)
+    # NOTE: skip base because we don't have TVL there
+    # get_data_for_chain(Chain.BASE)
 
 
 if __name__ == "__main__":
