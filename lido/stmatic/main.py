@@ -4,7 +4,7 @@ from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "LIDO"
-PEG_THRESHOLD = 0.05  # 5%
+PEG_THRESHOLD = 0.02  # 2%
 ASSET_BONDS_EXCEEDED = "GYR#357"
 
 # Load all required ABIs

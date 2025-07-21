@@ -89,18 +89,12 @@ jobs:
         run: uv run compound/main.py
       - name: Run Compound Proposals script
         run: uv run compound/proposals.py
-      - name: Run Lido Matic script
-        run: uv run lido/stmatic/main.py
       - name: Run Lido Ethereum script
         run: uv run lido/steth/main.py
-      # - name: Run Stargate script
-      #   run: uv run stargate/main.py
       - name: Run Silo Utilization script
         run: uv run silo/ur_sniff.py
       # - name: Run Silo Bad Debt script
       #   run: uv run silo/main.py
-      # - name: Run Pendle price script
-      #   run: uv run pendle/main.py
       - name: Run LRT Peg Checker Balancer
         run: uv run lrt-pegs/balancer/main.py
       - name: Run Morpho Governance Monitoring script
@@ -117,8 +111,6 @@ jobs:
         run: uv run euler/markets.py
       - name: Run RToken Monitoring script
         run: uv run rtoken/monitor_rtoken.py
-      # - name: Run USD0 Peg Price Checker
-      #   run: uv run usd0/price.py
       - name: Run RESOLV Monitoring script
         run: uv run resolv/resolv.py
       - name: Run Ethena script

@@ -23,9 +23,8 @@ Not monitoring [Easy track voting](https://docs.lido.fi/guides/easy-track-guide/
 
 ## Exchange rates
 
-Sending telegram message if the exchange rate on DEX is above [defined threshold](https://github.com/tapired/monitoring-scripts-py/blob/main/lido/steth/main.py#L7)`5%` from validator rate.
+Sending telegram message if the exchange rate on DEX is above [defined threshold](https://github.com/tapired/monitoring-scripts-py/blob/main/lido/steth/main.py#L7)`2%` from validator rate.
 
 - stETH: [Curve pool](https://curve.fi/#/ethereum/pools/steth/deposit) - [0xDC24316b9AE028F1497c275EB9192a3Ea0f67022](https://etherscan.io/address/0xDC24316b9AE028F1497c275EB9192a3Ea0f67022)
-- stMatic: [Balancer pool](https://balancer.fi/pools/polygon/v2/0xf0ad209e2e969eaaa8c882aac71f02d8a047d5c2000200000000000000000b49)
 
 [Python script code](https://github.com/tapired/monitoring-scripts-py/tree/main/lido)
