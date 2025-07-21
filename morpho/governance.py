@@ -223,8 +223,8 @@ def get_data_for_chain(chain: Chain):
 
 def main():
     get_data_for_chain(Chain.MAINNET)
-    get_data_for_chain(Chain.POLYGON)
-    get_data_for_chain(Chain.KATANA)
+    # get_data_for_chain(Chain.POLYGON)
+    # get_data_for_chain(Chain.KATANA)
     # NOTE: skip base because we don't have TVL there
     # get_data_for_chain(Chain.BASE)
 
