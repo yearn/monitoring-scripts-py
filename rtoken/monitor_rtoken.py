@@ -1,16 +1,12 @@
-import os
 from dataclasses import dataclass
 
 from utils.abi import load_abi
-from utils.cache import get_last_value_for_key_from_file, write_last_value_to_file
+from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "RTOKEN"
-
-# Cache configuration
-CACHE_FILENAME = os.getenv("CACHE_FILENAME", "cache-id.txt")
 
 # Load ABIs once
 ABI_RTOKEN = load_abi("rtoken/abi/rtoken.json")
@@ -169,7 +165,7 @@ def monitor_rtoken_on_chain(chain: Chain):
     if current_rate is not None:
         print(f"[{chain.network_name}] StRSR Current Exchange Rate: {current_rate}")
         cache_key = config.get_cache_key(chain)
-        initial_rate = get_last_value_for_key_from_file(CACHE_FILENAME, cache_key)
+        initial_rate = get_last_queued_id_from_file(cache_key)
 
         if initial_rate == 0:
             print(f"[{chain.network_name}] Saving initial StRSR exchange rate to cache: {current_rate}")
@@ -181,7 +177,7 @@ def monitor_rtoken_on_chain(chain: Chain):
                 f"Initial Rate (from cache): {initial_rate}"
             )
             send_telegram_message(message, PROTOCOL)
-        write_last_value_to_file(CACHE_FILENAME, cache_key, current_rate)
+        write_last_queued_id_to_file(cache_key, current_rate)
     else:
         send_telegram_message(
             f"Skipping StRSR exchange rate check due to invalid data from batch on {chain.network_name}.",
