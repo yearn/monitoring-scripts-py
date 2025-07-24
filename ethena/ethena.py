@@ -21,7 +21,7 @@ SUSDE_ADDRESS = "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497"
 ABI_ERC20 = load_abi("common-abi/ERC20.json")
 
 # Alert thresholds
-COLLATERAL_RATIO_TRIGGER = 1.01
+COLLATERAL_RATIO_TRIGGER = 1.0085  # must be overcollateralized by at least 0.85%
 
 REQUEST_TIMEOUT = 15  # seconds
 
@@ -94,7 +94,7 @@ def get_usde_supply() -> float | None:
 
     timestamp = data.get("timestamp")  # May be missing
     if timestamp and is_stale_timestamp(timestamp):
-        send_telegram_message(f"⚠️ {PROTOCOL}: supply data is older than 1 day", PROTOCOL, True)
+        print(f"⚠️ Data from ethena is old: {timestamp}")
         return None
 
     return float(data["supply"]) / 1e18
@@ -235,49 +235,51 @@ def main():
     llama_risk_is_old = parsed_timestamp is None or datetime.now() - parsed_timestamp > timedelta(hours=3)
     total_backing_assets = llama_risk.collateral_value + llama_risk.reserve_fund
 
-    usde_supply, susde_supply = get_tokens_supply()
     if llama_risk_is_old:
-        print("LlamaRisk data is old, using on-chain data")
-        supply = usde_supply / 1e18
+        # NOTE: skip validating old data, we already got telegram message
+        print(f"LlamaRisk data is old: {llama_risk.timestamp}")
+        return
 
     ratio = total_backing_assets / supply
 
     if ratio < COLLATERAL_RATIO_TRIGGER:
-        send_telegram_message(f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}", PROTOCOL)
+        send_telegram_message(
+            f"🚨 USDe is not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}",
+            PROTOCOL,
+        )
+
+    # Validate LlamaRisk data with on-chain data
+    usde_supply, susde_supply = get_tokens_supply()
+    # remove decimasl because llama risk values are without it
+    usde_supply = usde_supply / 1e18
+    susde_supply = susde_supply / 1e18
+    # NOTE: set higher value_diff_trigger because on-chain and off-chain values are not in sync
+    value_diff_trigger = 0.005  # 0.5%
+
+    error_messages = []
+
+    if abs(usde_supply - supply) / supply > value_diff_trigger:
+        error_messages.append(
+            "USDe supply values are not similar onchain diffrent from LlamaRisk: "
+            f"{supply} != {usde_supply} (diff: {abs(usde_supply - supply) / supply})"
+        )
+
+    if abs(susde_supply - llama_risk.chain_metrics.total_susde_supply) / susde_supply > value_diff_trigger:
+        error_messages.append(
+            "sUSDe supply values are not similar onchain diffrent from LlamaRisk: "
+            f"{susde_supply} != {llama_risk.chain_metrics.total_susde_supply} "
+            f"(diff: {abs(susde_supply - llama_risk.chain_metrics.total_susde_supply) / susde_supply})"
+        )
+
+    if error_messages:
+        message = "⚠️ " + "\n".join(error_messages)
+        send_telegram_message(message, PROTOCOL)
 
     print(
         f"[{llama_risk.timestamp}] Ethena – collateral: {collateral:,.2f} USD | "
         f"supply: {supply:,.2f} | ratio: {ratio:.4f}\n"
         f"onchain data: usde supply = {usde_supply / 1e18:,.2f} | susde supply = {susde_supply / 1e18:,.2f}"
     )
-
-    # Validate LlamaRisk data with on-chain data
-    if not llama_risk_is_old:
-        # remove decimasl because llama risk values are without it
-        usde_supply = usde_supply / 1e18
-        susde_supply = susde_supply / 1e18
-        # NOTE: set higher value_diff_trigger because on-chain and off-chain values are not in sync
-        value_diff_trigger = 0.005  # 0.5%
-
-        error_messages = []
-
-        if abs(usde_supply - supply) / supply > value_diff_trigger:
-            error_messages.append(
-                "USDe supply values are not similar onchain diffrent from LlamaRisk: "
-                f"{supply} != {usde_supply} (diff: {abs(usde_supply - supply) / supply})"
-            )
-
-        if abs(susde_supply - llama_risk.chain_metrics.total_susde_supply) / susde_supply > value_diff_trigger:
-            error_messages.append(
-                "sUSDe supply values are not similar onchain diffrent from LlamaRisk: "
-                f"{susde_supply} != {llama_risk.chain_metrics.total_susde_supply} "
-                f"(diff: {abs(susde_supply - llama_risk.chain_metrics.total_susde_supply) / susde_supply})"
-            )
-
-        if error_messages:
-            message = "⚠️ " + "\n".join(error_messages)
-            send_telegram_message(message, PROTOCOL)
-            return
 
 
 if __name__ == "__main__":
