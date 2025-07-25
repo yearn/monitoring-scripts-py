@@ -21,7 +21,7 @@ SUSDE_ADDRESS = "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497"
 ABI_ERC20 = load_abi("common-abi/ERC20.json")
 
 # Alert thresholds
-COLLATERAL_RATIO_TRIGGER = 1.0085  # must be overcollateralized by at least 0.85%
+COLLATERAL_RATIO_TRIGGER = 1.005  # must be overcollateralized by at least 0.5%
 
 REQUEST_TIMEOUT = 15  # seconds
 
@@ -243,6 +243,12 @@ def main():
     ratio = total_backing_assets / supply
 
     if ratio < COLLATERAL_RATIO_TRIGGER:
+        send_telegram_message(
+            f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}",
+            PROTOCOL,
+            True,
+        )
+    if ratio < 1:
         send_telegram_message(
             f"🚨 USDe is not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}",
             PROTOCOL,
