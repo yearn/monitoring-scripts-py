@@ -50,12 +50,12 @@ def main():
             else:
                 error_message = f"Batch Call: Expected 3 responses, got {len(responses)}"
                 print(error_message)
-                send_telegram_message(error_message, PROTOCOL)
+                send_telegram_message(error_message, PROTOCOL, True, True)
                 return  # Cannot proceed without expected data
 
     except Exception as e:
         error_message = f"Error during batch blockchain calls: {e}"
-        send_telegram_message(error_message, PROTOCOL)
+        send_telegram_message(error_message, PROTOCOL, True, True)
         return  # Cannot proceed if batch fails
 
     (usr_price, usr_supply, reserves, timestamp) = usr_last_price

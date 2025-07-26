@@ -329,13 +329,13 @@ def check_graph_data_for_chain(chain: Chain):
         response = requests.post(api_url, json=json_data, timeout=30)
         response.raise_for_status()
     except requests.RequestException as e:
-        send_telegram_message(f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨", PROTOCOL)
+        send_telegram_message(f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨", PROTOCOL, True, True)
         return
 
     data = response.json()
     if "errors" in data:
         error_msg = data["errors"][0]["message"] if data["errors"] else "Unknown GraphQL error"
-        send_telegram_message(f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨", PROTOCOL)
+        send_telegram_message(f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨", PROTOCOL, True, True)
         return
 
     vaults_data = data.get("data", {}).get("metaMorphos", {})
