@@ -242,16 +242,14 @@ def main():
 
     ratio = total_backing_assets / supply
 
-    if ratio < COLLATERAL_RATIO_TRIGGER:
-        send_telegram_message(
-            f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}",
-            PROTOCOL,
-            True,
-        )
+    error_messages = []
     if ratio < 1:
-        send_telegram_message(
-            f"🚨 USDe is not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}",
-            PROTOCOL,
+        error_messages.append(
+            f"🚨 USDe is not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}"
+        )
+    elif ratio < COLLATERAL_RATIO_TRIGGER:
+        error_messages.append(
+            f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}"
         )
 
     # Validate LlamaRisk data with on-chain data
@@ -261,8 +259,6 @@ def main():
     susde_supply = susde_supply / 1e18
     # NOTE: set higher value_diff_trigger because on-chain and off-chain values are not in sync
     value_diff_trigger = 0.005  # 0.5%
-
-    error_messages = []
 
     if abs(usde_supply - supply) / supply > value_diff_trigger:
         error_messages.append(
