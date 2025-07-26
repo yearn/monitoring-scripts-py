@@ -89,8 +89,8 @@ jobs:
         run: uv run aave/main.py
       - name: Run Aave Proposals script
         run: uv run aave/proposals.py
-      - name: Run Spark script
-        run: uv run spark/main.py
+      # - name: Run Spark script
+      #   run: uv run spark/main.py
       - name: Run Compound script
         run: uv run compound/main.py
       - name: Run Compound Proposals script
