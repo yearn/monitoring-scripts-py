@@ -116,7 +116,7 @@ def monitor_rtoken_on_chain(chain: Chain):
         else:
             error_message = f"[{chain.network_name}] Batch Call: Expected 4 responses, got {len(responses)}"
             print(error_message)
-            send_telegram_message(error_message, PROTOCOL)
+            send_telegram_message(error_message, PROTOCOL, True, True)
             return
 
     # --- RToken Coverage Check ---
@@ -198,7 +198,7 @@ def main():
         except Exception as e:
             error_message = f"Critical error monitoring on {chain.network_name}. Check the logs."
             print(error_message + f"\n{e}")
-            send_telegram_message(error_message, PROTOCOL)
+            send_telegram_message(error_message, PROTOCOL, True, True)
 
 
 if __name__ == "__main__":

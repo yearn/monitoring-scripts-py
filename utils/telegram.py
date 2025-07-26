@@ -15,7 +15,9 @@ class TelegramError(Exception):
     pass
 
 
-def send_telegram_message(message: str, protocol: str, disable_notification: bool = False) -> None:
+def send_telegram_message(
+    message: str, protocol: str, disable_notification: bool = False, plain_text: bool = False
+) -> None:
     """
     Send a message to a Telegram chat using a bot.
 
@@ -48,7 +50,7 @@ def send_telegram_message(message: str, protocol: str, disable_notification: boo
     params = {
         "chat_id": chat_id,
         "text": message,
-        "parse_mode": "Markdown",
+        "parse_mode": "Markdown" if not plain_text else None,
         "disable_notification": disable_notification,
     }
 
