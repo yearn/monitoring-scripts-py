@@ -44,7 +44,7 @@ def get_rtoken_config(chain: Chain) -> RTokenConfig:
             rtoken_address="0xE72B141DF173b999AE7c1aDcbF60Cc9833Ce56a8",
             strsr_address="0xffa151Ad0A0e2e40F39f9e5E9F87cF9E45e819dd",
             coverage_threshold=1.04,
-            redemption_threshold=5000 * 10**18,  # 5000 ETH
+            redemption_threshold=6000 * 10**18,
         )
     elif chain == Chain.BASE:
         # https://app.reserve.org/base/token/0xCb327b99fF831bF8223cCEd12B1338FF3aA322Ff/overview
@@ -52,7 +52,7 @@ def get_rtoken_config(chain: Chain) -> RTokenConfig:
             rtoken_address="0xCb327b99fF831bF8223cCEd12B1338FF3aA322Ff",
             strsr_address="0x3D190D968a8985673285B3B9cD5f5BDC12c9b368",
             coverage_threshold=1.03,
-            redemption_threshold=300 * 10**18,
+            redemption_threshold=400 * 10**18,
         )
     else:
         raise ValueError(f"RToken monitoring not supported for chain: {chain.network_name}")
