@@ -257,9 +257,14 @@ def main():
     # remove decimasl because llama risk values are without it
     usde_supply = usde_supply / 1e18
     susde_supply = susde_supply / 1e18
+    print(
+        f"[{llama_risk.timestamp}] Ethena – collateral: {collateral:,.2f} USD | "
+        f"supply: {supply:,.2f} | ratio: {ratio:.4f}\n"
+        f"onchain data: usde supply = {usde_supply / 1e18:,.2f} | susde supply = {susde_supply / 1e18:,.2f}"
+    )
+
     # NOTE: set higher value_diff_trigger because on-chain and off-chain values are not in sync
     value_diff_trigger = 0.005  # 0.5%
-
     if abs(usde_supply - supply) / supply > value_diff_trigger:
         error_messages.append(
             "USDe supply values are not similar onchain diffrent from LlamaRisk: "
@@ -273,11 +278,9 @@ def main():
             f"(diff: {abs(susde_supply - llama_risk.chain_metrics.total_susde_supply) / susde_supply})"
         )
 
-    print(
-        f"[{llama_risk.timestamp}] Ethena – collateral: {collateral:,.2f} USD | "
-        f"supply: {supply:,.2f} | ratio: {ratio:.4f}\n"
-        f"onchain data: usde supply = {usde_supply / 1e18:,.2f} | susde supply = {susde_supply / 1e18:,.2f}"
-    )
+    if error_messages:
+        message = "⚠️ " + "\n".join(error_messages)
+        send_telegram_message(message, PROTOCOL)
 
 
 if __name__ == "__main__":
