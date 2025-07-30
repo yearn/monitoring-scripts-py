@@ -232,7 +232,7 @@ def main():
 
     # NOTE: don't check on-chain data if llama_risk data is old because it will be out of sync
     parsed_timestamp = _parse_timestamp(llama_risk.chain_metrics.timestamp)
-    llama_risk_is_old = parsed_timestamp is None or datetime.now() - parsed_timestamp > timedelta(hours=3)
+    llama_risk_is_old = parsed_timestamp is None or datetime.now() - parsed_timestamp > timedelta(hours=2)
     total_backing_assets = llama_risk.collateral_value + llama_risk.reserve_fund
 
     if llama_risk_is_old:
@@ -272,10 +272,6 @@ def main():
             f"{susde_supply} != {llama_risk.chain_metrics.total_susde_supply} "
             f"(diff: {abs(susde_supply - llama_risk.chain_metrics.total_susde_supply) / susde_supply})"
         )
-
-    if error_messages:
-        message = "⚠️ " + "\n".join(error_messages)
-        send_telegram_message(message, PROTOCOL)
 
     print(
         f"[{llama_risk.timestamp}] Ethena – collateral: {collateral:,.2f} USD | "
