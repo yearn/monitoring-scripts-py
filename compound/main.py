@@ -11,12 +11,6 @@ ABI_CTOKEN = load_abi("compound/abi/CTokenV3.json")
 
 # Map addresses by chain
 ADDRESSES_BY_CHAIN = {
-    Chain.POLYGON: [
-        "0xF25212E676D1F7F89Cd72fFEe66158f541246445",
-        "cUSDC.Ev3",
-        "0xaeB318360f27748Acb200CE616E389A6C9409a07",
-        "cUSDTv3",
-    ],
     Chain.MAINNET: [
         "0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840",
         "cUSDTv3",
@@ -25,22 +19,6 @@ ADDRESSES_BY_CHAIN = {
         "0xA17581A9E3356d9A858b789D68B4d866e593aE94",
         "cWETHv3",
     ],
-    Chain.ARBITRUM: [
-        "0xd98Be00b5D27fc98112BdE293e487f8D4cA57d07",
-        "cUSDTv3",
-        "0x6f7D514bbD4aFf3BcD1140B7344b32f063dEe486",
-        "cWETHv3",
-        "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
-        "cUSDC.Ev3",
-        "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf",
-        "cUSDCv3",
-    ],
-    # We don't use optimism - add if needed
-    # Chain.OPTIMISM: [
-    #     "0x2e44e174f7D53F0212823acC11C01A11d58c5bCB", "cUSDCv3",
-    #     "0x995E394b8B2437aC8Ce61Ee0bC610D617962B214", "cUSDTv3",
-    #     "0xE36A30D249f7761327fd973001A32010b521b6Fd", "cWETHv3",
-    # ]
 }
 
 
@@ -77,7 +55,7 @@ def process_assets(chain: Chain):
 
 
 def main():
-    for chain in [Chain.POLYGON, Chain.MAINNET, Chain.ARBITRUM]:
+    for chain in [Chain.MAINNET]:
         print(f"Processing {chain.name} assets...")
         process_assets(chain)
 

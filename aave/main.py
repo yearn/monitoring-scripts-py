@@ -16,39 +16,7 @@ ABI_ATOKEN = load_abi("aave/abi/AToken.json")
 
 # Map addresses and symbols by chain
 ADDRESSES_BY_CHAIN = {
-    Chain.POLYGON: [
-        # aToken, underlying, symbol
-        (
-            "0x625E7708f30cA75bfd92586e17077590C60eb4cD",
-            "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
-            "USDC.e",
-        ),
-        (
-            "0xA4D94019934D8333Ef880ABFFbF2FDd611C762BD",
-            "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
-            "USDC",
-        ),
-        (
-            "0x6ab707Aca953eDAeFBc4fD23bA73294241490620",
-            "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-            "USDT",
-        ),
-        (
-            "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE",
-            "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
-            "DAI",
-        ),
-        (
-            "0x6d80113e533a2C0fe82EaBD35f1875DcEA89Ea97",
-            "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
-            "MATIC",
-        ),
-        (
-            "0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8",
-            "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
-            "WETH",
-        ),
-    ],
+    # aToken, underlying, symbol
     Chain.MAINNET: [
         (
             "0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8",
@@ -76,53 +44,6 @@ ADDRESSES_BY_CHAIN = {
             "crvUSD",
         ),
     ],
-    Chain.ARBITRUM: [
-        (
-            "0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8",
-            "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
-            "WETH",
-        ),
-        (
-            "0x724dc807b04555b71ed48a6896b6F41593b8C637",
-            "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-            "USDC",
-        ),
-        (
-            "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE",
-            "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",
-            "DAI",
-        ),
-        (
-            "0x625E7708f30cA75bfd92586e17077590C60eb4cD",
-            "0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8",
-            "USDC.e",
-        ),
-        (
-            "0x6ab707Aca953eDAeFBc4fD23bA73294241490620",
-            "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-            "USDT",
-        ),
-        (
-            "0x6533afac2E7BCCB20dca161449A13A32D391fb00",
-            "0x912CE59144191C1204E64559FE8253a0e49E6548",
-            "ARB",
-        ),
-    ],
-    # We don't use optimism - add if needed
-    # Chain.OPTIMISM: [
-    #     "0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8",  # aweth
-    #     "0x4200000000000000000000000000000000000006",  # weth
-    #     "0x38d693cE1dF5AaDF7bC62595A37D667aD57922e5",  # ausdc
-    #     "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",  # usdc
-    #     "0x82E64f49Ed5EC1bC6e43DAD4FC8Af9bb3A2312EE",  # adai
-    #     "0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1",  # dai
-    #     "0x625E7708f30cA75bfd92586e17077590C60eb4cD",  # ausdc.e
-    #     "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",  # usdc.e
-    #     "0x6ab707Aca953eDAeFBc4fD23bA73294241490620",  # ausdt
-    #     "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",  # usdt
-    #     "0x513c7E3a9c69cA3e22550eF58AC1C0088e918FFf",  # aop
-    #     "0x4200000000000000000000000000000000000042",  # op
-    # ]
 }
 
 THRESHOLD_UR = 0.99
@@ -171,7 +92,7 @@ def process_assets(chain: Chain) -> None:
 
 
 def main() -> None:
-    for chain in [Chain.MAINNET, Chain.POLYGON, Chain.ARBITRUM]:
+    for chain in [Chain.MAINNET]:
         print(f"Processing {chain.name} assets...")
         try:
             process_assets(chain)
