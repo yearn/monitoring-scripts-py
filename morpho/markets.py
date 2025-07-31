@@ -20,6 +20,7 @@ MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
 LIQUIDITY_THRESHOLD = 0.01  # 1% of total assets
+LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.10  # 10% of total assets
 
 # Map vaults by chain
 VAULTS_BY_CHAIN = {
@@ -67,11 +68,22 @@ VAULTS_BY_CHAIN = {
         ["Yearn OG USDC", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7", 1],
         ["Yearn OG USDT", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7", 1],
         ["Yearn OG WBTC", "0xe107cCdeb8e20E499545C813f98Cc90619b29859", 1],
-        ["Gauntlet USDC Vault", "0xE4248e2105508FcBad3fe95691551d1AF14015f7", 1],
+        ["Gauntlet USDC", "0xE4248e2105508FcBad3fe95691551d1AF14015f7", 1],
         ["SteakhouseHigh Yield USDC", "0x1445A01a57D7B7663CfD7B4EE0a8Ec03B379aabD", 2],
-        ["GauntletUSDT Vault USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E", 1],
+        ["Gauntlet USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E", 1],
         ["SteakhousePrime USDC", "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d", 1],
-        ["GauntletWETH Vault", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf", 1],
+        ["Gauntlet WETH", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf", 1],
+    ],
+}
+
+# Morpho Vaults that are used by Yearn Strategies which are used as YV collateral in Morpho Markets
+VAULTS_WITH_YV_COLLATERAL = {
+    Chain.KATANA: [
+        ["Yearn OG USDC", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7"],
+        ["SteakhousePrime USDC", "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d"],
+        ["Gauntlet USDC", "0xE4248e2105508FcBad3fe95691551d1AF14015f7"],
+        ["Yearn OG USDT", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7"],
+        ["Gauntlet USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E"],
     ],
 }
 
@@ -437,8 +449,24 @@ def check_low_liquidity(vault_data):
 
     # Default liquidity to 0 if it's None
     liquidity = liquidity or 0
-
     liquidity_ratio = liquidity / total_assets
+
+    # Check if vault is in VAULTS_WITH_YV_COLLATERAL
+    if chain in VAULTS_WITH_YV_COLLATERAL and vault_data["address"] in [
+        vault[1] for vault in VAULTS_WITH_YV_COLLATERAL[chain]
+    ]:
+        if liquidity_ratio < LIQUIDITY_THRESHOLD_YV_COLLATERAL:
+            message = (
+                f"⚠️ Low liquidity detected in [{vault_name}]({vault_url}) on {chain.name}\n"
+                f"🚨 This vault is being used as YV collateral. Min liquidity is 10% of total assets.\n"
+                f"💰 Liquidity: {liquidity_ratio:.1%} of total assets\n"
+                f"💵 Liquidity: ${liquidity:,.2f}\n"
+                f"📊 Total Assets: ${total_assets:,.2f}"
+            )
+            send_telegram_message(message, PROTOCOL)
+            return
+
+    # standard liquidity check
     if liquidity_ratio < LIQUIDITY_THRESHOLD:
         message = (
             f"⚠️ Low liquidity detected in [{vault_name}]({vault_url}) on {chain.name}\n"
