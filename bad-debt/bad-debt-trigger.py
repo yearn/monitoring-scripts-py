@@ -35,6 +35,7 @@ def get_data():
     protocol = os.getenv("PROTOCOL", "")
 
     message = f"⚠️ {protocol} Bad Debt ratio: {ratio_of_bad_debt}% at {date} ⚠️\nDebt: {debt}\nTVL: {tvl}\nDeposits: {deposits}\nBorrows: {borrows}"
+    print(message)
 
     if (threshold > 0 and total_bad_debt / 10**decimals > threshold) or ratio_of_bad_debt > threshold_ratio:
         accounts = accounts_with_bad_debt(data)

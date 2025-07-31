@@ -17,6 +17,7 @@ The script [resolv/resolv.py](resolv.py) monitors several critical metrics:
 2. **Redemption Usage**
    - Tracks current redemption usage against redemption limit
    - Alerts if usage exceeds 50% of the limit
+   - Redemption usage is reset after 24 hours
 
 3. **Price Data Freshness**
    - Monitors timestamp of last price update

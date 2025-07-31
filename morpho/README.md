@@ -4,7 +4,7 @@
 
 For roles on Morpho vaults, refer to the following [document](https://github.com/morpho-org/metamorpho/blob/main/README.md).
 
-Morpho governance monitoring is defined in the [Python script](./governance.py) that is executed hourly via [GitHub Actions](../.github/workflows/hourly.yml).
+Morpho governance monitoring is defined in the [Python script](./governance.py) that is executed daily via [GitHub Actions](../.github/workflows/daily.yml) because minimum timelock is 3 days to get vaults whitelisted, and 1 day is mimimum value in the contract.
 
 The script checks if there are any new values pending in the timelock for a given vault. It detects the following changes:
 

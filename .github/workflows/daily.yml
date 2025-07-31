@@ -1,0 +1,90 @@
+name: Daily Monitoring Scripts
+
+on:
+  schedule:
+    - cron: "19 8 * * *"
+  workflow_dispatch:
+
+# Add concurrency control
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROVIDER_URL_POLYGON: ${{ secrets.PROVIDER_URL }}
+  PROVIDER_URL_POLYGON_1: ${{ secrets.PROVIDER_URL_POLYGON_1 }}
+  PROVIDER_URL_POLYGON_2: ${{ secrets.PROVIDER_URL_POLYGON_2 }}
+  PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
+  PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
+  PROVIDER_URL_MAINNET_1: ${{ secrets.PROVIDER_URL_MAINNET_1 }}
+  PROVIDER_URL_MAINNET_2: ${{ secrets.PROVIDER_URL_MAINNET_2 }}
+  PROVIDER_URL_MAINNET_3: ${{ secrets.PROVIDER_URL_MAINNET_3 }}
+  PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
+  PROVIDER_URL_BASE: ${{ secrets.PROVIDER_URL_BASE }}
+  PROVIDER_URL_BASE_1: ${{ secrets.PROVIDER_URL_BASE_1 }}
+  PROVIDER_URL_BASE_2: ${{ secrets.PROVIDER_URL_BASE_2 }}
+  PROVIDER_URL_KATANA: ${{ secrets.PROVIDER_URL_KATANA }}
+  PROVIDER_URL_KATANA_1: ${{ secrets.PROVIDER_URL_KATANA_1 }}
+  TELEGRAM_CHAT_ID_MORPHO: ${{ secrets.TELEGRAM_CHAT_ID_MORPHO }}
+  TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
+  GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
+  TALLY_API_KEY: ${{ secrets.TALLY_API_KEY }}
+  ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
+  POLYGONSCAN_TOKEN: ${{ secrets.POLYGONSCAN_TOKEN }}
+  OPTIMISMSCAN_TOKEN: ${{ secrets.OPTIMISMSCAN_TOKEN }}
+  ARBISCAN_TOKEN: ${{ secrets.ARBISCAN_TOKEN }}
+
+jobs:
+  daily_monitoring:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+
+      - name: Install uv
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+
+      - name: Install dependencies
+        run: |
+          uv pip install --system .
+
+      # restore file from cache
+      - name: Get cache file
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: cache-id-daily.txt
+          key: cache-id-daily-v1-${{ hashFiles('cache-id-daily.txt') }}
+          restore-keys: |
+            cache-id-daily-v1-
+
+      # Get initial hash
+      - name: Get initial hash
+        id: initial-hash
+        run: echo "hash=${{ hashFiles('cache-id-daily.txt') }}" >> $GITHUB_OUTPUT
+
+      # Run monitoring scripts
+      - name: Run Morpho Governance Monitoring
+        run: uv run morpho/governance.py
+        env:
+          MORPHO_FILENAME: cache-id-daily.txt
+
+      # Check final hash
+      - name: Check final hash
+        id: final-hash
+        run: echo "hash=${{ hashFiles('cache-id-daily.txt') }}" >> $GITHUB_OUTPUT
+
+      - name: Cache cache-id.txt
+        if: always() && steps.initial-hash.outputs.hash != steps.final-hash.outputs.hash
+        id: cache-save
+        uses: actions/cache/save@v4
+        with:
+          path: cache-id-daily.txt
+          key: cache-id-daily-v1-${{ hashFiles('cache-id-daily.txt') }}
