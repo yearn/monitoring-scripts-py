@@ -60,34 +60,33 @@ def main():
 
     (usr_price, usr_supply, reserves, timestamp) = usr_last_price
 
+    error_messages = []
+
     if usr_price != 1e18:
         message = (
-            f"🚨 *{PROTOCOL} Alert* 🚨\\n"
-            f"USR Price is not 1e18!\\n"
-            f"USR Price: {usr_price / 1e18:.4f}\\n"
-            f"USR Supply: {usr_supply / 1e18:.4f}\\n"
-            f"Reserves: {reserves / 1e18:.4f}\\n"
+            f"USR Price is not 1e18!\n"
+            f"USR Price: {usr_price / 1e18:.4f}\n"
+            f"USR Supply: {usr_supply / 1e18:.4f}\n"
+            f"Reserves: {reserves / 1e18:.4f}\n"
             f"Timestamp: {timestamp}"
         )
-        send_telegram_message(message, PROTOCOL)
+        error_messages.append(message)
 
     if usr_supply > reserves * 1.3:
         message = (
-            f"🚨 *{PROTOCOL} Alert* 🚨\\n"
-            f"USR Supply is greater than 130% of Reserves!\\n"
-            f"USR Supply: {usr_supply / 1e18:.4f}\\n"
-            f"Reserves: {reserves / 1e18:.4f}\\n"
+            f"USR Supply is greater than 130% of Reserves!\n"
+            f"USR Supply: {usr_supply / 1e18:.4f}\n"
+            f"Reserves: {reserves / 1e18:.4f}"
         )
-        send_telegram_message(message, PROTOCOL)
+        error_messages.append(message)
 
     if current_redemption_usage > redemption_limit / 2:
         message = (
-            f"🚨 *{PROTOCOL} Alert* 🚨\\n"
-            f"Current Redemption Usage is greater than 50% of Redemption Limit!\\n"
-            f"Current Redemption Usage: {current_redemption_usage / 1e18:.4f}\\n"
-            f"Redemption Limit: {redemption_limit / 1e18:.4f}"
+            f"Current Redemption Usage is greater than 50% of Redemption Limit!\n"
+            f"Current Redemption Usage: {current_redemption_usage / 1e18:.4f}\n"
+            f"Redemption Limit: {redemption_limit / 1e18:.4f}\n"
         )
-        send_telegram_message(message, PROTOCOL)
+        error_messages.append(message)
 
     # Check if timestamp is older than one day
     current_time = int(time.time())
@@ -98,7 +97,10 @@ def main():
             f"Last update: {datetime.fromtimestamp(timestamp)}\n"
             f"Current time: {datetime.fromtimestamp(current_time)}"
         )
-        send_telegram_message(message, PROTOCOL)
+        error_messages.append(message)
+
+    if error_messages:
+        send_telegram_message("\n".join(error_messages), PROTOCOL)
 
 
 if __name__ == "__main__":
