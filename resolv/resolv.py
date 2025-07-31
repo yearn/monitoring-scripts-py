@@ -73,7 +73,7 @@ def should_alert_redemption(current_usage: int, redemption_limit: int) -> bool:
 
     if still_above_threshold and time_since_reset >= twenty_four_hours:
         # Update reset time to prevent spam (alert once per 24h period)
-        print(f"Data over threshold for 24+ hours")
+        print("Data over threshold for 24+ hours")
         write_redemption_cache(current_usage, current_time)
         return True
 
@@ -154,6 +154,7 @@ def main() -> None:
             f"Current Redemption Usage is greater than 50% of Redemption Limit!\n"
             f"Current Redemption Usage: {current_redemption_usage / 1e18:.4f}\n"
             f"Redemption Limit: {redemption_limit / 1e18:.4f}\n"
+            f"Available redemption: {(redemption_limit - current_redemption_usage) / 1e18:.4f}"
         )
         error_messages.append(message)
 
