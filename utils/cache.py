@@ -14,7 +14,7 @@ morpho_filename = os.getenv("MORPHO_FILENAME", "cache-id.txt")
 
 
 def get_last_queued_id_from_file(protocol):
-    return get_last_value_for_key_from_file(cache_filename, protocol)
+    return int(get_last_value_for_key_from_file(cache_filename, protocol))
 
 
 def write_last_queued_id_to_file(protocol, proposal_id):
@@ -22,7 +22,7 @@ def write_last_queued_id_to_file(protocol, proposal_id):
 
 
 def get_last_executed_nonce_from_file(safe_address):
-    return get_last_value_for_key_from_file(nonces_filename, safe_address)
+    return int(get_last_value_for_key_from_file(nonces_filename, safe_address))
 
 
 def write_last_executed_nonce_to_file(safe_address, nonce):
@@ -30,7 +30,7 @@ def write_last_executed_nonce_to_file(safe_address, nonce):
 
 
 def get_last_executed_morpho_from_file(vault_address, market_id, value_type):
-    return get_last_value_for_key_from_file(morpho_filename, morpho_key(vault_address, market_id, value_type))
+    return int(get_last_value_for_key_from_file(morpho_filename, morpho_key(vault_address, market_id, value_type)))
 
 
 def write_last_executed_morpho_to_file(vault_address, market_id, value_type, value):
@@ -51,7 +51,7 @@ def get_last_value_for_key_from_file(filename, wanted_key):
             for line in lines:
                 key, value = line.strip().split(":")
                 if key == wanted_key:
-                    return int(value)
+                    return value
     return 0
 
 
