@@ -22,12 +22,12 @@ def run_query(query, variables):
         raise Exception(f"Query failed with status code {response.status_code}: {response.text}")
 
 
-def fetch_queued_proposals():
+def fetch_queued_proposals(last_reported_id: int):
     # state: 3 is queued state: https://github.com/bgd-labs/aave-governance-v3/blob/0c14d60ac89d7a9f79d0a1f77de5c99c3ba1201f/src/interfaces/IGovernanceCore.sol#L75
     # queued state is transferred to active state when it's executed, few seconds later so we need to check state 4
     query = """
-        {
-            proposals(where:{state:4, proposalId_gt:238}) { # 238 is the last reported proposal
+        query($lastId: Int!) {
+            proposals(where:{state:4, proposalId_gt:$lastId}) {
                 proposalId
                 proposalMetadata{
                     title
@@ -42,7 +42,7 @@ def fetch_queued_proposals():
     """
 
     # get only last 10 proposals
-    variables = {"first": 10, "skip": 0}
+    variables = {"lastId": last_reported_id}
     response = run_query(query, variables)
     if "errors" in response:
         # NOTE: not raising error because the graph is not reliable. We have Tenderly alerts for this also
@@ -54,14 +54,14 @@ def fetch_queued_proposals():
 
 
 def handle_governance_proposals():
-    proposals = fetch_queued_proposals()
+    last_sent_id = get_last_queued_id_from_file(PROTOCOL)
+    proposals = fetch_queued_proposals(last_sent_id)
     if not proposals:
         print("No proposals found")
         return
 
     aave_url = "https://app.aave.com/governance/v3/proposal/?proposalId="
     message = ""
-    last_sent_id = get_last_queued_id_from_file(PROTOCOL)
     for proposal in proposals:
         timestamp = int(proposal["transactions"]["executed"]["timestamp"])
         proposal_id = int(proposal["proposalId"])
