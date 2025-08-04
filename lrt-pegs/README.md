@@ -2,7 +2,7 @@
 
 ## Exchange rates
 
-Checks the main liquidity pools of LRTs to detect depegging, such as the ezETH-WETH, rsETH-WETH, pufETH-wstETH, weETH-rETH and ETHx-wstETH pools in Balancer. The bot monitors pool balances and sends a message if they become skewed.
+Checks the main liquidity pools of LRTs to detect depegging, such as the ezETH-WETH, rsETH-WETH, pufETH-wstETH, weETH-rETH, ETHx-wstETH and pxETH-WETH pools in Balancer. The bot monitors pool balances and sends a message if they become skewed.
 
 ### Lombard Finance (LBTC)
 
@@ -29,3 +29,7 @@ Monitor Lombard LBTC feed by [Redstone](https://docs.redstone.finance/docs/data/
 ### Lombard Finance (LBTC)
 
 Monitoring [multisig of LBTC boring vault](https://etherscan.io/address/0xb7cB7131FFc18f87eEc66991BECD18f2FF70d2af) that can change all settings of Veda vault. [Tenderly alert](https://dashboard.tenderly.co/yearn/sam/alerts/rules/271040e6-85bc-4103-bf05-094a9912961a) is set to notify when a new transaction is scheduled, event CallScheduled emitted, in Lombard Timelock. This contract is the owner of [LBTC token](https://etherscan.io/token/0x8236a87084f8B84306f72007F36F2618A5634494#readProxyContract#F18).
+
+### Dinero protocol (apxETH)
+
+[apxETH](https://etherscan.io/address/0xD664b74274DfEB538d9baC494F3a4760828B02b0) contract ERC4626 wrapper for pxETH that autocompounds rewards. The admin of the contract is Redacted cartel [multisig 3/7](https://app.safe.global/transactions/history?safe=eth%3A0xA52Fd396891E7A74b641a2Cb1A6999Fcf56B077e), address: 0xA52Fd396891E7A74b641a2Cb1A6999Fcf56B077e. This multisig if monitored with [Safe script](../safe/main.py#L200).
