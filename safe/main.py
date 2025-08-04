@@ -195,6 +195,11 @@ def main():
             "mainnet",
             "0xb7cB7131FFc18f87eEc66991BECD18f2FF70d2af",
         ],  # LBTC boring vault big boss
+        [
+            "LRT",
+            "mainnet",
+            "0xA52Fd396891E7A74b641a2Cb1A6999Fcf56B077e",
+        ],  # apxETH owner: https://etherscan.io/address/0x9Ba021B0a9b958B5E75cE9f6dff97C7eE52cb3E6#readContract#F18
         # [
         #     "USD0",
         #     "mainnet",
