@@ -122,6 +122,8 @@ jobs:
         run: uv run resolv/resolv.py
       - name: Run Ethena script
         run: uv run ethena/ethena.py
+      - name: Run Origin Protocol script
+        run: uv run lrt-pegs/origin_protocol.py
 
       # Check final hash
       - name: Check final hash
