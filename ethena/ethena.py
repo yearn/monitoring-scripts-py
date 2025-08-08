@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import requests
 
@@ -14,6 +14,7 @@ PROTOCOL = "ETHENA"
 SUPPLY_URL = "https://app.ethena.fi/api/solvency/token-supply?symbol=USDe"
 COLLATERAL_URL = "https://app.ethena.fi/api/positions/current/collateral?latest=true"
 LLAMARISK_URL = "https://api.llamarisk.com/protocols/ethena/overview/all/?format=json"
+CHAOS_LABS_URL = "https://history.oraclesecurity.org/por/attestations?protocol=ethena"
 
 USDE_ADDRESS = "0x4c9EDD5852cd905f086C759E8383e09bff1E68B3"
 SUSDE_ADDRESS = "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497"
@@ -203,7 +204,7 @@ def get_tokens_supply() -> tuple[float, float] | tuple[None, None]:
     return usde_supply, susde_supply
 
 
-def main():
+def llama_risk_check():
     llama_risk = get_llamarisk_data()
 
     if llama_risk is None:
@@ -283,5 +284,87 @@ def main():
         send_telegram_message(message, PROTOCOL)
 
 
+@dataclass
+class ChaosLabsAttestation:
+    timestamp: str
+    backing_assets_usd_value: float
+    backing_assets_and_reserve_fund_usd_value: float
+    backing_assets_exceeds_usde_supply: bool
+    approved_assets_only: bool
+    delta_neutral: bool
+    total_supply: float
+    signature: str | None
+
+def chaos_labs_check():
+    data = fetch_json(CHAOS_LABS_URL)
+    if not data or not isinstance(data, list) or len(data) == 0:
+        send_telegram_message("⚠️ ETHENA: Failed to fetch Chaos Labs attestation data", PROTOCOL, True)
+        return
+
+    # Get the latest attestation (last item in the list)
+    latest_attestation_raw = data[-1]
+
+    try:
+        attestation = ChaosLabsAttestation(
+            timestamp=latest_attestation_raw["timestamp"],
+            backing_assets_usd_value=latest_attestation_raw["backingAssetsUsdValue"],
+            backing_assets_and_reserve_fund_usd_value=latest_attestation_raw["backingAssetsAndReserveFundUsdValue"],
+            backing_assets_exceeds_usde_supply=latest_attestation_raw["backingAssetsUsdValueExceedsUsdeSupply"],
+            approved_assets_only=latest_attestation_raw["approvedAssetsOnly"],
+            delta_neutral=latest_attestation_raw["deltaNeutral"],
+            total_supply=latest_attestation_raw["totalSupply"],
+            signature=latest_attestation_raw.get("signature")
+        )
+    except KeyError as e:
+        send_telegram_message(f"⚠️ ETHENA: Missing field in Chaos Labs data: {e}", PROTOCOL)
+        return
+
+    attestation_time = datetime.fromisoformat(attestation.timestamp.replace('Z', '+00:00'))
+    if datetime.now(timezone.utc) - attestation_time > timedelta(days=1):
+        print(f"ETHENA: Attestation from Chaos Labs is older than 1 day: {attestation_time}. Skipping check.")
+        return
+
+    error_messages = []
+
+    # Check if USDe is fully backed
+    backing_ratio = attestation.backing_assets_usd_value / attestation.total_supply
+    if not attestation.backing_assets_exceeds_usde_supply:
+        error_messages.append(
+            f"🚨 USDe NOT FULLY BACKED!\n"
+            f"Backing Assets: ${attestation.backing_assets_usd_value:,.2f}\n"
+            f"Total Supply: ${attestation.total_supply:,.2f}\n"
+            f"Backing Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)"
+        )
+
+    # Cross-check with Chaos Labs flag (for data consistency)
+    if not attestation.backing_assets_exceeds_usde_supply and backing_ratio >= 1:
+        error_messages.append("⚠️ Data inconsistency: Chaos Labs flag says not backed but ratio shows backed. Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)")
+
+    # Check if only approved assets are used
+    if not attestation.approved_assets_only:
+        error_messages.append("⚠️ Non-approved assets detected in backing!")
+
+    # Check if delta neutral strategy is maintained
+    if not attestation.delta_neutral:
+        error_messages.append("⚠️ Delta neutral strategy not maintained!")
+
+    # Check signature validity (missing signature could indicate issues)
+    if attestation.signature is None:
+        error_messages.append("⚠️ Attestation signature missing - verification may be incomplete")
+    # Calculate and report backing metrics for transparency
+    backing_ratio = attestation.backing_assets_usd_value / attestation.total_supply
+    reserve_buffer = attestation.backing_assets_and_reserve_fund_usd_value - attestation.total_supply
+
+    if error_messages:
+        message = "🔴 ETHENA CHAOS LABS ALERTS:\n\n" + "\n\n".join(error_messages)
+        message += f"\n\n📊 Current Metrics:\n"
+        message += f"Backing Ratio: {backing_ratio:.4f} ({backing_ratio * 100:,.2f}%)\n"
+        message += f"Reserve Buffer: ${reserve_buffer:,.2f}\n"
+        message += f"Last Update: {attestation.timestamp}"
+        send_telegram_message(message, PROTOCOL)
+
+
 if __name__ == "__main__":
-    main()
+    # NOTE: skip using LlamaRisk data because it is not reliable
+    # llama_risk_check()
+    chaos_labs_check()
