@@ -354,10 +354,13 @@ def chaos_labs_check():
     # Calculate and report backing metrics for transparency
     backing_ratio = attestation.backing_assets_usd_value / attestation.total_supply
     reserve_buffer = attestation.backing_assets_and_reserve_fund_usd_value - attestation.total_supply
+    print(f"ETHENA: Attestation from Chaos Labs: {attestation.timestamp}")
+    print(f"ETHENA: Backing Ratio: {backing_ratio:.4f} ({backing_ratio * 100:,.2f}%)")
+    print(f"ETHENA: Reserve Buffer: ${reserve_buffer:,.2f}")
 
     if error_messages:
-        message = "🔴 ETHENA CHAOS LABS ALERTS:\n\n" + "\n\n".join(error_messages)
-        message += f"\n\n📊 Current Metrics:\n"
+        message = "🔴 ETHENA CHAOS LABS ALERTS:\n" + "\n".join(error_messages)
+        message += "\n📊 Current Metrics:\n"
         message += f"Backing Ratio: {backing_ratio:.4f} ({backing_ratio * 100:,.2f}%)\n"
         message += f"Reserve Buffer: ${reserve_buffer:,.2f}\n"
         message += f"Last Update: {attestation.timestamp}"
