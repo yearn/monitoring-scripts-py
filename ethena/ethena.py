@@ -295,6 +295,7 @@ class ChaosLabsAttestation:
     total_supply: float
     signature: str | None
 
+
 def chaos_labs_check():
     data = fetch_json(CHAOS_LABS_URL)
     if not data or not isinstance(data, list) or len(data) == 0:
@@ -313,13 +314,13 @@ def chaos_labs_check():
             approved_assets_only=latest_attestation_raw["approvedAssetsOnly"],
             delta_neutral=latest_attestation_raw["deltaNeutral"],
             total_supply=latest_attestation_raw["totalSupply"],
-            signature=latest_attestation_raw.get("signature")
+            signature=latest_attestation_raw.get("signature"),
         )
     except KeyError as e:
         send_telegram_message(f"⚠️ ETHENA: Missing field in Chaos Labs data: {e}", PROTOCOL)
         return
 
-    attestation_time = datetime.fromisoformat(attestation.timestamp.replace('Z', '+00:00'))
+    attestation_time = datetime.fromisoformat(attestation.timestamp.replace("Z", "+00:00"))
     if datetime.now(timezone.utc) - attestation_time > timedelta(days=1):
         print(f"ETHENA: Attestation from Chaos Labs is older than 1 day: {attestation_time}. Skipping check.")
         return
@@ -338,7 +339,9 @@ def chaos_labs_check():
 
     # Cross-check with Chaos Labs flag (for data consistency)
     if not attestation.backing_assets_exceeds_usde_supply and backing_ratio >= 1:
-        error_messages.append("⚠️ Data inconsistency: Chaos Labs flag says not backed but ratio shows backed. Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)")
+        error_messages.append(
+            "⚠️ Data inconsistency: Chaos Labs flag says not backed but ratio shows backed. Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)"
+        )
 
     # Check if only approved assets are used
     if not attestation.approved_assets_only:
