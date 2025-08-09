@@ -6,9 +6,30 @@ Ethena is a synthetic dollar protocol built on Ethereum that provides a crypto-n
 
 ## Monitoring
 
-The script [`ethena/ethena.py`](ethena.py) runs **hourly via GitHub Actions** to sanity-check that **USDe remains fully backed** and that the public data feeds are fresh and internally consistent. Telegram messages are sent if some values are out of the expected range.
+The script [`ethena/ethena.py`](ethena.py) runs daily via GitHub Actions to sanity-check that **USDe remains fully backed** and that the public data feeds are fresh and internally consistent. Telegram messages are sent if some values are out of the expected range.
 
-### Data Sources
+### Data Sources - Chaos Labs
+
+1. **Attestation**
+   `GET https://api.chaoslabs.xyz/v1/attestation/ethena`
+
+2. **Attestation Freshness**
+   If attestation is older than 1 day, skip the check.
+
+3. **Attestation Consistency**
+   - Check if USDe is fully backed
+   - Check if only approved assets are used
+   - Check if delta neutral strategy is maintained
+   - Check if signature is valid
+
+4. **Attestation Metrics**
+   - Backing Ratio: `backingAssetsUsdValue / totalSupply`
+   - Reserve Buffer: `backingAssetsAndReserveFundUsdValue - totalSupply`
+   - Last Update: `timestamp`
+
+### Data Sources - LlamaRisk
+
+> NOTE: LlamaRisk data is not reliable, so we use Chaos Labs data instead.
 
 #### Off-Chain
 
@@ -29,7 +50,7 @@ Data used is provided by Ethena on [transparency page](https://app.ethena.fi/das
 2. **sUSDe Supply**
    `totalSupply` for sUSDe token
 
-### What We Monitor
+#### What We Monitor
 
 1. **Collateral Ratio**
    `totalBackingAssetsInUsd + reserveFund / totalUsdeSupply`
