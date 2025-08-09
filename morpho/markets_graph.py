@@ -233,6 +233,13 @@ def check_bad_debt(data):
     for realization in bad_debt_realizations:
         bad_debt_value = int(realization["badDebt"])
         market = realization["market"]
+        # NOTE: change this when adding more chains
+        if (
+            market["id"] not in MARKETS_RISK_1[Chain.POLYGON]
+            and market["id"] not in MARKETS_RISK_2[Chain.POLYGON]
+            and market["id"] not in MARKETS_RISK_3[Chain.POLYGON]
+        ):
+            continue
         market_address = market["id"]
         total_borrow = int(market["totalBorrow"])
         ratio = bad_debt_value / total_borrow
