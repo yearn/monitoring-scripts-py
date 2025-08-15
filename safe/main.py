@@ -195,6 +195,11 @@ def main():
             "mainnet",
             "0xb7cB7131FFc18f87eEc66991BECD18f2FF70d2af",
         ],  # LBTC boring vault big boss
+        [
+            "LRT",
+            "base-main",
+            "0x92A19381444A001d62cE67BaFF066fA1111d7202",
+        ],  # origin admin
         # [
         #     "USD0",
         #     "mainnet",
