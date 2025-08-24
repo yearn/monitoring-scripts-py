@@ -76,6 +76,9 @@ jobs:
         env:
           MORPHO_FILENAME: cache-id-daily.txt
 
+      - name: Run Ethena Monitoring
+        run: uv run ethena/ethena.py
+
       # Check final hash
       - name: Check final hash
         id: final-hash

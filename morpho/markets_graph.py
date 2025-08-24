@@ -233,6 +233,13 @@ def check_bad_debt(data):
     for realization in bad_debt_realizations:
         bad_debt_value = int(realization["badDebt"])
         market = realization["market"]
+        # NOTE: change this when adding more chains
+        if (
+            market["id"] not in MARKETS_RISK_1[Chain.POLYGON]
+            and market["id"] not in MARKETS_RISK_2[Chain.POLYGON]
+            and market["id"] not in MARKETS_RISK_3[Chain.POLYGON]
+        ):
+            continue
         market_address = market["id"]
         total_borrow = int(market["totalBorrow"])
         ratio = bad_debt_value / total_borrow
@@ -335,7 +342,10 @@ def check_graph_data_for_chain(chain: Chain):
     data = response.json()
     if "errors" in data:
         error_msg = data["errors"][0]["message"] if data["errors"] else "Unknown GraphQL error"
-        send_telegram_message(f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨", PROTOCOL, True, True)
+        if "indexing_error" in error_msg:
+            print(f"🚨 GraphQL indexing error when fetching Morpho data: {error_msg} 🚨")
+        else:
+            send_telegram_message(f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨", PROTOCOL, True, True)
         return
 
     vaults_data = data.get("data", {}).get("metaMorphos", {})

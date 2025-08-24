@@ -200,6 +200,11 @@ def main():
             "mainnet",
             "0xA52Fd396891E7A74b641a2Cb1A6999Fcf56B077e",
         ],  # apxETH owner: https://etherscan.io/address/0x9Ba021B0a9b958B5E75cE9f6dff97C7eE52cb3E6#readContract#F18
+        [
+            "LRT",
+            "base-main",
+            "0x92A19381444A001d62cE67BaFF066fA1111d7202",
+        ],  # origin admin
         # [
         #     "USD0",
         #     "mainnet",
