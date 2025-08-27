@@ -106,6 +106,8 @@ jobs:
       #   run: uv run silo/main.py
       - name: Run LRT Peg Checker Balancer
         run: uv run lrt-pegs/balancer/main.py
+      - name: Run LRT Peg Checker Curve
+        run: uv run lrt-pegs/curve/main.py
       - name: Run Morpho Bad Debt script
         run: uv run morpho/markets.py
       - name: Run Morpho Markets Graph script
