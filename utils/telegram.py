@@ -30,7 +30,6 @@ def send_telegram_message(
         TelegramError: If the message fails to send
     """
     print(f"Sending telegram message:\n{message}")
-    return
 
     # Truncate long messages
     if len(message) > MAX_MESSAGE_LENGTH:
