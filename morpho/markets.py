@@ -83,6 +83,8 @@ VAULTS_WITH_YV_COLLATERAL = {
         ["Gauntlet USDC", "0xE4248e2105508FcBad3fe95691551d1AF14015f7"],
         ["Yearn OG USDT", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7"],
         ["Gauntlet USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E"],
+        ["Gauntlet WETH", "0xEA79C91540C7E884e6E0069Ce036E52f7BbB1194"],
+        ["Yearn OG WETH", "0x37a79Bfb9F645F8Ed0a9ead9c722710D8f47C431"],
     ],
 }
 
@@ -187,6 +189,7 @@ MARKETS_RISK_2 = {
         "0xdf0f160d591f02931e44010763f892a51a480257a5ff21c41ebff874b0c7d258",  # BTCK/vbUSDT -> lltv 77%, oracle: Redstone BTC/USD
         "0x0e9d558490ed0cd523681a8c51d171fd5568b04311d0906fec47d668fb55f5d9",  # BTCK/vbUSDC -> lltv 77%, oracle: Redstone BTC/USD
         "0x16ded80178992b02f7c467c373cfc9f4eee7f0356df672f6a768ec92b2ffdeff",  # yUSD/vbUSDC -> lltv 86%, oracle: yUSD vault rate. yUSD = vbUSDC hardcoded oracle
+        "0x08f67ef41398456dbc5ff72d43c8b6f7917abfd01498a9fc6c89dabe6eb78b8c",  # yvvbETH/USDC -> lltv 77%, oracle: yearn vault exchange rate. Chainlink ETH/USD and Chainlink USDC/USD.
     ],
 }
 
@@ -211,6 +214,7 @@ MARKETS_RISK_3 = {
         "0xa3819a7d2aee958ca0e7404137d012b51ea47d051db69d94656956eff8c80c23",  # PT-syrupUSDC-28AUG2025/USDC -> lltv 86%, oracle: Pendle PT exchange rate(PT to asset) syrupUSDC.
         "0xfae6c3fca4d2fe61c62d29541e84a728b660a0dbc99217750c1080a8fc7d0e45",  # PT-eUSDE-14AUG2025/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) eUSDE. No price oracle for USDC, USDe = USDC.
         "0x53ed197357128ed96070e20ba9f5af4250cda6c67dcac5246876beb483f51303",  # sDOLA/USDC -> lltv 91.5%, oracle: sDOLA vault rate. DOLA = USDC hardcoded oracle.
+        "0xce68c7aa336675e42bbc8eaa8b5ecc7ebd816bf8625b5316330c6ac2dabc4cf2",  # SolvBTC/BTC -> lltv 94.5%, oracle: upgradeable MetaOracleDeviationTimelock with prime oracle morpho oracle with 1:1 hardcoded rate
     ],
     Chain.BASE: [
         "0x9a697eb760dd12aaea23699c96ea2ebbfe48b7af64138d92c4d232b9ed380024",  # PT-LBTC-29MAY2025/cbBTC -> lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle. Higher lltv than PT-LBTC-27MAR2025 / WBTC.

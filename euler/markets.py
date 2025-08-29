@@ -38,8 +38,8 @@ SUPPLY_ASSETS = [
     ["PT-sUSDE-27MAR2025", 2],  # Pendle PT to USDe and chainlink USDe/USD
     ["PT-sUSDE-29MAY2025", 2],  # Pendle PT to USDe and chainlink USDe/USD
     ["PYUSD", 2],  # Pyth oracle PYUSD/USD and high liquidity (10M)
+    ["tBTC", 2],  # Uses chainlink oracle tBTC/USD
     # Risk Tier 3
-    ["tBTC", 3],  # Uses chainlink oracle tBTC/USD
     [
         "ezETH",
         3,
@@ -61,6 +61,7 @@ SUPPLY_ASSETS = [
         "SolvBTC",
         4,
     ],  # Uses chainlink oracle solvBTC/BTC and BTC/USD https://solv.finance/
+    ["tETH", 4],  # Uses chainlink oracle tETH/wstETH, lido wstETH/WETH and Chainlink WETH/USD
     # Risk Tier 5
     [
         "USD0++",
