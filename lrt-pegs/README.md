@@ -2,7 +2,25 @@
 
 ## Exchange rates
 
-Checks the main liquidity pools of LRTs to detect depegging, such as the ezETH-WETH, rsETH-WETH, pufETH-wstETH, weETH-rETH, ETHx-wstETH and pxETH-WETH pools in Balancer. The bot monitors pool balances and sends a message if they become skewed.
+Checks the main liquidity pools of LRTs to detect depegging, such as the  pools in Balancer and pufETH-wstETH, ETH+/WETH, ETH+/ETH pools in Curve. The bot monitors pool balances and sends a message if they become massively unbalanced.
+
+### Curve pools
+
+Curve pools that are checked are:
+
+- pufETH-wstETH
+- ETH+/WETH
+- weETH-WETH
+
+### Balancer pools
+
+Balancer pools that are checked are:
+
+- ezETH-WETH
+- rsETH-WETH
+- weETH-rETH
+- ETHx-wstETH
+- pxETH-WETH
 
 ### Lombard Finance (LBTC)
 
