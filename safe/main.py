@@ -45,7 +45,10 @@ PROXY_UPGRADE_SIGNATURES = [
 
 
 def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
-    base_url = safe_apis[network_name] + "/api/v1"
+    """
+    Docs: https://docs.safe.global/core-api/transaction-service-reference/mainnet#List-a-Safe's-Module-Transactions
+    """
+    base_url = safe_apis[network_name] + "/api/v2"
     endpoint = f"{base_url}/safes/{safe_address}/multisig-transactions/"
 
     params = {"limit": limit, "ordering": "-nonce"}  # Order by nonce descending
@@ -53,12 +56,23 @@ def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
     if executed is not None:
         params["executed"] = str(executed).lower()
 
-    response = requests.get(endpoint, params=params)
+    api_key = os.getenv("SAFE_API_KEY")
+    if not api_key:
+        raise ValueError("SAFE_API_KEY environment variable not set.")
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+    }
+
+    response = requests.get(endpoint, params=params, headers=headers)
 
     if response.status_code == 200:
         return response.json()["results"]
+    elif response.status_code == 401:
+        raise ValueError("Invalid API key. Please check your SAFE_API_KEY.")
+    elif response.status_code == 429:
+        raise ValueError("Rate limit exceeded. Safe API allows 5 requests per second by default.")
     else:
-        print(f"Error: {response.status_code}")
+        print(f"Error: {response.status_code} - {response.text}")
         return None
 
 
