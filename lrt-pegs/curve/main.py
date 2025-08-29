@@ -3,7 +3,6 @@ from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-ASSET_BONDS_EXCEEDED = "GYR#357"
 PROTOCOL = "PEGS"
 PEG_THRESHOLD = 80
 

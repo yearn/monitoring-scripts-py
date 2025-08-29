@@ -3,7 +3,6 @@ from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-ASSET_BONDS_EXCEEDED = "GYR#357"
 PROTOCOL = "PEGS"
 PEG_THRESHOLD = 80
 
@@ -25,12 +24,6 @@ POOL_CONFIGS = [
         "Kelp rsETH-WETH 50-50 Pool",
         "0x58aadfb1afac0ad7fca1148f3cde6aedf5236b6d00000000000000000000067f",
         1,
-        0,
-    ),
-    (
-        "Puffer pufETH-wstETH 50-50 Pool",
-        "0x63e0d47a6964ad1565345da9bfa66659f4983f02000000000000000000000681",
-        2,
         0,
     ),
     (
