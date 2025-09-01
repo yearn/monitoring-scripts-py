@@ -46,7 +46,7 @@ PROXY_UPGRADE_SIGNATURES = [
 
 def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
     """
-        Docs: https://docs.safe.global/core-api/transaction-service-reference/mainnet#List-a-Safe's-Multisig-Transactions
+    Docs: https://docs.safe.global/core-api/transaction-service-reference/mainnet#List-a-Safe's-Multisig-Transactions
     """
 
     base_url = safe_apis[network_name] + "/api/v2"
