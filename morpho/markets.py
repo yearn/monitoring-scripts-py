@@ -85,6 +85,8 @@ VAULTS_WITH_YV_COLLATERAL = {
         ["Gauntlet USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E"],
         ["Gauntlet WETH", "0xEA79C91540C7E884e6E0069Ce036E52f7BbB1194"],
         ["Yearn OG WETH", "0x37a79Bfb9F645F8Ed0a9ead9c722710D8f47C431"],
+        ["Yearn OG WBTC", "0xe107cCdeb8e20E499545C813f98Cc90619b29859"],
+        ["Gauntlet WBTC", "0xf243523996ADbb273F0B237B53f30017C4364bBC"],
     ],
 }
 
@@ -191,6 +193,7 @@ MARKETS_RISK_2 = {
         "0x0e9d558490ed0cd523681a8c51d171fd5568b04311d0906fec47d668fb55f5d9",  # BTCK/vbUSDC -> lltv 77%, oracle: Redstone BTC/USD
         "0x16ded80178992b02f7c467c373cfc9f4eee7f0356df672f6a768ec92b2ffdeff",  # yUSD/vbUSDC -> lltv 86%, oracle: yUSD vault rate. yUSD = vbUSDC hardcoded oracle
         "0x08f67ef41398456dbc5ff72d43c8b6f7917abfd01498a9fc6c89dabe6eb78b8c",  # yvvbETH/USDC -> lltv 77%, oracle: yearn vault exchange rate. Chainlink ETH/USD and Chainlink USDC/USD.
+        "0x3a22063bd258f3f75e3135cac4ec53435dfa5b47b3d5173bb8fd5278e6c1b305",  # yvvbWBTC/USDC -> lltv 77%, oracle: yearn vault exchange rate. Chainlink WBTC/BTC, Chainlink BTC/USD and Chainlink USDC/USD.
     ],
 }
 
