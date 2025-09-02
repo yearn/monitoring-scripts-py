@@ -97,6 +97,7 @@ jobs:
         run: uv run aave/main.py
       - name: Run Aave Proposals script
         run: uv run aave/proposals.py
+      - name: Run Compound script
         run: uv run compound/main.py
       - name: Run Compound Proposals script
         run: uv run compound/proposals.py
@@ -116,10 +117,10 @@ jobs:
         run: uv run lrt-pegs/origin_protocol.py
       - name: Run Euler Markets script
         run: uv run euler/markets.py
-      - name: Run Silo Utilization script
-        run: uv run silo/ur_sniff.py
       - name: Run Resolv Monitoring script
         run: uv run resolv/resolv.py
+      - name: Run Silo Utilization script
+        run: uv run silo/ur_sniff.py
 
       # Check final hash
       - name: Check final hash
