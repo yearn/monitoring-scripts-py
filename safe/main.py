@@ -2,7 +2,7 @@ import os
 
 import requests
 from dotenv import load_dotenv
-
+import time
 from safe.specific import handle_pendle
 from utils.cache import (
     get_last_executed_nonce_from_file,
@@ -148,6 +148,20 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
         print("No pending transactions found with higher nonce than the last executed transaction.")
 
 
+def check_api_limit(last_api_call_time, request_counter):
+    current_time = time.time()
+    if current_time - last_api_call_time > 1:
+        last_api_call_time = current_time
+        request_counter = 0
+    else:
+        if request_counter >= 4:
+            time.sleep(1)
+            request_counter = 0
+            last_api_call_time = time.time()
+
+    return last_api_call_time, request_counter
+
+
 def run_for_network(network_name, safe_address, protocol):
     check_for_pending_transactions(safe_address, network_name, protocol)
 
@@ -233,10 +247,15 @@ def main():
         # TEST: yearn ms in mainnet 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52
     ]
 
+    last_api_call_time = 0
+    request_counter = 0
+
     # loop all
     for safe in all_safe_addresses:
         print(f"Running for {safe[0]} on {safe[1]}")
+        last_api_call_time, request_counter = check_api_limit(last_api_call_time, request_counter)
         run_for_network(safe[1], safe[2], safe[0])
+        request_counter += 2
 
 
 if __name__ == "__main__":
