@@ -154,11 +154,10 @@ def check_api_limit(last_api_call_time, request_counter):
     if current_time - last_api_call_time > 1:
         last_api_call_time = current_time
         request_counter = 0
-    else:
-        if request_counter >= 4:
-            time.sleep(1)
-            request_counter = 0
-            last_api_call_time = time.time()
+    elif request_counter >= 4:
+        time.sleep(1)
+        request_counter = 0
+        last_api_call_time = time.time()
 
     return last_api_call_time, request_counter
 
