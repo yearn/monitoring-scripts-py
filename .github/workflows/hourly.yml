@@ -99,8 +99,8 @@ jobs:
         run: uv run aave/proposals.py
       - name: Run Compound script
         run: uv run compound/main.py
-      - name: Run Compound Proposals script
-        run: uv run compound/proposals.py
+      # - name: Run Compound Proposals script
+      #   run: uv run compound/proposals.py
       - name: Run Lido Ethereum script
         run: uv run lido/steth/main.py
       - name: Run LRT Peg Checker Balancer
