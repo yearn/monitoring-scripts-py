@@ -20,7 +20,7 @@ MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
 LIQUIDITY_THRESHOLD = 0.01  # 1% of total assets
-LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.15  # 15% of total assets
+LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.125  # 12.5% of total assets
 
 # Map vaults by chain
 VAULTS_BY_CHAIN = {
@@ -187,6 +187,7 @@ MARKETS_RISK_2 = {
         "0xdba352d93a64b17c71104cbddc6aef85cd432322a1446b5b65163cbbc615cd0c",  # cbETH/USDC -> lltv 86.5%, oracle: Chainlink cbETH/ETH and Chainlink ETH/USD and Chainlink USDC/USD -> but low liquidity
         "0x7f90d72667171d72d10d62b5828d6a5ef7254b1e33718fe0c1f7dcf56dd1edc7",  # bsdETH/WETH -> lltv 91.5%, oracle: bsdETH total supply. bsdETH token has internal monitoring.
         "0x144bf18d6bf4c59602548a825034f73bf1d20177fc5f975fc69d5a5eba929b45",  # wsuperOETHb/WETH -> lltv 91.5%, oracle: Vault exchange rate for wsuperOETHb/superOETHb, superOETHb=ETH. wsuperOETHb token has internal monitoring.
+        "0x67a66cbacb2fe48ec4326932d4528215ad11656a86135f2795f5b90e501eb538",  # superOETHb/USDC -> lltv 77%, oracle: Chainlink ETH/USD and Chainlink USDC/USD, 1ETH=1superOETHb
     ],
     Chain.KATANA: [
         "0xfe6cb1b88d8830a884f2459962f4b96ae6e38416af086b8ae49f5d0f7f9fc0cd",  # POL/vbUSDC -> lltv 77%, oracle: Chainlink POL/USD and Chainlink USDC/USD
@@ -463,7 +464,7 @@ def check_low_liquidity(vault_data):
         if liquidity_ratio < LIQUIDITY_THRESHOLD_YV_COLLATERAL:
             message = (
                 f"⚠️ Low liquidity detected in [{vault_name}]({vault_url}) on {chain.name}\n"
-                f"🚨 This vault is being used as YV collateral. Min liquidity is 10% of total assets.\n"
+                f"🚨 This vault is being used as YV collateral. Min liquidity is {LIQUIDITY_THRESHOLD_YV_COLLATERAL:.1%} of total assets.\n"
                 f"💰 Liquidity: {liquidity_ratio:.1%} of total assets\n"
                 f"💵 Liquidity: ${liquidity:,.2f}\n"
                 f"📊 Total Assets: ${total_assets:,.2f}"
