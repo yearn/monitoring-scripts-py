@@ -43,6 +43,99 @@ PROXY_UPGRADE_SIGNATURES = [
     "1f931c1c",  # diamondCut((address,uint8,bytes4[])[],address,bytes)
 ]
 
+# combined addresses, add more addresses if needed, last item is optional for additional info message
+ALL_SAFE_ADDRESSES = [
+    ["SILO", "mainnet", "0xE8e8041cB5E3158A0829A19E014CA1cf91098554"],
+    # ["SILO", "optimism-main", "0x468CD12aa9e9fe4301DB146B0f7037831B52382d"],
+    ["SILO", "arbitrum-main", "0x865A1DA42d512d8854c7b0599c962F67F5A5A9d9"],
+    [
+        "LIDO",
+        "mainnet",
+        "0x73b047fe6337183A454c5217241D780a932777bD",
+    ],  # https://docs.lido.fi/multisigs/emergency-brakes/#12-emergency-brakes-ethereum
+    [
+        "LIDO",
+        "mainnet",
+        "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
+    ],  # https://docs.lido.fi/multisigs/emergency-brakes/#11-gateseal-committee -> expires on 1 April 2025.
+    ["PENDLE", "mainnet", "0x8119EC16F0573B7dAc7C0CB94EB504FB32456ee1"],
+    ["PENDLE", "arbitrum-main", "0x7877AdFaDEd756f3248a0EBfe8Ac2E2eF87b75Ac"],
+    ["EULER", "mainnet", "0xcAD001c30E96765aC90307669d578219D4fb1DCe"],
+    [
+        "AAVE",
+        "mainnet",
+        "0x2CFe3ec4d5a6811f4B8067F0DE7e47DfA938Aa30",
+    ],  # aave Protocol Guardian Safe: https://app.aave.com/governance/v3/proposal/?proposalId=184
+    ["AAVE", "polygon-main", "0xCb45E82419baeBCC9bA8b1e5c7858e48A3B26Ea6"],
+    ["AAVE", "arbitrum-main", "0xCb45E82419baeBCC9bA8b1e5c7858e48A3B26Ea6"],
+    [
+        "AAVE",
+        "mainnet",
+        "0xCe52ab41C40575B072A18C9700091Ccbe4A06710",
+    ],  # aave Governance Guardian Safe
+    ["AAVE", "polygon-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
+    ["AAVE", "arbitrum-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
+    [
+        "MOONWELL",
+        "base-main",
+        "0x446342AF4F3bCD374276891C6bb3411bf2F8779E",
+        "Moonwell Admin of timelock controller",
+    ],  # admin of timelock controller
+    [
+        "MOONWELL",
+        "base-main",
+        "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
+        "Moonwell Pause guardian of comptroller contract",
+    ],  # pause guardian of comptroller contract
+    [
+        "MORPHO",
+        "mainnet",
+        "0x84258B3C495d8e9b10D0d4A7867392F149Da4274",
+        "Morpho eUSDe predeposit vault owner",
+    ],  # eUSDe predeposit vault owner, token used by DAI vault on morpho
+    [
+        "RESOLV",
+        "mainnet",
+        "0xD6889F307BE1b83Bb355d5DA7d4478FB0d2Af547",
+        "RESOLV timelock contract. Used in ETH+",
+    ],  # timelock contract
+    [
+        "LRT",
+        "mainnet",
+        "0xb7cB7131FFc18f87eEc66991BECD18f2FF70d2af",
+        "LBTC boring vault big boss",
+    ],  # LBTC boring vault big boss
+    [
+        "LRT",
+        "mainnet",
+        "0xA52Fd396891E7A74b641a2Cb1A6999Fcf56B077e",
+        "Dinnero apxETH owner. Token used as collateral in yETH",
+    ],  # apxETH owner: https://etherscan.io/address/0x9Ba021B0a9b958B5E75cE9f6dff97C7eE52cb3E6#readContract#F18
+    [
+        "LRT",
+        "base-main",
+        "0x92A19381444A001d62cE67BaFF066fA1111d7202",
+        "Origin admin multisig. Markets used on Base",
+    ],  # origin admin
+    [
+        "LRT",
+        "mainnet",
+        "0x94877640dD9E6F1e3Cb56Bf7b5665b7152601295",
+        "thBILL & tULTRA owner multisig. Markets used on Morpho Arbitrum",
+    ],  # thBILL & tULTRA owner multisig
+    # [
+    #     "USD0",
+    #     "mainnet",
+    #     "0x6e9d65eC80D69b1f508560Bc7aeA5003db1f7FB7",
+    # ],  # USD0 protocol governance
+    # no active stargate strategies
+    # ["STARGATE", "mainnet", "0x65bb797c2B9830d891D87288F029ed8dACc19705"],
+    # ["STARGATE", "polygon-main", "0x47290DE56E71DC6f46C26e50776fe86cc8b21656"],
+    # ["STARGATE", "optimism-main", "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43"],
+    # ["STARGATE", "arbitrum-main", "0x9CD50907aeb5D16F29Bddf7e1aBb10018Ee8717d"],
+    # TEST: yearn ms in mainnet 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52
+]
+
 
 def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
     base_url = safe_apis[network_name] + "/api/v1"
@@ -107,8 +200,18 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
                 f"#️⃣ Nonce: {nonce}\n"
                 f"📜 Target Contract Address: {target_contract}\n"
                 f"💰 Value: {tx['value']}\n"
-                f"📅 Submission Date: {tx['submissionDate']}\n"
+                f"📅 Submission Date: {tx['submissionDate']}"
             )
+            # Find the additional info for the current safe address
+            additional_info = None
+            for safe in ALL_SAFE_ADDRESSES:
+                if safe[2].lower() == safe_address.lower():
+                    if len(safe) > 3:
+                        additional_info = safe[3]
+                    break  # Found the safe, no need to continue loop
+
+            if additional_info:
+                message += f"\nℹ️ Additional Info: {additional_info}"
 
             # pendle uses specific owner of the contracts where we need to decode the data
             if protocol == "PENDLE":
@@ -138,88 +241,8 @@ def run_for_network(network_name, safe_address, protocol):
 
 
 def main():
-    # combined addresses, add more addresses if needed
-    all_safe_addresses = [
-        ["SILO", "mainnet", "0xE8e8041cB5E3158A0829A19E014CA1cf91098554"],
-        # ["SILO", "optimism-main", "0x468CD12aa9e9fe4301DB146B0f7037831B52382d"],
-        ["SILO", "arbitrum-main", "0x865A1DA42d512d8854c7b0599c962F67F5A5A9d9"],
-        [
-            "LIDO",
-            "mainnet",
-            "0x73b047fe6337183A454c5217241D780a932777bD",
-        ],  # https://docs.lido.fi/multisigs/emergency-brakes/#12-emergency-brakes-ethereum
-        [
-            "LIDO",
-            "mainnet",
-            "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
-        ],  # https://docs.lido.fi/multisigs/emergency-brakes/#11-gateseal-committee -> expires on 1 April 2025.
-        ["PENDLE", "mainnet", "0x8119EC16F0573B7dAc7C0CB94EB504FB32456ee1"],
-        ["PENDLE", "arbitrum-main", "0x7877AdFaDEd756f3248a0EBfe8Ac2E2eF87b75Ac"],
-        ["EULER", "mainnet", "0xcAD001c30E96765aC90307669d578219D4fb1DCe"],
-        [
-            "AAVE",
-            "mainnet",
-            "0x2CFe3ec4d5a6811f4B8067F0DE7e47DfA938Aa30",
-        ],  # aave Protocol Guardian Safe: https://app.aave.com/governance/v3/proposal/?proposalId=184
-        ["AAVE", "polygon-main", "0xCb45E82419baeBCC9bA8b1e5c7858e48A3B26Ea6"],
-        ["AAVE", "arbitrum-main", "0xCb45E82419baeBCC9bA8b1e5c7858e48A3B26Ea6"],
-        [
-            "AAVE",
-            "mainnet",
-            "0xCe52ab41C40575B072A18C9700091Ccbe4A06710",
-        ],  # aave Governance Guardian Safe
-        ["AAVE", "polygon-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
-        ["AAVE", "arbitrum-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
-        [
-            "MOONWELL",
-            "base-main",
-            "0x446342AF4F3bCD374276891C6bb3411bf2F8779E",
-        ],  # admin of timelock controller
-        [
-            "MOONWELL",
-            "base-main",
-            "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
-        ],  # pause guardian of comptroller contract
-        [
-            "MORPHO",
-            "mainnet",
-            "0x84258B3C495d8e9b10D0d4A7867392F149Da4274",
-        ],  # eUSDe predeposit vault owner, token used by DAI vault on morpho
-        [
-            "RESOLV",
-            "mainnet",
-            "0xD6889F307BE1b83Bb355d5DA7d4478FB0d2Af547",
-        ],  # timelock contract
-        [
-            "LRT",
-            "mainnet",
-            "0xb7cB7131FFc18f87eEc66991BECD18f2FF70d2af",
-        ],  # LBTC boring vault big boss
-        [
-            "LRT",
-            "mainnet",
-            "0xA52Fd396891E7A74b641a2Cb1A6999Fcf56B077e",
-        ],  # apxETH owner: https://etherscan.io/address/0x9Ba021B0a9b958B5E75cE9f6dff97C7eE52cb3E6#readContract#F18
-        [
-            "LRT",
-            "base-main",
-            "0x92A19381444A001d62cE67BaFF066fA1111d7202",
-        ],  # origin admin
-        # [
-        #     "USD0",
-        #     "mainnet",
-        #     "0x6e9d65eC80D69b1f508560Bc7aeA5003db1f7FB7",
-        # ],  # USD0 protocol governance
-        # no active stargate strategies
-        # ["STARGATE", "mainnet", "0x65bb797c2B9830d891D87288F029ed8dACc19705"],
-        # ["STARGATE", "polygon-main", "0x47290DE56E71DC6f46C26e50776fe86cc8b21656"],
-        # ["STARGATE", "optimism-main", "0x392AC17A9028515a3bFA6CCe51F8b70306C6bd43"],
-        # ["STARGATE", "arbitrum-main", "0x9CD50907aeb5D16F29Bddf7e1aBb10018Ee8717d"],
-        # TEST: yearn ms in mainnet 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52
-    ]
-
     # loop all
-    for safe in all_safe_addresses:
+    for safe in ALL_SAFE_ADDRESSES:
         print(f"Running for {safe[0]} on {safe[1]}")
         run_for_network(safe[1], safe[2], safe[0])
 
