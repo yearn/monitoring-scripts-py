@@ -20,7 +20,7 @@ MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
 LIQUIDITY_THRESHOLD = 0.01  # 1% of total assets
-LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.15  # 15% of total assets
+LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.125  # 12.5% of total assets
 
 # Map vaults by chain
 VAULTS_BY_CHAIN = {
@@ -85,6 +85,8 @@ VAULTS_WITH_YV_COLLATERAL = {
         ["Gauntlet USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E"],
         ["Gauntlet WETH", "0xEA79C91540C7E884e6E0069Ce036E52f7BbB1194"],
         ["Yearn OG WETH", "0x37a79Bfb9F645F8Ed0a9ead9c722710D8f47C431"],
+        ["Yearn OG WBTC", "0xe107cCdeb8e20E499545C813f98Cc90619b29859"],
+        ["Gauntlet WBTC", "0xf243523996ADbb273F0B237B53f30017C4364bBC"],
     ],
 }
 
@@ -173,6 +175,7 @@ MARKETS_RISK_2 = {
         "0xe4cfbee9af4ad713b41bf79f009ca02b17c001a0c0e7bd2e6a89b1111b3d3f08",  # tBTC/USDC -> lltv 77%, oracle: tBTC/USD UMA oracle that captures OEV and USDC/USD UMA oracle.
         "0x7a5d67805cb78fad2596899e0c83719ba89df353b931582eb7d3041fd5a06dc8",  # PT-USDe-25SEP2025/USDC -> lltv 91.5%, oracle: Steakhouse oracle with backup oracle. Main oracle is Pendle PT exchange rate(PT to asset) USDe. Backup oracle is Pendle PT and Chainlink USDe/USD.
         "0x3e37bd6e02277f15f93cd7534ce039e60d19d9298f4d1bc6a3a4f7bf64de0a1c",  # PT-sUSDE-25SEP2025/USDC -> lltv 91.5%, oracle: Steakhouse oracle with backup oracle. Main oracle is Pendle PT exchange rate(PT to asset) sUSDe. Backup oracle is Pendle PT and Chainlink sUSDe/USD.
+        "0x45d97c66db5e803b9446802702f087d4293a2f74b370105dc3a88a278bf6bb21",  # PT-USDe-25SEP2025/DAI -> lltv 91.5%, oracle: PendlePT with LinearDiscountOracle. No price oracle for DAI, USDe = DAI.
     ],
     Chain.BASE: [
         "0x6aa81f51dfc955df598e18006deae56ce907ac02b0b5358705f1a28fcea23cc0",  # wstETH/WETH -> lltv 96.5%, oracle: Chainlink wstETH-stETH Exchange Rate
@@ -184,6 +187,7 @@ MARKETS_RISK_2 = {
         "0xdba352d93a64b17c71104cbddc6aef85cd432322a1446b5b65163cbbc615cd0c",  # cbETH/USDC -> lltv 86.5%, oracle: Chainlink cbETH/ETH and Chainlink ETH/USD and Chainlink USDC/USD -> but low liquidity
         "0x7f90d72667171d72d10d62b5828d6a5ef7254b1e33718fe0c1f7dcf56dd1edc7",  # bsdETH/WETH -> lltv 91.5%, oracle: bsdETH total supply. bsdETH token has internal monitoring.
         "0x144bf18d6bf4c59602548a825034f73bf1d20177fc5f975fc69d5a5eba929b45",  # wsuperOETHb/WETH -> lltv 91.5%, oracle: Vault exchange rate for wsuperOETHb/superOETHb, superOETHb=ETH. wsuperOETHb token has internal monitoring.
+        "0x67a66cbacb2fe48ec4326932d4528215ad11656a86135f2795f5b90e501eb538",  # superOETHb/USDC -> lltv 77%, oracle: Chainlink ETH/USD and Chainlink USDC/USD, 1ETH=1superOETHb
     ],
     Chain.KATANA: [
         "0xfe6cb1b88d8830a884f2459962f4b96ae6e38416af086b8ae49f5d0f7f9fc0cd",  # POL/vbUSDC -> lltv 77%, oracle: Chainlink POL/USD and Chainlink USDC/USD
@@ -191,6 +195,7 @@ MARKETS_RISK_2 = {
         "0x0e9d558490ed0cd523681a8c51d171fd5568b04311d0906fec47d668fb55f5d9",  # BTCK/vbUSDC -> lltv 77%, oracle: Redstone BTC/USD
         "0x16ded80178992b02f7c467c373cfc9f4eee7f0356df672f6a768ec92b2ffdeff",  # yUSD/vbUSDC -> lltv 86%, oracle: yUSD vault rate. yUSD = vbUSDC hardcoded oracle
         "0x08f67ef41398456dbc5ff72d43c8b6f7917abfd01498a9fc6c89dabe6eb78b8c",  # yvvbETH/USDC -> lltv 77%, oracle: yearn vault exchange rate. Chainlink ETH/USD and Chainlink USDC/USD.
+        "0x3a22063bd258f3f75e3135cac4ec53435dfa5b47b3d5173bb8fd5278e6c1b305",  # yvvbWBTC/USDC -> lltv 77%, oracle: yearn vault exchange rate. Chainlink WBTC/BTC, Chainlink BTC/USD and Chainlink USDC/USD.
     ],
 }
 
@@ -459,7 +464,7 @@ def check_low_liquidity(vault_data):
         if liquidity_ratio < LIQUIDITY_THRESHOLD_YV_COLLATERAL:
             message = (
                 f"⚠️ Low liquidity detected in [{vault_name}]({vault_url}) on {chain.name}\n"
-                f"🚨 This vault is being used as YV collateral. Min liquidity is 10% of total assets.\n"
+                f"🚨 This vault is being used as YV collateral. Min liquidity is {LIQUIDITY_THRESHOLD_YV_COLLATERAL:.1%} of total assets.\n"
                 f"💰 Liquidity: {liquidity_ratio:.1%} of total assets\n"
                 f"💵 Liquidity: ${liquidity:,.2f}\n"
                 f"📊 Total Assets: ${total_assets:,.2f}"

@@ -89,42 +89,38 @@ jobs:
         id: initial-hash
         run: echo "hash=${{ hashFiles('cache-id.txt') }}" >> $GITHUB_OUTPUT
 
-      - name: Run Aave script
-        run: uv run aave/main.py
-      - name: Run Aave Proposals script
-        run: uv run aave/proposals.py
-      # - name: Run Spark script
-      #   run: uv run spark/main.py
-      - name: Run Compound script
-        run: uv run compound/main.py
-      - name: Run Compound Proposals script
-        run: uv run compound/proposals.py
-      - name: Run Lido Ethereum script
-        run: uv run lido/steth/main.py
-      - name: Run Silo Utilization script
-        run: uv run silo/ur_sniff.py
-      # - name: Run Silo Bad Debt script
-      #   run: uv run silo/main.py
-      - name: Run LRT Peg Checker Balancer
-        run: uv run lrt-pegs/balancer/main.py
-      - name: Run LRT Peg Checker Curve
-        run: uv run lrt-pegs/curve/main.py
       - name: Run Morpho Bad Debt script
         run: uv run morpho/markets.py
       - name: Run Morpho Markets Graph script
         run: uv run morpho/markets_graph.py
+      - name: Run Aave script
+        run: uv run aave/main.py
+      - name: Run Aave Proposals script
+        run: uv run aave/proposals.py
+      - name: Run Compound script
+        run: uv run compound/main.py
+      # - name: Run Compound Proposals script
+      #   run: uv run compound/proposals.py
+      - name: Run Lido Ethereum script
+        run: uv run lido/steth/main.py
+      - name: Run LRT Peg Checker Balancer
+        run: uv run lrt-pegs/balancer/main.py
+      - name: Run LRT Peg Checker Curve
+        run: uv run lrt-pegs/curve/main.py
       - name: Run Moonwell Bad Debt script
         run: uv run moonwell/bad_debt.py
       - name: Run Moonwell Proposals script
         run: uv run moonwell/proposals.py
-      - name: Run Euler Markets script
-        run: uv run euler/markets.py
       - name: Run RToken Monitoring script
         run: uv run rtoken/monitor_rtoken.py
-      - name: Run RESOLV Monitoring script
-        run: uv run resolv/resolv.py
       - name: Run Origin Protocol script
         run: uv run lrt-pegs/origin_protocol.py
+      - name: Run Euler Markets script
+        run: uv run euler/markets.py
+      - name: Run Resolv Monitoring script
+        run: uv run resolv/resolv.py
+      - name: Run Silo Utilization script
+        run: uv run silo/ur_sniff.py
 
       # Check final hash
       - name: Check final hash
