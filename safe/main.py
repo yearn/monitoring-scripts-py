@@ -270,7 +270,6 @@ def run_for_network(network_name, safe_address, protocol):
 
 
 def main():
-
     last_api_call_time = 0
     request_counter = 0
     # loop all
