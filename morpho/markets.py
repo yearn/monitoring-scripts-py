@@ -15,7 +15,7 @@ from utils.chains import Chain
 from utils.telegram import send_telegram_message
 
 # Configuration constants
-API_URL = "https://blue-api.morpho.org/graphql"
+API_URL = "https://api.morpho.org/graphql"
 MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
@@ -229,6 +229,7 @@ MARKETS_RISK_3 = {
         "0x6a331b22b56c9c0ee32a1a7d6f852d2c682ea8b27a1b0f99a9c484a37a951eb7",  # weETH/USDC -> lltv 77%, oracle: Chainlink weETH / eETH Exchange Rate and Chainlink ETH/USD and Chainlink USDC/USD
         "0x52a2a376586d0775e3e80621facc464f6e96d81c8cb70fd461527dde195a079f",  # LBTC/USDC -> lltv 86%, oracle: RedStone Price Feed for LBTC/BTC  and Chainlink BTC/USD
         "0x30767836635facec1282e6ef4a5981406ed4e72727b3a63a3a72c74e8279a8d7",  # LBTC/cbBTC -> lltv 94.5%, oracle: RedStone Price Feed for LBTC_FUNDAMENTAL: https://app.redstone.finance/app/feeds/base/lbtc_fundamental/
+        "0x0138c47c8f7e0a785ec20a46edc6dc7747c8cd6e318d02f6506a5b6a5f5be7b0",  # PT-LBTC-scaled18-25SEP2025/cbBTC -> lltv 91.5%, oracle: Pendle PT exchange ratePT with TWAP 900s
     ],
     Chain.KATANA: [],
 }
