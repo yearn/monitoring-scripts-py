@@ -1,0 +1,3827 @@
+"""
+Indicates exactly one field must be supplied and this field must not be `null`.
+"""
+directive @oneOf on INPUT_OBJECT
+
+directive @cacheControl(maxAge: Int, scope: CacheControlScope, inheritMaxAge: Boolean) on FIELD_DEFINITION | OBJECT | INTERFACE | UNION | QUERY
+
+"""Chain"""
+type Chain {
+  id: Int!
+  network: String!
+  currency: String!
+}
+
+type BigIntDataPoint {
+  x: Float!
+  y: BigInt
+}
+
+"""
+The `BigInt` scalar type represents non-fractional signed whole numeric values.
+"""
+scalar BigInt
+
+type FloatDataPoint {
+  x: Float!
+  y: Float
+}
+
+type IntDataPoint {
+  x: Float!
+  y: Int
+}
+
+type AddressDataPoint {
+  x: Float!
+  y: Address
+}
+
+"""42 character long hex address"""
+scalar Address
+
+"""Market state history"""
+type MarketHistory {
+  """
+  Amount borrowed on the market, in underlying units. Amount increases as interests accrue.
+  """
+  borrowAssets(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """
+  Amount supplied on the market, in underlying units. Amount increases as interests accrue.
+  """
+  supplyAssets(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Amount borrowed on the market, in USD for display purpose"""
+  borrowAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Amount supplied on the market, in USD for display purpose"""
+  supplyAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Amount borrowed on the market, in market share units. Amount does not increase as interest accrue.
+  """
+  borrowShares(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """
+  Amount supplied on the market, in market share units. Amount does not increase as interest accrue.
+  """
+  supplyShares(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Amount available to borrow on the market, in underlying units"""
+  liquidityAssets(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Amount available to borrow on the market, in USD for display purpose"""
+  liquidityAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Amount of collateral in the market, in underlying units"""
+  collateralAssets(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Amount of collateral in the market, in USD for display purpose"""
+  collateralAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Utilization rate"""
+  utilization(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """AdaptiveCurveIRM APY if utilization was at target"""
+  apyAtTarget(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """AdaptiveCurveIRM APY if utilization was at target"""
+  rateAtUTarget(options: TimeseriesOptions = {}): [FloatDataPoint!] @deprecated(reason: "Use `apyAtTarget` instead")
+
+  """AdaptiveCurveIRM rate per second if utilization was at target"""
+  rateAtTarget(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Supply APY excluding rewards"""
+  supplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Supply APY including rewards"""
+  netSupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Borrow APY excluding rewards"""
+  borrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Supply APY including rewards"""
+  netBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Fee rate"""
+  fee(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Collateral price"""
+  price(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Daily Supply APY excluding rewards"""
+  dailySupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Daily Supply APY including rewards"""
+  dailyNetSupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Daily Borrow APY excluding rewards"""
+  dailyBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Daily Borrow APY including rewards"""
+  dailyNetBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Weekly Supply APY excluding rewards"""
+  weeklySupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Weekly Supply APY including rewards"""
+  weeklyNetSupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Weekly Borrow APY excluding rewards"""
+  weeklyBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Weekly Borrow APY including rewards"""
+  weeklyNetBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Monthly Supply APY excluding rewards"""
+  monthlySupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Monthly Supply APY including rewards"""
+  monthlyNetSupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Monthly Borrow APY excluding rewards"""
+  monthlyBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Monthly Borrow APY including rewards"""
+  monthlyNetBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Quarterly Supply APY excluding rewards"""
+  quarterlySupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Quarterly Supply APY including rewards"""
+  quarterlyNetSupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Quarterly Borrow APY excluding rewards"""
+  quarterlyBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Quarterly Borrow APY including rewards"""
+  quarterlyNetBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Yearly Supply APY excluding rewards"""
+  yearlySupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Yearly Supply APY including rewards"""
+  yearlyNetSupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Yearly Borrow APY excluding rewards"""
+  yearlyBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Yearly Borrow APY including rewards"""
+  yearlyNetBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """All Time Supply APY excluding rewards"""
+  allTimeSupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """All Time Supply APY including rewards"""
+  allTimeNetSupplyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """All Time Borrow APY excluding rewards"""
+  allTimeBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """All Time Borrow APY including rewards"""
+  allTimeNetBorrowApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+}
+
+input TimeseriesOptions {
+  """Unix timestamp (Inclusive)."""
+  startTimestamp: Int
+
+  """Unix timestamp (Inclusive)."""
+  endTimestamp: Int
+
+  """
+  The timestamp interval to space and group points. Defaults to around 50 points between startTimestamp and endTimestamp.
+  """
+  interval: TimeseriesInterval
+}
+
+enum TimeseriesInterval {
+  MINUTE @deprecated(reason: "HOUR is the minimum interval.")
+  FIVE_MINUTES @deprecated(reason: "HOUR is the minimum interval.")
+  FIFTEEN_MINUTES @deprecated(reason: "HOUR is the minimum interval.")
+  HALF_HOUR @deprecated(reason: "HOUR is the minimum interval.")
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+  ALL @deprecated(reason: "Use startTimestamp and endTimestamp instead.")
+}
+
+"""Morpho Blue market state rewards"""
+type MarketStateReward {
+  """
+  Amount of reward tokens per year on the supply side. Scaled to reward asset decimals.
+  """
+  yearlySupplyTokens: BigInt!
+
+  """
+  Amount of reward tokens per year on the borrow side. Scaled to reward asset decimals.
+  """
+  yearlyBorrowTokens: BigInt!
+
+  """Supply rewards APY."""
+  supplyApy: Float @deprecated(reason: "Use `supplyApr` instead. This field will be removed in the future.")
+
+  """Supply rewards APR."""
+  supplyApr: Float
+
+  """Borrow rewards APY."""
+  borrowApy: Float @deprecated(reason: "Use `borrowApr` instead. This field will be removed in the future.")
+
+  """Borrow rewards APR."""
+  borrowApr: Float
+
+  """
+  Amount of reward tokens per supplied token (annualized). Scaled to reward asset decimals.
+  """
+  amountPerSuppliedToken: BigInt!
+
+  """
+  Amount of reward tokens per borrowed token (annualized). Scaled to reward asset decimals.
+  """
+  amountPerBorrowedToken: BigInt!
+  asset: Asset!
+}
+
+"""Morpho Blue market state"""
+type MarketState {
+  id: ID!
+
+  """Block number of the state"""
+  blockNumber: BigInt
+
+  """
+  Amount borrowed on the market, in underlying units. Amount increases as interests accrue.
+  """
+  borrowAssets: BigInt!
+
+  """
+  Amount supplied on the market, in underlying units. Amount increases as interests accrue.
+  """
+  supplyAssets: BigInt!
+
+  """Amount borrowed on the market, in USD for display purpose"""
+  borrowAssetsUsd: Float
+
+  """Amount supplied on the market, in USD for display purpose"""
+  supplyAssetsUsd: Float
+
+  """
+  Amount borrowed on the market, in market share units. Amount does not increase as interest accrue.
+  """
+  borrowShares: BigInt!
+
+  """
+  Amount supplied on the market, in market share units. Amount does not increase as interest accrue.
+  """
+  supplyShares: BigInt!
+
+  """Amount available to borrow on the market, in underlying units"""
+  liquidityAssets: BigInt!
+
+  """Amount available to borrow on the market, in USD for display purpose"""
+  liquidityAssetsUsd: Float
+
+  """Amount of collateral in the market, in underlying units"""
+  collateralAssets: BigInt
+
+  """Amount of collateral in the market, in USD for display purpose"""
+  collateralAssetsUsd: Float
+
+  """Utilization rate"""
+  utilization: Float!
+
+  """Apy at target utilization"""
+  rateAtUTarget: Float! @deprecated(reason: "Use `apyAtTarget` instead")
+
+  """Apy at target utilization"""
+  apyAtTarget: Float!
+
+  """Rate at target utilization"""
+  rateAtTarget: BigInt
+
+  """Instantaneous Supply APY"""
+  supplyApy: Float!
+
+  """Instantaneous Borrow APY"""
+  borrowApy: Float!
+
+  """Instantaneous Supply APY including rewards"""
+  netSupplyApy: Float
+
+  """Instantaneous Borrow APY including rewards"""
+  netBorrowApy: Float
+
+  """Fee rate"""
+  fee: Float!
+
+  """Collateral price"""
+  price: BigInt
+
+  """Variation of the collateral price over the last 24 hours"""
+  dailyPriceVariation: Float
+
+  """Last update timestamp."""
+  timestamp: BigInt!
+
+  """Market state rewards"""
+  rewards: [MarketStateReward!]
+
+  """
+  Total size of the market. This is the sum of all assets that are allocated or can be reallocated to this market.
+  """
+  size: BigInt!
+
+  """
+  Total size of the market. This is the sum of all assets that are allocated or can be reallocated to this market, in USD for display purpose.
+  """
+  sizeUsd: Float
+
+  """Amount available to borrow on the market, including shared liquidity."""
+  totalLiquidity: BigInt!
+
+  """
+  Amount available to borrow on the market, including shared liquidity, in USD for display purpose.
+  """
+  totalLiquidityUsd: Float
+
+  """
+  6h average supply APY excluding rewards (6h timeframe is subject to change).
+  """
+  avgSupplyApy: Float
+
+  """
+  6h average supply APY including rewards (6h timeframe is subject to change).
+  """
+  avgNetSupplyApy: Float
+
+  """
+  6h average borrow APY excluding rewards (6h timeframe is subject to change).
+  """
+  avgBorrowApy: Float
+
+  """
+  6h average borrow APY including rewards (6h timeframe is subject to change).
+  """
+  avgNetBorrowApy: Float
+
+  """Daily Supply APY excluding rewards"""
+  dailySupplyApy: Float
+
+  """Daily Supply APY including rewards"""
+  dailyNetSupplyApy: Float
+
+  """Daily Borrow APY excluding rewards"""
+  dailyBorrowApy: Float
+
+  """Daily Borrow APY including rewards"""
+  dailyNetBorrowApy: Float
+
+  """Weekly Supply APY excluding rewards"""
+  weeklySupplyApy: Float
+
+  """Weekly Supply APY including rewards"""
+  weeklyNetSupplyApy: Float
+
+  """Weekly Borrow APY excluding rewards"""
+  weeklyBorrowApy: Float
+
+  """Weekly Borrow APY including rewards"""
+  weeklyNetBorrowApy: Float
+
+  """Biweekly Supply APY excluding rewards"""
+  biweeklySupplyApy: Float
+
+  """Biweekly Supply APY including rewards"""
+  biweeklyNetSupplyApy: Float
+
+  """Biweekly Borrow APY excluding rewards"""
+  biweeklyBorrowApy: Float
+
+  """Biweekly Borrow APY including rewards"""
+  biweeklyNetBorrowApy: Float
+
+  """Monthly Supply APY excluding rewards"""
+  monthlySupplyApy: Float
+
+  """Monthly Supply APY including rewards"""
+  monthlyNetSupplyApy: Float
+
+  """Monthly Borrow APY excluding rewards"""
+  monthlyBorrowApy: Float
+
+  """Monthly Borrow APY including rewards"""
+  monthlyNetBorrowApy: Float
+
+  """Quarterly Supply APY excluding rewards"""
+  quarterlySupplyApy: Float
+
+  """Quarterly Supply APY including rewards"""
+  quarterlyNetSupplyApy: Float
+
+  """Quarterly Borrow APY excluding rewards"""
+  quarterlyBorrowApy: Float
+
+  """Quarterly Borrow APY including rewards"""
+  quarterlyNetBorrowApy: Float
+
+  """Yearly Supply APY excluding rewards"""
+  yearlySupplyApy: Float
+
+  """Yearly Supply APY including rewards"""
+  yearlyNetSupplyApy: Float
+
+  """Yearly Borrow APY excluding rewards"""
+  yearlyBorrowApy: Float
+
+  """Yearly Borrow APY including rewards"""
+  yearlyNetBorrowApy: Float
+
+  """All Time Supply APY excluding rewards"""
+  allTimeSupplyApy: Float
+
+  """All Time Supply APY including rewards"""
+  allTimeNetSupplyApy: Float
+
+  """All Time Borrow APY excluding rewards"""
+  allTimeBorrowApy: Float
+
+  """All Time Borrow APY including rewards"""
+  allTimeNetBorrowApy: Float
+}
+
+"""Morpho Blue state history"""
+type MorphoBlueStateHistory {
+  """Amount of collateral in all markets, in USD for display purpose."""
+  totalCollateralUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Amount supplied in all markets, in USD for display purpose"""
+  totalSupplyUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Amount deposited in all markets, in USD for display purpose"""
+  totalDepositUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Amount borrowed in all markets, in USD for display purpose"""
+  totalBorrowUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """TVL (collateral + supply - borrows), in USD for display purpose"""
+  tvlUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Number of unique users that have interacted with the protocol"""
+  userCount(options: TimeseriesOptions = {}): [IntDataPoint!]
+
+  """Number of markets in the protocol"""
+  marketCount(options: TimeseriesOptions = {}): [IntDataPoint!]
+
+  """Number of meta morpho vaults in the protocol"""
+  vaultCount(options: TimeseriesOptions = {}): [IntDataPoint!]
+}
+
+"""Morpho Blue global state"""
+type MorphoBlueState {
+  id: ID!
+
+  """Last update timestamp."""
+  timestamp: BigInt!
+
+  """Amount of collateral in all markets, in USD for display purpose"""
+  totalCollateralUsd: Float!
+
+  """Amount supplied in all markets, in USD for display purpose"""
+  totalSupplyUsd: Float!
+
+  """Amount deposited in all markets, in USD for display purpose"""
+  totalDepositUsd: Float!
+
+  """Amount borrowed in all markets, in USD for display purpose"""
+  totalBorrowUsd: Float!
+
+  """TVL (collateral + supply - borrows), in USD for display purpose"""
+  tvlUsd: Float!
+
+  """Number of unique users that have interacted with the protocol"""
+  userCount: Int!
+
+  """Number of markets in the protocol"""
+  marketCount: Int!
+
+  """Number of meta morpho vaults in the protocol"""
+  vaultCount: Int!
+}
+
+"""Morpho Blue deployment"""
+type MorphoBlue {
+  id: ID!
+  address: Address!
+  creationBlockNumber: Int!
+  chain: Chain!
+
+  """Current state"""
+  state: MorphoBlueState
+
+  """State history"""
+  historicalState: MorphoBlueStateHistory
+}
+
+"""Oracle Feed"""
+type OracleFeed {
+  id: ID!
+
+  """Feed contract address"""
+  address: Address!
+  description: String
+  vendor: String
+  pair: [String!]
+  decimals: Int
+  chain: Chain!
+  historicalPrice(options: TimeseriesOptions! = {}): [BigIntDataPoint!]
+  price: BigIntDataPoint
+}
+
+"""Oracle Vault"""
+type OracleVault {
+  id: ID!
+
+  """Vault contract address"""
+  address: Address!
+  chain: Chain!
+  assetId: String
+  metamorphoId: String
+  vendor: String
+  pair: [String!]
+  decimals: Int
+  price: BigIntDataPoint
+  historicalPrice(options: TimeseriesOptions! = {}): [BigIntDataPoint!]
+}
+
+"""Oracle creation tx"""
+type ChainlinkOracleV2Event {
+  txHash: HexString!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  chainId: Int!
+
+  """Transaction caller address"""
+  caller: Address!
+}
+
+"""Hexadecimal string"""
+scalar HexString
+
+"""Oracle"""
+type Oracle {
+  id: ID!
+
+  """Oracle contract address"""
+  address: Address!
+
+  """Oracle type"""
+  type: OracleType!
+  data: OracleData
+  chain: Chain!
+  markets: [Market!]!
+  creationEvent: ChainlinkOracleV2Event
+}
+
+enum OracleType {
+  ChainlinkOracle
+  ChainlinkOracleV2
+  CustomOracle
+  Unknown
+}
+
+union OracleData = MorphoChainlinkOracleData | MorphoChainlinkOracleV2Data
+
+"""Morpho chainlink oracle data"""
+type MorphoChainlinkOracleData {
+  baseFeedOne: OracleFeed
+  baseFeedTwo: OracleFeed
+  quoteFeedOne: OracleFeed
+  quoteFeedTwo: OracleFeed
+  scaleFactor: BigInt!
+  vault: String! @deprecated(reason: "Use `baseOracleVault` instead")
+  chainId: Int!
+  baseOracleVault: OracleVault
+  vaultConversionSample: BigInt!
+}
+
+"""Morpho chainlink oracle v2 data"""
+type MorphoChainlinkOracleV2Data {
+  baseFeedOne: OracleFeed
+  baseFeedTwo: OracleFeed
+  quoteFeedOne: OracleFeed
+  quoteFeedTwo: OracleFeed
+  scaleFactor: BigInt!
+  baseVault: String! @deprecated(reason: "Use `baseOracleVault` instead")
+  baseOracleVault: OracleVault
+  quoteOracleVault: OracleVault
+  quoteVault: String! @deprecated(reason: "Use `quoteOracleVault` instead")
+  chainId: Int!
+  baseVaultConversionSample: BigInt!
+  quoteVaultConversionSample: BigInt!
+}
+
+"""Public allocator flow caps"""
+type PublicAllocatorFlowCaps {
+  """Public allocator flow cap in USD"""
+  maxIn: BigInt!
+
+  """Public allocator flow cap in underlying"""
+  maxOut: BigInt!
+  market: Market!
+}
+
+"""Public allocator configuration"""
+type PublicAllocatorConfig {
+  fee: BigInt!
+  accruedFee: BigInt!
+  admin: Address!
+  flowCaps: [PublicAllocatorFlowCaps!]!
+}
+
+"""Public allocator"""
+type PublicAllocator {
+  id: ID!
+  address: Address!
+  creationBlockNumber: Int!
+  morphoBlue: MorphoBlue!
+}
+
+"""Public alllocator shared liquidity"""
+type PublicAllocatorSharedLiquidity {
+  id: ID!
+  assets: BigInt!
+  market: Market!
+  vault: Vault!
+  publicAllocator: PublicAllocator!
+  allocationMarket: Market!
+}
+
+"""Risk analysis"""
+type RiskAnalysis {
+  provider: RiskProvider!
+  analysis: RiskAnalysisData!
+  score: Float! @deprecated(reason: "Use `analysis.score` instead")
+  rating: String @deprecated(reason: "Use `analysis.rating` instead")
+  isUnderReview: Boolean! @deprecated(reason: "Use `analysis.isUnderReview` instead")
+  timestamp: Float! @deprecated(reason: "Use `analysis.timestamp` instead")
+}
+
+enum RiskProvider {
+  CREDORA
+  BLOCKAID
+}
+
+union RiskAnalysisData = CredoraRiskAnalysis
+
+"""Credora risk analysis"""
+type CredoraRiskAnalysis {
+  score: Float!
+  rating: String
+  isUnderReview: Boolean!
+  timestamp: Float!
+}
+
+"""Custom Warning Metadata"""
+type CustomMetadata {
+  content: String
+}
+
+"""Morpho Blue supply and borrow side concentrations"""
+type MarketConcentration {
+  """Borrowers Herfindahl-Hirschman Index"""
+  supplyHhi: Float @deprecated(reason: "Not maintained.")
+
+  """Borrowers Herfindahl-Hirschman Index"""
+  borrowHhi: Float @deprecated(reason: "Not maintained.")
+}
+
+"""Market APY aggregates"""
+type MarketApyAggregates {
+  """Average market supply APY excluding rewards"""
+  supplyApy: Float
+
+  """Average market borrow APY excluding rewards"""
+  borrowApy: Float
+
+  """Average market supply APY including rewards"""
+  netSupplyApy: Float
+
+  """Average market borrow APY including rewards"""
+  netBorrowApy: Float
+}
+
+"""IRM curve data point"""
+type IRMCurveDataPoint {
+  """Market utilization rate"""
+  utilization: Float!
+
+  """Supply APY at utilization rate"""
+  supplyApy: Float!
+
+  """Borrow APY at utilization rate"""
+  borrowApy: Float!
+}
+
+"""Bad debt realized in the market"""
+type MarketBadDebt {
+  """Amount of bad debt realized in the market in underlying units."""
+  underlying: BigInt!
+
+  """Amount of bad debt realized in the market in USD."""
+  usd: Float
+}
+
+"""Market oracle information"""
+type MarketOracleInfo {
+  type: OracleType!
+}
+
+"""Market warning"""
+type MarketWarning {
+  type: String!
+  level: WarningLevel!
+  metadata: MarketWarningMetadata
+}
+
+enum WarningLevel {
+  YELLOW
+  RED
+}
+
+union MarketWarningMetadata = HardcodedPriceMetadata | CustomMetadata
+
+"""Hardcoded Price Metadata"""
+type HardcodedPriceMetadata {
+  symbolFrom: String
+  symbolTo: String
+}
+
+"""Market oracle feeds"""
+type MarketOracleFeed {
+  baseFeedOneAddress: Address!
+  baseFeedOneDescription: String
+  baseFeedOneVendor: String
+  baseFeedTwoAddress: Address!
+  baseFeedTwoDescription: String
+  baseFeedTwoVendor: String
+  baseVault: Address
+  baseVaultDescription: String
+  baseVaultVendor: String
+  baseVaultConversionSample: BigInt
+  quoteFeedOneAddress: Address!
+  quoteFeedOneDescription: String
+  quoteFeedOneVendor: String
+  quoteFeedTwoAddress: Address!
+  quoteFeedTwoDescription: String
+  quoteFeedTwoVendor: String
+  quoteVault: Address
+  quoteVaultDescription: String
+  quoteVaultVendor: String
+  quoteVaultConversionSample: BigInt
+  scaleFactor: BigInt
+}
+
+"""Morpho Blue market"""
+type Market {
+  id: ID!
+  uniqueKey: MarketId!
+  lltv: BigInt!
+  oracleAddress: Address!
+  irmAddress: Address!
+  creationBlockNumber: Int!
+  creationTimestamp: BigInt!
+  creatorAddress: Address
+  whitelisted: Boolean!
+
+  """
+  Amount of collateral to borrow 1 loan asset scaled to both asset decimals
+  """
+  collateralPrice: BigInt @deprecated(reason: "Use `state.price` instead.")
+
+  """Underlying amount of assets that can be reallocated to this market"""
+  reallocatableLiquidityAssets: BigInt
+  targetBorrowUtilization: BigInt!
+  targetWithdrawUtilization: BigInt!
+  loanAsset: Asset!
+  collateralAsset: Asset
+  oracle: Oracle
+  morphoBlue: MorphoBlue!
+
+  """Current state"""
+  state: MarketState
+
+  """State history"""
+  historicalState: MarketHistory
+
+  """Feeds used by the oracle if provided by the contract"""
+  oracleFeed: MarketOracleFeed
+
+  """Market oracle information"""
+  oracleInfo: MarketOracleInfo
+
+  """Market concentrations"""
+  concentration: MarketConcentration @deprecated(reason: "Not maintained.")
+
+  """Market bad debt values"""
+  badDebt: MarketBadDebt
+
+  """Market realized bad debt values"""
+  realizedBadDebt: MarketBadDebt
+
+  """Daily market APYs"""
+  dailyApys: MarketApyAggregates @deprecated(reason: "Use `market.state` daily average APYs instead.")
+
+  """Weekly market APYs"""
+  weeklyApys: MarketApyAggregates @deprecated(reason: "Use `market.state` weekly average APYs instead.")
+
+  """Monthly market APYs"""
+  monthlyApys: MarketApyAggregates @deprecated(reason: "Use `market.state` monthly average APYs instead.")
+
+  """Quarterly market APYs"""
+  quarterlyApys: MarketApyAggregates @deprecated(reason: "Use `market.state` quarterly average APYs instead.")
+
+  """Yearly market APYs"""
+  yearlyApys: MarketApyAggregates @deprecated(reason: "Use `market.state` yearly average APYs instead.")
+
+  """All time market APYs"""
+  allTimeApys: MarketApyAggregates @deprecated(reason: "Use `market.state` all time average APYs instead.")
+
+  """
+  Current IRM curve at different utilization thresholds for display purpose
+  """
+  currentIrmCurve(numberOfPoints: Float = 100): [IRMCurveDataPoint!]
+
+  """Public allocator shared liquidity available reallocations"""
+  publicAllocatorSharedLiquidity: [PublicAllocatorSharedLiquidity!]
+
+  """Market warnings"""
+  warnings: [MarketWarning!]
+
+  """Vaults with the market in supply queue"""
+  supplyingVaults: [Vault!]
+
+  """Risk related data on the market"""
+  riskAnalysis: [RiskAnalysis!]
+}
+
+"""66 character long hexadecimal market ID"""
+scalar MarketId
+
+"""MetaMorpho Vault Factories"""
+type VaultFactory {
+  id: ID!
+  address: Address!
+  creationBlockNumber: Int!
+  chain: Chain!
+}
+
+"""MetaMorpho vault allocation"""
+type VaultAllocation {
+  id: ID!
+
+  """Block number in which the allocation was computed"""
+  blockNumber: BigInt
+
+  """Amount of asset supplied on market, in market underlying token units"""
+  supplyAssets: BigInt!
+
+  """Amount of asset supplied on market, in USD for display purpose."""
+  supplyAssetsUsd: Float
+
+  """Amount of supplied shares on market."""
+  supplyShares: BigInt!
+
+  """
+  Maximum amount of asset that can be supplied on market by the vault, in market underlying token units
+  """
+  supplyCap: BigInt!
+
+  """
+  Maximum amount of asset that can be supplied on market by the vault, in USD for display purpose.
+  """
+  supplyCapUsd: Float
+
+  """
+  Pending maximum amount of asset that can be supplied on market by the vault, in market underlying token units
+  """
+  pendingSupplyCap: BigInt
+
+  """Pending supply cap apply timestamp"""
+  pendingSupplyCapValidAt: BigInt
+
+  """
+  Pending maximum amount of asset that can be supplied on market by the vault, in USD for display purpose.
+  """
+  pendingSupplyCapUsd: Float
+
+  """Supply queue index"""
+  supplyQueueIndex: Int
+
+  """Withdraw queue index"""
+  withdrawQueueIndex: Int
+  enabled: Boolean!
+  removableAt: BigInt!
+  market: Market!
+}
+
+"""MetaMorpho vault state rewards"""
+type VaultStateReward {
+  """
+  Amount of reward tokens distributed to MetaMorpho vault suppliers (annualized). Scaled to reward asset decimals.
+  """
+  yearlySupplyTokens: BigInt!
+
+  """Rewards APR."""
+  supplyApr: Float
+
+  """
+  Amount of reward tokens earned per supplied token (annualized). Scaled to reward asset decimals.
+  """
+  amountPerSuppliedToken: BigInt!
+  asset: Asset!
+}
+
+type PageInfo {
+  """Total number of items"""
+  countTotal: Int!
+
+  """Number of items as scoped by pagination."""
+  count: Int!
+
+  """Number of items requested."""
+  limit: Int!
+
+  """Number of items skipped."""
+  skip: Int!
+}
+
+type AddressMetadata {
+  type: AddressMetadataType!
+  metadata: Metadata!
+}
+
+enum AddressMetadataType {
+  safe
+  risk
+  aragon
+}
+
+union Metadata = SafeAddressMetadata | AddressRiskMetadata | AragonAddressMetadata
+
+"""Safe address metadata"""
+type SafeAddressMetadata {
+  owners: [String!]!
+  threshold: Int!
+}
+
+"""Risk address metadata"""
+type AddressRiskMetadata {
+  risk: String!
+  riskReason: String
+  isAuthorized: Boolean!
+}
+
+"""Aragon address metadata"""
+type AragonAddressMetadata {
+  ensDomain: String
+  name: String
+  description: String
+}
+
+type PaginatedAddressMetadata {
+  items: [AddressMetadata!]
+  pageInfo: PageInfo
+}
+
+"""Curator Address"""
+type CuratorAddress {
+  chainId: Int!
+  address: String!
+
+  """Additional information about the address."""
+  metadata: PaginatedAddressMetadata
+}
+
+"""Vault curator state"""
+type CuratorState {
+  curatorId: ID!
+
+  """
+  Assets Under Management. Total assets managed by the curator, in USD for display purpose.
+  """
+  aum: Float!
+}
+
+"""Vault curator"""
+type Curator {
+  id: ID!
+  name: String!
+  description: String
+  verified: Boolean!
+
+  """Curator logo URI, for display purpose"""
+  image: String
+
+  """Link to curator website"""
+  url: String @deprecated(reason: "Use `socials` instead")
+  socials: [CuratorSocial!]!
+
+  """Current state"""
+  state: CuratorState
+  addresses: [CuratorAddress!]!
+}
+
+type CuratorSocial {
+  type: String!
+  url: String!
+}
+
+"""MetaMorpho vault state"""
+type VaultState {
+  id: ID!
+
+  """Block number of the state"""
+  blockNumber: BigInt
+
+  """Total value of vault holdings, in underlying token units."""
+  totalAssets: BigInt!
+
+  """Total value of vault holdings, in USD for display purpose."""
+  totalAssetsUsd: Float
+
+  """
+  Stores the total assets managed by this vault when the fee was last accrued, in underlying token units.
+  """
+  lastTotalAssets: BigInt!
+
+  """Vault shares total supply."""
+  totalSupply: BigInt!
+
+  """Vault performance fee."""
+  fee: Float!
+
+  """Vault APY excluding rewards, before deducting the performance fee."""
+  apy: Float!
+
+  """Vault APY excluding rewards, after deducting the performance fee."""
+  netApyWithoutRewards: Float!
+
+  """
+  Vault APY including rewards and underlying yield, after deducting the performance fee.
+  """
+  netApy: Float
+
+  """Vault curator address."""
+  curator: Address!
+
+  """Additional information about the curator address."""
+  curatorMetadata: PaginatedAddressMetadata
+
+  """Fee recipient address."""
+  feeRecipient: Address!
+
+  """Guardian address."""
+  guardian: Address!
+
+  """Additional information about the guardian address."""
+  guardianMetadata: PaginatedAddressMetadata
+
+  """Pending guardian address."""
+  pendingGuardian: Address
+
+  """Pending guardian apply timestamp."""
+  pendingGuardianValidAt: BigInt
+
+  """Owner address."""
+  owner: Address!
+
+  """Additional information about the owner address."""
+  ownerMetadata: PaginatedAddressMetadata
+
+  """Pending owner address."""
+  pendingOwner: Address
+
+  """Skim recipient address."""
+  skimRecipient: Address!
+
+  """Timelock in seconds."""
+  timelock: BigInt!
+
+  """Pending timelock in seconds."""
+  pendingTimelock: BigInt
+
+  """Pending timelock apply timestamp."""
+  pendingTimelockValidAt: BigInt
+
+  """Last update timestamp."""
+  timestamp: BigInt!
+
+  """Vault allocation on Morpho Blue markets."""
+  allocation: [VaultAllocation!]
+
+  """Vault state rewards"""
+  rewards: [VaultStateReward!]
+
+  """Value of WAD shares in assets"""
+  sharePrice: BigInt
+
+  """Value of WAD shares in USD"""
+  sharePriceUsd: Float
+
+  """Curators operating on this vault"""
+  curators: [Curator!]
+
+  """
+  6h average vault APY excluding rewards, before deducting the performance fee (6h timeframe is subject to change).
+  """
+  avgApy: Float
+
+  """
+  6h average vault APY including rewards, after deducting the performance fee (6h timeframe is subject to change).
+  """
+  avgNetApy: Float
+
+  """
+  Daily Vault APY excluding rewards, before deducting the performance fee.
+  """
+  dailyApy: Float
+
+  """
+  Daily Vault APY including rewards, after deducting the performance fee.
+  """
+  dailyNetApy: Float
+
+  """
+  Weekly Vault APY excluding rewards, before deducting the performance fee.
+  """
+  weeklyApy: Float
+
+  """
+  Weekly Vault APY including rewards, after deducting the performance fee.
+  """
+  weeklyNetApy: Float
+
+  """
+  Biweekly Vault APY excluding rewards, before deducting the performance fee.
+  """
+  biweeklyApy: Float
+
+  """
+  Biweekly Vault APY including rewards, after deducting the performance fee.
+  """
+  biweeklyNetApy: Float
+
+  """
+  Monthly Vault APY excluding rewards, before deducting the performance fee.
+  """
+  monthlyApy: Float
+
+  """
+  Monthly Vault APY including rewards, after deducting the performance fee.
+  """
+  monthlyNetApy: Float
+
+  """
+  Quarterly Vault APY excluding rewards, before deducting the performance fee.
+  """
+  quarterlyApy: Float
+
+  """
+  Quarterly Vault APY including rewards, after deducting the performance fee.
+  """
+  quarterlyNetApy: Float
+
+  """
+  Yearly Vault APY excluding rewards, before deducting the performance fee.
+  """
+  yearlyApy: Float
+
+  """
+  Yearly Vault APY including rewards, after deducting the performance fee.
+  """
+  yearlyNetApy: Float
+
+  """
+  All Time Vault APY excluding rewards, before deducting the performance fee.
+  """
+  allTimeApy: Float
+
+  """
+  All Time Vault APY including rewards, after deducting the performance fee.
+  """
+  allTimeNetApy: Float
+}
+
+"""Meta Morpho vault event data"""
+type VaultAdminEvent {
+  hash: HexString!
+  timestamp: BigInt!
+  type: String!
+  data: VaultAdminEventData
+}
+
+union VaultAdminEventData = SetCuratorEventData | SetFeeEventData | SetFeeRecipientEventData | SetGuardianEventData | SetIsAllocatorEventData | SetSkimRecipientEventData | SetSupplyQueueEventData | SetWithdrawQueueEventData | SkimEventData | CapEventData | TimelockEventData | ReallocateSupplyEventData | ReallocateWithdrawEventData | OwnershipEventData | RevokeCapEventData | RevokePendingMarketRemovalEventData
+
+"""SetCurator event data"""
+type SetCuratorEventData {
+  curatorAddress: Address!
+}
+
+"""SetFee event data"""
+type SetFeeEventData {
+  fee: BigInt!
+}
+
+"""SetFeeRecipient event data"""
+type SetFeeRecipientEventData {
+  feeRecipient: Address!
+}
+
+"""SetGuardian event data"""
+type SetGuardianEventData {
+  guardian: Address!
+}
+
+"""SetIsAllocator event data"""
+type SetIsAllocatorEventData {
+  allocator: Address!
+  isAllocator: Boolean!
+}
+
+"""SetSkimRecipient event data"""
+type SetSkimRecipientEventData {
+  skimRecipient: Address!
+}
+
+"""SetSupplyQueue event data"""
+type SetSupplyQueueEventData {
+  supplyQueue: [Market!]!
+}
+
+"""SetWithdrawQueue event data"""
+type SetWithdrawQueueEventData {
+  withdrawQueue: [Market!]!
+}
+
+"""Skim event data"""
+type SkimEventData {
+  asset: Asset!
+  amount: BigInt!
+}
+
+"""Event data for cap-related operation"""
+type CapEventData {
+  market: Market!
+  cap: BigInt!
+}
+
+"""Event data for timelock-related operation"""
+type TimelockEventData {
+  timelock: BigInt!
+}
+
+"""ReallocateSupply event data"""
+type ReallocateSupplyEventData {
+  market: Market!
+  suppliedAssets: BigInt!
+  suppliedShares: BigInt!
+}
+
+"""ReallocateWithdraw event data"""
+type ReallocateWithdrawEventData {
+  market: Market!
+  withdrawnAssets: BigInt!
+  withdrawnShares: BigInt!
+}
+
+"""Event data for ownership-related operations"""
+type OwnershipEventData {
+  owner: Address!
+}
+
+"""Event data for revokeCap operation"""
+type RevokeCapEventData {
+  market: Market!
+}
+
+"""Event data for revokePendingMarketRemoval operation"""
+type RevokePendingMarketRemovalEventData {
+  market: Market!
+}
+
+type PaginatedVaultAdminEvent {
+  items: [VaultAdminEvent!]
+  pageInfo: PageInfo
+}
+
+"""Vault warning"""
+type VaultWarning {
+  type: String!
+  level: WarningLevel!
+  metadata: CustomMetadata
+}
+
+"""Vault APY aggregates"""
+type VaultApyAggregates {
+  """
+  Average vault apy excluding rewards, before deducting the performance fee.
+  """
+  apy: Float
+
+  """
+  Average vault APY including rewards, after deducting the performance fee.
+  """
+  netApy: Float
+}
+
+"""Vault Liquidity"""
+type VaultLiquidity {
+  """Vault withdrawable liquidity in underlying."""
+  underlying: BigInt!
+
+  """Vault withdrawable liquidity in USD."""
+  usd: Float!
+}
+
+"""Vault allocator"""
+type VaultAllocator {
+  """Allocator adress."""
+  address: Address!
+
+  """Allocator since block number"""
+  blockNumber: BigInt!
+
+  """Allocator since timestamp"""
+  timestamp: BigInt!
+
+  """Additional information about the address."""
+  metadata: PaginatedAddressMetadata
+}
+
+"""Vault pending cap"""
+type VaultPendingCap {
+  """Pending supply cap"""
+  supplyCap: BigInt!
+
+  """Pending supply cap apply timestamp"""
+  validAt: BigInt!
+  market: Market!
+}
+
+"""Vault metadata curator"""
+type VaultMetadataCurator {
+  name: String!
+  image: String!
+  url: String!
+  verified: Boolean!
+}
+
+"""Vault metadata"""
+type VaultMetadata {
+  description: String!
+  image: String!
+  forumLink: String
+  curators: [VaultMetadataCurator!]! @deprecated(reason: "Use `state.curators` instead")
+}
+
+"""MetaMorpho Vaults"""
+type Vault {
+  id: ID!
+  address: Address!
+  symbol: String!
+  name: String!
+  creationBlockNumber: Int!
+  creationTimestamp: BigInt!
+  creatorAddress: Address
+  whitelisted: Boolean!
+  metadata: VaultMetadata
+  asset: Asset!
+  factory: VaultFactory!
+  chain: Chain!
+  state: VaultState
+
+  """Daily vault APY"""
+  dailyApy: Float @deprecated(reason: "Use `dailyApys` instead.")
+
+  """Monthly vault APY"""
+  monthlyApy: Float @deprecated(reason: "Use `monthlyApys` instead.")
+
+  """Weekly vault APY"""
+  weeklyApy: Float @deprecated(reason: "Use `weeklyApys` instead.")
+
+  """Daily vault APYs"""
+  dailyApys: VaultApyAggregates @deprecated(reason: "Use `vault.state` daily average APYs instead.")
+
+  """Weekly vault APYs"""
+  weeklyApys: VaultApyAggregates @deprecated(reason: "Use `vault.state` weekly average APYs instead.")
+
+  """Monthly vault APYs"""
+  monthlyApys: VaultApyAggregates @deprecated(reason: "Use `vault.state` monthly average APYs instead.")
+
+  """Vault liquidity"""
+  liquidity: VaultLiquidity
+
+  """Vault warnings"""
+  warnings: [VaultWarning!]
+
+  """Public allocator configuration"""
+  publicAllocatorConfig: PublicAllocatorConfig
+
+  """Vault allocators"""
+  allocators: [VaultAllocator!]
+
+  """Vault pending caps"""
+  pendingCaps: [VaultPendingCap!]
+
+  """Risk related data on the vault"""
+  riskAnalysis: [RiskAnalysis!]
+
+  """Vault admin events on the vault"""
+  adminEvents(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    where: VaultAdminEventsFilters
+  ): PaginatedVaultAdminEvent
+  historicalState: VaultHistory!
+}
+
+"""
+Filtering options for vault admin events. AND operator is used for multiple filters, while OR operator is used for multiple values in the same filter.
+"""
+input VaultAdminEventsFilters {
+  """Filter by event type"""
+  type_in: [String!]
+}
+
+"""Asset yield"""
+type AssetYield {
+  """Asset yield (APR)"""
+  apr: Float!
+}
+
+"""Asset"""
+type Asset {
+  id: ID!
+
+  """ERC-20 token contract address"""
+  address: Address!
+  chain: Chain!
+  decimals: Float!
+  name: String!
+  symbol: String!
+  tags: [String!]
+
+  """Token logo URI, for display purpose"""
+  logoURI: String
+
+  """ERC-20 token total supply"""
+  totalSupply: BigInt! @deprecated(reason: "this data is not updated anymore")
+
+  """Current price in USD, for display purpose."""
+  priceUsd: Float
+
+  """Historical price in USD, for display purpose"""
+  historicalPriceUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Current oracle price in USD, for display purpose."""
+  oraclePriceUsd(timestamp: Float): Float
+
+  """Current spot price in ETH."""
+  spotPriceEth(timestamp: Float): Float
+
+  """Historical spot price in ETH"""
+  historicalSpotPriceEth(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """MetaMorpho vault"""
+  vault: Vault
+
+  """Asset yield"""
+  yield: AssetYield
+
+  """Risk related data on the asset"""
+  riskAnalysis: [RiskAnalysis!]
+
+  """Either the asset is whitelisted or not"""
+  isWhitelisted: Boolean!
+}
+
+type PaginatedAssets {
+  items: [Asset!]
+  pageInfo: PageInfo
+}
+
+"""Market position state history"""
+type MarketPositionHistory {
+  """
+  Profit (from the collateral asset's price variation) & Loss (from the loan interest) history, in loan assets.
+  """
+  pnl(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """
+  Profit (from the collateral asset's price variation) & Loss (from the loan interest) history, in USD for display purposes.
+  """
+  pnlUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Return Over Equity history."""
+  roe(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Return Over Equity history, taking into account prices variation."""
+  roeUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Profit & Loss (from the loan asset's price variation and interest) of the supply side of the position since its inception, in loan assets.
+  """
+  supplyPnl(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """
+  Profit & Loss (from the loan asset's price variation and interest) of the supply side of the position since its inception, in USD for display purpose.
+  """
+  supplyPnlUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Return Over Equity history of the supply side of the position."""
+  supplyRoe(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Return Over Equity history of the supply side of the position, taking into account the loan asset's price variation.
+  """
+  supplyRoeUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Profit & Loss (from the loan asset's price variation and interest) of the borrow side of the position since its inception, in loan assets.
+  """
+  borrowPnl(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """
+  Profit & Loss (from the loan asset's price variation and interest) of the borrow side of the position since its inception, in USD for display purpose.
+  """
+  borrowPnlUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Return Over Equity history of the borrow side of the position."""
+  borrowRoe(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Return Over Equity history of the borrow side of the position, taking into account the loan asset's price variation.
+  """
+  borrowRoeUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Profit & Loss (from the collateral asset's price variation) of the collateral of the position since its inception, in USD for display purpose.
+  """
+  collateralPnlUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Return Over Equity history of the collateral of the position, taking into account the collateral asset's price variation.
+  """
+  collateralRoeUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Profit & Loss (from the assets' price variation and loan interest) of the margin of the position since its inception, in loan assets.
+  """
+  marginPnl(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """
+  Profit & Loss (from the collateral asset's price variation and loan interest) of the margin of the position since its inception, in USD for display purpose.
+  """
+  marginPnlUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Return Over Equity history of the margin of the position."""
+  marginRoe(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Return Over Equity history of the margin of the position, taking into account prices variation.
+  """
+  marginRoeUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Collateral history."""
+  collateral(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Collateral value history, in loan assets."""
+  collateralValue(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Collateral value history, in USD."""
+  collateralUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Supply assets history."""
+  supplyAssets(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Supply assets history, in USD."""
+  supplyAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Supply shares history."""
+  supplyShares(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Borrow assets history."""
+  borrowAssets(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Borrow assets history, in USD."""
+  borrowAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Borrow shares history."""
+  borrowShares(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Margin history, in loan assets."""
+  margin(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Margin history, in USD."""
+  marginUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+}
+
+"""Market position state"""
+type MarketPositionState {
+  id: ID!
+
+  """The latest update timestamp."""
+  timestamp: BigInt!
+
+  """
+  Profit (from the collateral asset's price variation) & Loss (from the loan interest) of the position since its inception, in loan assets.
+  """
+  pnl: BigInt
+
+  """
+  Profit (from the collateral asset's price variation) & Loss (from the loan interest) of the position since its inception, in USD for display purpose.
+  """
+  pnlUsd: Float
+
+  """Return Over Equity of the position since its inception."""
+  roe: Float
+
+  """
+  Return Over Equity of the position since its inception, taking into account prices variation.
+  """
+  roeUsd: Float
+
+  """
+  Profit & Loss (from the loan asset's price variation and interest) of the supply side of the position since its inception, in loan assets.
+  """
+  supplyPnl: BigInt
+
+  """
+  Profit & Loss (from the loan asset's price variation and interest) of the supply side of the position since its inception, in USD for display purpose.
+  """
+  supplyPnlUsd: Float
+
+  """
+  Return Over Equity of the supply side of the position since its inception.
+  """
+  supplyRoe: Float
+
+  """
+  Return Over Equity of the supply side of the position since its inception, taking into account the loan asset's price variation.
+  """
+  supplyRoeUsd: Float
+
+  """
+  Profit & Loss (from the loan asset's price variation and interest) of the borrow side of the position since its inception, in loan assets.
+  """
+  borrowPnl: BigInt
+
+  """
+  Profit & Loss (from the loan asset's price variation and interest) of the borrow side of the position since its inception, in USD for display purpose.
+  """
+  borrowPnlUsd: Float
+
+  """
+  Return Over Equity of the borrow side of the position since its inception.
+  """
+  borrowRoe: Float
+
+  """
+  Return Over Equity of the borrow side of the position since its inception, taking into account the loan asset's price variation.
+  """
+  borrowRoeUsd: Float
+
+  """
+  Profit & Loss (from the collateral asset's price variation) of the collateral of the position since its inception, in USD for display purpose.
+  """
+  collateralPnlUsd: Float
+
+  """
+  Return Over Equity of the collateral of the position since its inception, taking into account the collateral asset's price variation.
+  """
+  collateralRoeUsd: Float
+
+  """
+  Profit & Loss (from the assets' price variation and loan interest) of the margin of the position since its inception, in loan assets.
+  """
+  marginPnl: BigInt
+
+  """
+  Profit & Loss (from the collateral asset's price variation and loan interest) of the margin of the position since its inception, in USD for display purpose.
+  """
+  marginPnlUsd: Float
+
+  """Return Over Equity of the margin of the position since its inception."""
+  marginRoe: Float
+
+  """
+  Return Over Equity of the margin of the position since its inception, taking into account prices variation.
+  """
+  marginRoeUsd: Float
+
+  """The latest collateral assets indexed for this position."""
+  collateral: BigInt!
+
+  """
+  The latest collateral assets indexed for this position, in loan assets.
+  """
+  collateralValue: BigInt
+
+  """The latest collateral assets indexed for this position, in USD."""
+  collateralUsd: Float
+
+  """The latest supply assets indexed for this position."""
+  supplyAssets: BigInt
+
+  """The latest supply assets indexed for this position, in USD."""
+  supplyAssetsUsd: Float
+
+  """The latest supply shares indexed for this position."""
+  supplyShares: BigInt!
+
+  """The latest borrow assets indexed for this position."""
+  borrowAssets: BigInt
+
+  """The latest borrow assets indexed for this position, in USD."""
+  borrowAssetsUsd: Float
+
+  """The latest borrow shares indexed for this position."""
+  borrowShares: BigInt!
+
+  """The latest margin indexed for this position, in loan assets."""
+  margin: BigInt
+
+  """The latest margin indexed for this position, in USD."""
+  marginUsd: Float
+}
+
+"""Market position"""
+type MarketPosition {
+  id: ID!
+  whitelisted: Boolean!
+
+  """Amount of loan asset supplied, in market shares."""
+  supplyShares: BigInt! @deprecated(reason: "Use `state.supplyShares` instead.")
+
+  """Amount of loan asset supplied, in underlying token units."""
+  supplyAssets: BigInt! @deprecated(reason: "Use `state.supplyAssets` instead.")
+
+  """Amount of loan asset supplied, in USD for display purpose."""
+  supplyAssetsUsd: Float @deprecated(reason: "Use `state.supplyAssetsUsd` instead.")
+
+  """Amount of loan asset borrowed, in market shares."""
+  borrowShares: BigInt! @deprecated(reason: "Use `state.borrowShares` instead.")
+
+  """Amount of loan asset borrowed, in underlying token units."""
+  borrowAssets: BigInt! @deprecated(reason: "Use `state.borrowAssets` instead.")
+
+  """Amount of loan asset borrowed, in USD for display purpose."""
+  borrowAssetsUsd: Float @deprecated(reason: "Use `state.borrowAssetsUsd` instead.")
+
+  """
+  Amount of collateral asset deposited on the market, in underlying token units.
+  """
+  collateral: BigInt! @deprecated(reason: "Use `state.collateral` instead.")
+
+  """
+  Amount of collateral asset deposited on the market, in USD for display purpose.
+  """
+  collateralUsd: Float @deprecated(reason: "Use `state.collateralUsd` instead.")
+
+  """
+  Health factor of the position, computed as collateral value divided by borrow value.
+  """
+  healthFactor: Float
+
+  """
+  Price variation required for the given position to reach its liquidation threshold (scaled by WAD)
+  """
+  priceVariationToLiquidationPrice: Float
+
+  """Current state"""
+  state: MarketPositionState
+
+  """State history"""
+  historicalState: MarketPositionHistory
+  user: User!
+  market: Market!
+}
+
+"""Vault position state"""
+type VaultPositionState {
+  id: ID!
+
+  """The latest update timestamp."""
+  timestamp: BigInt!
+
+  """
+  Profit (from the collateral's price variation) & Loss (from the loan interest) of the position since its inception, in loan assets.
+  """
+  pnl: BigInt
+
+  """
+  Profit (from the collateral's price variation) & Loss (from the loan interest) of the position since its inception, in USD.
+  """
+  pnlUsd: Float
+
+  """Return Over Equity of the position since its inception."""
+  roe: Float
+
+  """
+  Return Over Equity of the position since its inception, taking into account the underlying asset's price variation.
+  """
+  roeUsd: Float
+
+  """The latest supply assets indexed for this position."""
+  assets: BigInt
+
+  """The latest supply assets indexed for this position, in USD."""
+  assetsUsd: Float
+
+  """The latest supply shares indexed for this position."""
+  shares: BigInt!
+}
+
+"""Vault position state history"""
+type VaultPositionHistory {
+  """
+  Profit (from the underlying asset's price variation) & Loss (from bad debt socialization) of the position since its inception, in underlying assets.
+  """
+  pnl(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """
+  Profit (from the underlying asset's price variation) & Loss (from bad debt socialization) of the position since its inception, in USD for display purposes.
+  """
+  pnlUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Return Over Equity of the position since its inception."""
+  roe(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Return Over Equity of the position since its inception, taking into account the underlying asset's price variation.
+  """
+  roeUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Value of the position since its inception, in underlying assets."""
+  assets(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Value of the position since its inception, in USD."""
+  assetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Value of the position since its inception, in vault shares."""
+  shares(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+}
+
+"""MetaMorpho vault position"""
+type VaultPosition {
+  id: ID!
+  whitelisted: Boolean!
+
+  """Amount of vault shares"""
+  shares: BigInt! @deprecated(reason: "Use `state.shares` instead.")
+
+  """Value of vault shares held, in underlying token units."""
+  assets: BigInt! @deprecated(reason: "Use `state.assets` instead.")
+
+  """Value of vault shares held, in USD for display purpose."""
+  assetsUsd: Float @deprecated(reason: "Use `state.assetsUsd` instead.")
+
+  """Current state"""
+  state: VaultPositionState
+
+  """State history"""
+  historicalState: VaultPositionHistory
+  user: User!
+  vault: Vault!
+}
+
+"""User state history"""
+type UserHistory {
+  """Total value of all the user's vault positions, in USD."""
+  vaultsAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Total collateral of all the user's market positions, in USD."""
+  marketsCollateralUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Total supply assets of all the user's market positions, in USD."""
+  marketsSupplyAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Total borrow assets of all the user's market positions, in USD."""
+  marketsBorrowAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Total margin of all the user's market positions, in USD."""
+  marketsMarginUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+}
+
+"""User state"""
+type UserState {
+  """
+  Profit (from the underlying asset's price variation) & Loss (from bad debt socialization) of all the user's vault positions, in USD.
+  """
+  vaultsPnlUsd: Float
+
+  """
+  Return Over Equity of all the user's vault positions, taking into account prices variation.
+  """
+  vaultsRoeUsd: Float
+
+  """Total value of all the user's vault positions, in USD."""
+  vaultsAssetsUsd: Float
+
+  """
+  Profit (from the underlying asset's price variation) & Loss (from bad debt socialization) of all the user's market positions, in USD.
+  """
+  marketsPnlUsd: Float
+
+  """
+  Return Over Equity of all the user's market positions, taking into account prices variation.
+  """
+  marketsRoeUsd: Float
+
+  """
+  Profit & Loss (from the loan asset's price variation and interest) of the supply side of the position since its inception, in USD for display purpose.
+  """
+  marketsSupplyPnlUsd: Float
+
+  """
+  Return Over Equity of the supply side of all the user's market positions, taking into account prices variation.
+  """
+  marketsSupplyRoeUsd: Float
+
+  """
+  Profit & Loss (from the loan asset's price variation and interest) of the borrow side of the position since its inception, in USD for display purpose.
+  """
+  marketsBorrowPnlUsd: Float
+
+  """
+  Return Over Equity of the borrow side of all the user's market positions, taking into account prices variation.
+  """
+  marketsBorrowRoeUsd: Float
+
+  """
+  Profit & Loss (from the collateral asset's price variation) of the collateral of the position since its inception, in USD for display purpose.
+  """
+  marketsCollateralPnlUsd: Float
+
+  """
+  Return Over Equity of the collateral of all the user's market positions, taking into account prices variation.
+  """
+  marketsCollateralRoeUsd: Float
+
+  """
+  Profit & Loss (from the collateral asset's price variation and loan interest) of the margin of the position since its inception, in USD for display purpose.
+  """
+  marketsMarginPnlUsd: Float
+
+  """
+  Return Over Equity of the margin of all the user's market positions, taking into account prices variation.
+  """
+  marketsMarginRoeUsd: Float
+
+  """Total collateral of all the user's market positions, in USD."""
+  marketsCollateralUsd: Float
+
+  """Total supply assets of all the user's market positions, in USD."""
+  marketsSupplyAssetsUsd: Float
+
+  """Total borrow assets of all the user's market positions, in USD."""
+  marketsBorrowAssetsUsd: Float
+
+  """Total margin of all the user's market positions, in USD."""
+  marketsMarginUsd: Float
+}
+
+type PaginatedCurators {
+  items: [Curator!]
+  pageInfo: PageInfo
+}
+
+type MetaMorphoAdapterFactory implements VaultV2AdapterFactory {
+  id: ID!
+  chain: Chain!
+  address: Address!
+  creationBlockNumber: BigInt!
+}
+
+interface VaultV2AdapterFactory {
+  id: ID!
+  chain: Chain!
+  address: Address!
+  creationBlockNumber: BigInt!
+}
+
+type MetaMorphoAdapter implements VaultV2Adapter {
+  id: ID!
+  chain: Chain!
+  address: Address!
+  creationBlockNumber: BigInt!
+  creationTimestamp: BigInt!
+  type: VaultV2AdapterType!
+  vault: VaultV2!
+  factory: VaultV2AdapterFactory!
+  assets: BigInt! @deprecated(reason: "currently always position.assets or 0")
+  assetsUsd: Float @deprecated(reason: "currently always position.assetsUsd or 0")
+  metaMorpho: Vault!
+  position: VaultPosition
+}
+
+interface VaultV2Adapter {
+  id: ID!
+  chain: Chain!
+  address: Address!
+  creationBlockNumber: BigInt!
+  creationTimestamp: BigInt!
+  type: VaultV2AdapterType!
+  vault: VaultV2!
+  factory: VaultV2AdapterFactory!
+  assets: BigInt! @deprecated(reason: "currently always position.assets or 0")
+  assetsUsd: Float @deprecated(reason: "currently always position.assetsUsd or 0")
+}
+
+enum VaultV2AdapterType {
+  MetaMorpho
+}
+
+type PaginatedVaultV2Adapters {
+  items: [VaultV2Adapter!]
+  pageInfo: PageInfo
+}
+
+"""Vault V2 metadata"""
+type VaultV2Metadata {
+  description: String!
+  image: String!
+  forumLink: String
+}
+
+"""Vault V2 allocator"""
+type VaultV2Allocator {
+  """Allocator adress."""
+  allocator: Address!
+
+  """Allocator since block number"""
+  blockNumber: BigInt!
+
+  """Allocator since timestamp"""
+  timestamp: BigInt!
+}
+
+"""Vault V2 sentinel"""
+type VaultV2Sentinel {
+  """Sentinel adress."""
+  sentinel: Address!
+
+  """Sentinel since block number"""
+  blockNumber: BigInt!
+
+  """Sentinel since timestamp"""
+  timestamp: BigInt!
+}
+
+"""Vault V2 allocator"""
+type VaultV2Timelock {
+  """Targeted selector"""
+  selector: HexString!
+
+  """Targeted function"""
+  functionName: String!
+
+  """Duration of the timelock"""
+  duration: BigInt!
+
+  """Last updated at block number"""
+  blockNumber: BigInt!
+
+  """Last updated at timestamp"""
+  timestamp: BigInt!
+}
+
+type VaultV2 {
+  id: ID!
+  chain: Chain!
+  address: Address!
+  name: String!
+  symbol: String!
+  whitelisted: Boolean!
+  metadata: VaultV2Metadata
+
+  """Curators operating on this vault"""
+  curators: PaginatedCurators!
+  curatorAddress: Address!
+  ownerAddress: Address!
+  creationBlockNumber: BigInt!
+  creationTimestamp: BigInt!
+  asset: Asset!
+  factory: Asset!
+  adapters: PaginatedVaultV2Adapters!
+  liquidityAdapter: VaultV2Adapter
+  totalAssets: BigInt @deprecated(reason: "currently always metaMorphoAdapter.position.assets")
+  totalSupply: BigInt!
+  totalAssetsUsd: Float @deprecated(reason: "currently always metaMorphoAdapter.position.assetsUsd")
+  idleAssets: BigInt! @deprecated(reason: "currently always 0")
+  idleAssetsUsd: Float @deprecated(reason: "currently always 0")
+  avgApy: Float @deprecated(reason: "currently always metaMorphoAdapter.metaMorpho.state.avgApy")
+  avgNetApy: Float @deprecated(reason: "currently always metaMorphoAdapter.metaMorpho.state.avgNetApy")
+  rewards: [VaultStateReward!]! @deprecated(reason: "currently always metaMorphoAdapter.metaMorpho.state.rewards")
+  performanceFee: Float!
+  performanceFeeRecipient: Address!
+  managementFee: Float!
+  managementFeeRecipient: Address!
+  allocators: [VaultV2Allocator!]!
+  sentinels: [VaultV2Sentinel!]!
+  timelocks: [VaultV2Timelock!]!
+}
+
+type VaultV2Position {
+  id: ID!
+  chain: Chain!
+  user: User!
+  vault: VaultV2!
+
+  """Amount of vault shares"""
+  shares: BigInt!
+}
+
+"""User"""
+type User {
+  id: ID!
+  address: Address!
+  tag: String
+  chain: Chain!
+  marketPositions: [MarketPosition!]!
+  vaultPositions: [VaultPosition!]!
+  vaultV2Positions: [VaultV2Position!]! @deprecated(reason: "WIP")
+  transactions: [Transaction!]!
+  state: UserState!
+  historicalState: UserHistory!
+}
+
+"""Transaction"""
+type Transaction {
+  id: ID!
+  timestamp: BigInt!
+  hash: HexString!
+  logIndex: Int!
+  blockNumber: BigInt!
+  type: TransactionType!
+  data: TransactionData!
+  chain: Chain!
+  user: User!
+}
+
+enum TransactionType {
+  MetaMorphoDeposit
+  MetaMorphoWithdraw
+  MetaMorphoTransfer
+  MetaMorphoFee
+  MarketBorrow
+  MarketLiquidation
+  MarketRepay
+  MarketSupply
+  MarketSupplyCollateral
+  MarketWithdraw
+  MarketWithdrawCollateral
+}
+
+union TransactionData = VaultTransactionData | MarketCollateralTransferTransactionData | MarketTransferTransactionData | MarketLiquidationTransactionData
+
+"""Meta Morpho vault transaction data"""
+type VaultTransactionData {
+  shares: BigInt!
+  assets: BigInt!
+  assetsUsd: Float
+  vault: Vault!
+}
+
+"""Market collateral transfer transaction data"""
+type MarketCollateralTransferTransactionData {
+  assets: BigInt!
+  assetsUsd: Float
+  market: Market!
+}
+
+"""Market transfer transaction data"""
+type MarketTransferTransactionData {
+  shares: BigInt!
+  assets: BigInt!
+  assetsUsd: Float
+  market: Market!
+}
+
+"""Market liquidation transaction data"""
+type MarketLiquidationTransactionData {
+  repaidAssets: BigInt!
+  repaidAssetsUsd: Float
+  repaidShares: BigInt!
+  seizedAssets: BigInt!
+  seizedAssetsUsd: Float
+  badDebtShares: BigInt!
+  badDebtAssets: BigInt!
+  badDebtAssetsUsd: Float
+  liquidator: Address!
+  market: Market!
+}
+
+type PaginatedTransactions {
+  items: [Transaction!]
+  pageInfo: PageInfo
+}
+
+type PaginatedMetaMorphos {
+  items: [Vault!]
+  pageInfo: PageInfo
+}
+
+"""MetaMorpho vault allocation history"""
+type VaultAllocationHistory {
+  market: Market!
+
+  """Amount of asset supplied on market, in market underlying token units"""
+  supplyAssets(options: TimeseriesOptions = {}): [BigIntDataPoint!]!
+
+  """Amount of asset supplied on market, in USD for display purpose."""
+  supplyAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]!
+
+  """
+  Maximum amount of asset that can be supplied on market by the vault, in market underlying token units
+  """
+  supplyCap(options: TimeseriesOptions = {}): [BigIntDataPoint!]!
+
+  """
+  Maximum amount of asset that can be supplied on market by the vault, in USD for display purpose.
+  """
+  supplyCapUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]!
+}
+
+"""Meta-Morpho vault history"""
+type VaultHistory {
+  """Total value of vault holdings, in underlying token units."""
+  totalAssets(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Total value of vault holdings, in USD for display purpose."""
+  totalAssetsUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Vault shares total supply."""
+  totalSupply(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Vault performance fee."""
+  fee(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Vault APY excluding rewards, before deducting the performance fee."""
+  apy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Vault APY excluding rewards, after deducting the performance fee."""
+  netApyWithoutRewards(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Vault APY including rewards, after deducting the performance fee."""
+  netApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """Vault curator."""
+  curator(options: TimeseriesOptions = {}): [AddressDataPoint!]
+
+  """Fee recipient."""
+  feeRecipient(options: TimeseriesOptions = {}): [AddressDataPoint!]
+
+  """Guardian."""
+  guardian(options: TimeseriesOptions = {}): [AddressDataPoint!]
+
+  """Owner."""
+  owner(options: TimeseriesOptions = {}): [AddressDataPoint!]
+
+  """Skim recipient."""
+  skimRecipient(options: TimeseriesOptions = {}): [AddressDataPoint!]
+
+  """Vault allocation on Morpho Blue markets."""
+  allocation: [VaultAllocationHistory!]
+
+  """Value of WAD shares in assets"""
+  sharePrice(options: TimeseriesOptions = {}): [BigIntDataPoint!]
+
+  """Value of WAD shares in USD"""
+  sharePriceUsd(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Daily Vault APY excluding rewards, before deducting the performance fee.
+  """
+  dailyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Daily Vault APY including rewards, after deducting the performance fee.
+  """
+  dailyNetApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Weekly Vault APY excluding rewards, before deducting the performance fee.
+  """
+  weeklyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Weekly Vault APY including rewards, after deducting the performance fee.
+  """
+  weeklyNetApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Monthly Vault APY excluding rewards, before deducting the performance fee.
+  """
+  monthlyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Monthly Vault APY including rewards, after deducting the performance fee.
+  """
+  monthlyNetApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Quarterly Vault APY excluding rewards, before deducting the performance fee.
+  """
+  quarterlyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Quarterly Vault APY including rewards, after deducting the performance fee.
+  """
+  quarterlyNetApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Yearly Vault APY excluding rewards, before deducting the performance fee.
+  """
+  yearlyApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  Yearly Vault APY including rewards, after deducting the performance fee.
+  """
+  yearlyNetApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  All Time Vault APY excluding rewards, before deducting the performance fee.
+  """
+  allTimeApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+
+  """
+  All Time Vault APY including rewards, after deducting the performance fee.
+  """
+  allTimeNetApy(options: TimeseriesOptions = {}): [FloatDataPoint!]
+}
+
+type PaginatedMetaMorphoPositions {
+  items: [VaultPosition!]
+  pageInfo: PageInfo
+}
+
+type PaginatedUsers {
+  items: [User!]
+  pageInfo: PageInfo
+}
+
+type PaginatedMarkets {
+  items: [Market!]
+  pageInfo: PageInfo
+}
+
+type PaginatedMarketPositions {
+  items: [MarketPosition!]
+  pageInfo: PageInfo
+}
+
+type PaginatedMorphoBlue {
+  items: [MorphoBlue!]
+  pageInfo: PageInfo
+}
+
+"""Market oracle accuracy versus spot price"""
+type MarketOracleAccuracy {
+  market: Market!
+
+  """Average oracle/spot prices deviation"""
+  averagePercentDifference: Float @deprecated(reason: "Not maintained anymore.")
+
+  """Maximum oracle/spot prices deviation"""
+  maxPercentDifference: Float @deprecated(reason: "Not maintained anymore.")
+}
+
+"""
+Amount of collateral at risk of liquidation at collateralPriceRatio * oracle price
+"""
+type CollateralAtRiskDataPoint {
+  collateralPriceRatio: Float!
+  collateralAssets: BigInt!
+  collateralUsd: Float!
+}
+
+"""Market collateral at risk of liquidation"""
+type MarketCollateralAtRisk {
+  market: Market!
+
+  """Total collateral at risk of liquidation at certain prices thresholds."""
+  collateralAtRisk: [CollateralAtRiskDataPoint!]
+}
+
+"""Vault reallocate"""
+type VaultReallocate {
+  id: ID!
+  timestamp: BigInt!
+  hash: HexString!
+  logIndex: Int!
+  blockNumber: BigInt!
+  caller: Address!
+  shares: BigInt!
+  assets: BigInt!
+  type: VaultReallocateType!
+  market: Market!
+  vault: Vault!
+}
+
+enum VaultReallocateType {
+  ReallocateSupply
+  ReallocateWithdraw
+}
+
+type PaginatedVaultReallocates {
+  items: [VaultReallocate!]
+  pageInfo: PageInfo
+}
+
+"""Global search results"""
+type SearchResults {
+  markets: [Market!]!
+  vaults: [Vault!]!
+}
+
+type PaginatedPublicAllocator {
+  items: [PublicAllocator!]
+  pageInfo: PageInfo
+}
+
+"""Public alllocator reallocate"""
+type PublicAllocatorReallocate {
+  id: ID!
+  timestamp: BigInt!
+  hash: HexString!
+  logIndex: Int!
+  blockNumber: BigInt!
+  sender: Address!
+  assets: BigInt!
+  type: PublicAllocatorReallocateType!
+  market: Market!
+  vault: Vault!
+  publicAllocator: PublicAllocator!
+}
+
+enum PublicAllocatorReallocateType {
+  Deposit
+  Withdraw
+}
+
+type PaginatedPublicAllocatorReallocates {
+  items: [PublicAllocatorReallocate!]
+  pageInfo: PageInfo
+}
+
+type PaginatedOracles {
+  items: [Oracle!]
+  pageInfo: PageInfo
+}
+
+type PaginatedOracleFeeds {
+  items: [OracleFeed!]
+  pageInfo: PageInfo
+}
+
+type PaginatedMetaMorphoFactories {
+  items: [VaultFactory!]
+  pageInfo: PageInfo
+}
+
+type PaginatedOracleVaults {
+  items: [OracleVault!]
+  pageInfo: PageInfo
+}
+
+type VaultV2Factory {
+  id: ID!
+  chain: Chain!
+  address: Address!
+  creationBlockNumber: BigInt!
+}
+
+type PaginatedVaultV2Factories {
+  items: [VaultV2Factory!]
+  pageInfo: PageInfo
+}
+
+type PaginatedMetaMorphoAdapterFactories {
+  items: [MetaMorphoAdapterFactory!]
+  pageInfo: PageInfo
+}
+
+type PaginatedVaultV2s {
+  items: [VaultV2!]
+  pageInfo: PageInfo
+}
+
+type _CrossVersionVault {
+  """null iif the vaiult is a vault V2"""
+  v1: Vault
+
+  """null iif the vaiult is a Vault V1"""
+  v2: VaultV2
+}
+
+type _PaginatedCrossVersionVault {
+  items: [_CrossVersionVault!]
+  pageInfo: PageInfo
+}
+
+"""Vault V2 transaction"""
+type VaultV2Transaction {
+  chain: Chain!
+  txHash: HexString!
+  vault: VaultV2!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  shares: BigInt!
+  txIndex: Int!
+  logIndex: Int!
+  type: VaultV2TransactionType!
+  data: VaultV2TransactionData!
+}
+
+enum VaultV2TransactionType {
+  Transfer
+  Deposit
+  Withdraw
+}
+
+union VaultV2TransactionData = VaultV2DepositData | VaultV2WithdrawData | VaultV2TransferData
+
+"""Vault V2 deposit data"""
+type VaultV2DepositData {
+  assets: BigInt!
+  sender: String!
+  onBehalf: String!
+}
+
+"""Vault V2 withdraw data"""
+type VaultV2WithdrawData {
+  assets: BigInt!
+  sender: String!
+  receiver: String!
+  onBehalf: String!
+}
+
+"""Vault V2 transfer data"""
+type VaultV2TransferData {
+  from: String!
+  to: String!
+}
+
+type PaginatedVaultV2Transactions {
+  items: [VaultV2Transaction!]
+  pageInfo: PageInfo
+}
+
+type Query {
+  chain(id: Int!): Chain!
+  chains: [Chain!]!
+  asset(id: String!): Asset!
+  assetByAddress(address: String!, chainId: Int = 1): Asset!
+  assets(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    where: AssetsFilters
+    orderBy: AssetOrderBy = Address
+    orderDirection: OrderDirection
+  ): PaginatedAssets!
+  transaction(id: String!): Transaction!
+  transactionByHash(hash: String!, chainId: Int = 1): Transaction! @deprecated(reason: "Multiple Transaction entities correspond to a single hash, because a Transaction entity corresponds to an onchain event.")
+  transactions(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: TransactionsOrderBy = Timestamp
+    orderDirection: OrderDirection
+    where: TransactionFilters
+  ): PaginatedTransactions!
+  user(id: String!): User!
+  userByAddress(address: String!, chainId: Int = 1): User!
+  users(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: UsersOrderBy = Address
+    orderDirection: OrderDirection
+    where: UsersFilters
+  ): PaginatedUsers!
+  marketCollateralAtRisk(uniqueKey: String!, chainId: Int = 1, numberOfPoints: Float = 100): MarketCollateralAtRisk!
+  market(id: String!): Market!
+  marketByUniqueKey(uniqueKey: String!, chainId: Int = 1): Market!
+  marketAverageApys(uniqueKey: String!, chainId: Int = 1, startTimestamp: Float @deprecated(reason: "Average APYs based on custom timestamp is no longer supported. Use `market.state` average APYs instead.")): MarketApyAggregates @deprecated(reason: "Use `market.state` average APYs instead.")
+  markets(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: MarketOrderBy = UniqueKey
+    orderDirection: OrderDirection
+    where: MarketFilters
+  ): PaginatedMarkets!
+  curator(id: String!): Curator!
+  curators(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    where: CuratorFilters
+  ): PaginatedCurators!
+  marketOracleAccuracy(marketId: String!, options: TimeseriesOptions = {}): MarketOracleAccuracy!
+  morphoBlue(id: String!): MorphoBlue!
+  morphoBlueByAddress(address: String!, chainId: Int = 1): MorphoBlue!
+  morphoBlues(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: MorphoBlueOrderBy = Address
+    orderDirection: OrderDirection
+    where: MorphoBlueFilters
+
+    """Explicitly request data from the realtime API when available"""
+    useRealtimeApi: Boolean @deprecated(reason: "Internal use only")
+  ): PaginatedMorphoBlue!
+  marketPosition(userAddress: String!, marketUniqueKey: String!, chainId: Int = 1): MarketPosition!
+  marketPositions(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: MarketPositionOrderBy = SupplyShares
+    orderDirection: OrderDirection
+    where: MarketPositionFilters
+  ): PaginatedMarketPositions!
+  oracleFeedByAddress(address: String!, chainId: Int = 1): OracleFeed!
+  oracleFeeds(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    where: OracleFeedsFilters
+  ): PaginatedOracleFeeds!
+  oracleVaultByAddress(address: String!, chainId: Int = 1): OracleVault!
+  oracleVaults(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    where: OracleVaultsFilters
+  ): PaginatedOracleVaults!
+  oracleByAddress(address: String!, chainId: Int = 1): Oracle!
+  oracles(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    where: OraclesFilters
+  ): PaginatedOracles!
+  publicAllocator(address: String!, chainId: Int = 1): PublicAllocator!
+  publicAllocators(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: PublicAllocatorOrderBy = Address
+    orderDirection: OrderDirection
+    where: PublicAllocatorFilters
+  ): PaginatedPublicAllocator!
+  publicAllocatorReallocates(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: PublicAllocatorReallocateOrderBy = Timestamp
+    orderDirection: OrderDirection
+    where: PublicallocatorReallocateFilters
+  ): PaginatedPublicAllocatorReallocates!
+  search(
+    search: String!
+    marketOrderBy: MarketOrderBy = SupplyAssetsUsd
+    vaultOrderBy: VaultOrderBy = TotalAssetsUsd
+    numberOfResults: Int = 5
+
+    """Filter by chain id"""
+    chainId_in: [Int!]
+  ): SearchResults!
+  vaultFactory(id: String!): VaultFactory!
+  vaultFactoryByAddress(address: String!, chainId: Int = 1): VaultFactory!
+  vaultFactories: PaginatedMetaMorphoFactories!
+  vault(id: String!): Vault!
+  vaultByAddress(address: String!, chainId: Int = 1): Vault!
+  vaults(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: VaultOrderBy = Address
+    orderDirection: OrderDirection
+    where: VaultFilters
+  ): PaginatedMetaMorphos!
+  vaultPosition(userAddress: String!, vaultAddress: String!, chainId: Int = 1): VaultPosition!
+  vaultPositions(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: VaultPositionOrderBy = Shares
+    orderDirection: OrderDirection
+    where: VaultPositionFilters
+  ): PaginatedMetaMorphoPositions!
+  vaultReallocates(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: VaultReallocateOrderBy = Timestamp
+    orderDirection: OrderDirection
+    where: VaultReallocateFilters
+  ): PaginatedVaultReallocates!
+  vaultV2Factories: PaginatedVaultV2Factories! @deprecated(reason: "WIP")
+  vaultV2MetaMorphoAdapterFactories: PaginatedMetaMorphoAdapterFactories! @deprecated(reason: "WIP")
+  vaultV2s(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    where: VaultV2sFilters
+    orderBy: VaultV2OrderBy = Address
+    orderDirection: OrderDirection
+  ): PaginatedVaultV2s! @deprecated(reason: "WIP")
+  vaultV2ByAddress(address: String!, chainId: Int!): VaultV2! @deprecated(reason: "WIP")
+  vaultV2Adapters(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    where: VaultV2AdaptersFilters
+    orderBy: VaultV2AdapterOrderBy = Address
+    orderDirection: OrderDirection
+  ): PaginatedVaultV2Adapters! @deprecated(reason: "WIP")
+  _crossVersionVaults(
+    orderBy: VaultOrderBy = Address
+    orderDirection: OrderDirection
+    where: _CrossVersionVaultFilters
+
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+  ): _PaginatedCrossVersionVault! @deprecated(reason: "WIP")
+  vaultV2PositionByAddress(userAddress: String!, vaultAddress: String!, chainId: Int!): VaultV2Position! @deprecated(reason: "WIP")
+  vaultV2transactions(
+    """Number of items requested"""
+    first: Int = 100
+
+    """Number of items skipped"""
+    skip: Int = 0
+    orderBy: VaultV2TransactionOrderBy = Time
+    orderDirection: OrderDirection
+    where: VaultV2TransactionFilters
+  ): PaginatedVaultV2Transactions! @deprecated(reason: "WIP")
+}
+
+input AssetsFilters {
+  search: String
+
+  """Filter by asset id"""
+  id_in: [String!]
+
+  """Filter by token symbol"""
+  symbol_in: [String!]
+
+  """Filter by token contract address. Case insensitive."""
+  address_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """Filter by token's tags"""
+  tags_in: [String!]
+
+  """Filter by credora risk score lower than or equal to given value"""
+  credoraRiskScore_lte: Float
+
+  """Filter by credora risk score greater than or equal to given value"""
+  credoraRiskScore_gte: Float
+
+  """Filter by whitelisted status"""
+  whitelisted: Boolean
+
+  """Filter assets that are listed by at least one vault"""
+  isVaultAsset: Boolean
+
+  """Filter assets that are listed as collateral on at least one market"""
+  isCollateralAsset: Boolean
+
+  """Filter assets that are listed as loan on at least one market"""
+  isLoanAsset: Boolean
+
+  """Filter assets that are listed by specific curators"""
+  curator_in: [String!]
+}
+
+enum AssetOrderBy {
+  Address
+  CredoraRiskScore
+}
+
+enum OrderDirection {
+  Asc
+  Desc
+}
+
+enum TransactionsOrderBy {
+  Timestamp
+  Shares
+  Assets
+  AssetsUsd
+  RepaidShares
+  RepaidAssets
+  RepaidAssetsUsd
+  SeizedAssets
+  SeizedAssetsUsd
+  BadDebtShares
+  BadDebtAssets
+  BadDebtAssetsUsd
+}
+
+"""
+Filtering options for transactions. AND operator is used for multiple filters, while OR operator is used for multiple values in the same filter.
+"""
+input TransactionFilters {
+  search: String
+
+  """Filter by asset id"""
+  assetId_in: [String!]
+
+  """Filter by token symbol."""
+  assetSymbol_in: [String!]
+
+  """Filter by token contract address. Case insensitive."""
+  assetAddress_in: [String!]
+
+  """Filter by MetaMorpho vault id"""
+  vaultId_in: [String!]
+
+  """Filter by MetaMorpho vault address"""
+  vaultAddress_in: [String!]
+
+  """Filter by market id"""
+  marketId_in: [String!]
+
+  """Filter by market unique key"""
+  marketUniqueKey_in: [String!]
+
+  """Filter by user address. Case insensitive."""
+  userAddress_in: [String!]
+
+  """Filter by user id"""
+  userId_in: [String!]
+
+  """Filter by transaction type"""
+  type_in: [TransactionType!]
+
+  """Filter by transaction hash"""
+  hash: String
+
+  """Filter by greater than or equal to given timestamp"""
+  timestamp_gte: Int
+
+  """Filter by lower than or equal to given timestamp"""
+  timestamp_lte: Int
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """
+  Filter by greater than or equal to given amount of MetaMorpho vault shares
+  """
+  shares_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of MetaMorpho vault shares
+  """
+  shares_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of market assets, in underlying token units
+  """
+  assets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of market assets, in underlying token units
+  """
+  assets_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of market assets, in USD
+  """
+  assetsUsd_gte: Float
+
+  """Filter by lower than or equal to given amount of market assets, in USD"""
+  assetsUsd_lte: Float
+
+  """
+  Filter by greater than or equal to given amount of repaid shares. Applies exclusively to MarketLiquidation transactions.
+  """
+  repaidAssets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of repaid shares. Applies exclusively to MarketLiquidation transactions.
+  """
+  repaidAssets_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of repaid shares, in USD. Applies exclusively to MarketLiquidation transactions.
+  """
+  repaidAssetsUsd_gte: Float
+
+  """
+  Filter by lower than or equal to given amount of repaid shares, in USD. Applies exclusively to MarketLiquidation transactions.
+  """
+  repaidAssetsUsd_lte: Float
+
+  """
+  Filter by greater than or equal to given amount of repaid shares. Applies exclusively to MarketLiquidation transactions.
+  """
+  repaidShares_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of repaid shares. Applies exclusively to MarketLiquidation transactions.
+  """
+  repaidShares_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of seized shares. Applies exclusively to MarketLiquidation transactions.
+  """
+  seizedAssets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of seized shares. Applies exclusively to MarketLiquidation transactions.
+  """
+  seizedAssets_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of seized shares, in USD. Applies exclusively to MarketLiquidation transactions.
+  """
+  seizedAssetsUsd_gte: Float
+
+  """
+  Filter by lower than or equal to given amount of seized shares, in USD. Applies exclusively to MarketLiquidation transactions.
+  """
+  seizedAssetsUsd_lte: Float
+
+  """
+  Filter by greater than or equal to given amount of bad debt shares. Applies exclusively to MarketLiquidation transactions.
+  """
+  badDebtShares_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of bad debt shares. Applies exclusively to MarketLiquidation transactions.
+  """
+  badDebtShares_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of bad debt assets. Applies exclusively to MarketLiquidation transactions.
+  """
+  badDebtAssets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of bad debt assets. Applies exclusively to MarketLiquidation transactions.
+  """
+  badDebtAssets_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of bad debt assets, in USD. Applies exclusively to MarketLiquidation transactions.
+  """
+  badDebtAssetsUsd_gte: Float
+
+  """
+  Filter by lower than or equal to given amount of bad debt assets, in USD. Applies exclusively to MarketLiquidation transactions.
+  """
+  badDebtAssetsUsd_lte: Float
+
+  """
+  Filter by liquidator address. Applies exclusively to MarketLiquidation transactions.
+  """
+  liquidator_in: [String!]
+}
+
+enum UsersOrderBy {
+  Address
+}
+
+"""
+Filtering options for users. AND operator is used for multiple filters, while OR operator is used for multiple values in the same filter.
+"""
+input UsersFilters {
+  search: String
+
+  """Filter by user address. Case insensitive."""
+  address_in: [String!]
+
+  """Filter by user id"""
+  id_in: [String!]
+
+  """Filter by asset id"""
+  assetId_in: [String!]
+
+  """Filter by token symbol"""
+  assetSymbol_in: [String!]
+
+  """Filter by token contract address. Case insensitive."""
+  assetAddress_in: [String!]
+
+  """Filter by MetaMorpho vault id."""
+  vaultId_in: [String!]
+
+  """Filter by MetaMorpho vault address. Case insensitive."""
+  vaultAddress_in: [String!]
+
+  """Filter by market id"""
+  marketId_in: [String!]
+
+  """Filter by market unique key"""
+  marketUniqueKey_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+}
+
+enum MarketOrderBy {
+  UniqueKey
+  Lltv
+  BorrowAssets
+  BorrowAssetsUsd
+  SupplyAssets
+  SupplyAssetsUsd
+  BorrowShares
+  SupplyShares
+  Utilization
+  RateAtUTarget
+  ApyAtTarget
+  SupplyApy
+  NetSupplyApy
+  BorrowApy
+  NetBorrowApy
+  Fee
+  LoanAssetSymbol
+  CollateralAssetSymbol
+  TotalLiquidityUsd
+  AvgBorrowApy
+  AvgNetBorrowApy
+  DailyBorrowApy
+  DailyNetBorrowApy
+  CredoraRiskScore
+  SizeUsd
+}
+
+"""
+Filtering options for markets. AND operator is used for multiple filters, while OR operator is used for multiple values in the same filter.
+"""
+input MarketFilters {
+  search: String
+
+  """Filter by market id"""
+  id_in: [String!]
+  whitelisted: Boolean
+  countryCode: String
+  isIdle: Boolean
+
+  """Filter by market unique key"""
+  uniqueKey_in: [String!]
+
+  """Filter by loan asset tags."""
+  loanAssetTags_in: [String!]
+
+  """Filter by collateral asset tags."""
+  collateralAssetTags_in: [String!]
+
+  """Filter by market oracle address. Case insensitive."""
+  oracleAddress_in: [String!]
+
+  """Filter by market irm address"""
+  irmAddress_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """Filter by collateral asset address. Case insensitive."""
+  collateralAssetAddress_in: [String!]
+
+  """Filter by collateral asset id"""
+  collateralAssetId_in: [String!]
+
+  """Filter by loan asset address. Case insensitive."""
+  loanAssetAddress_in: [String!]
+
+  """Filter by loan asset id"""
+  loanAssetId_in: [String!]
+
+  """Filter by greater than or equal to given lltv"""
+  lltv_gte: BigInt
+
+  """Filter by lower than or equal to given lltv"""
+  lltv_lte: BigInt
+
+  """
+  Filter by greater than or equal to given borrow asset amount, in underlying token units.
+  """
+  borrowAssets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given borrow asset amount, in underlying token units.
+  """
+  borrowAssets_lte: BigInt
+
+  """Filter by greater than or equal to given borrow asset amount, in USD."""
+  borrowAssetsUsd_gte: Float
+
+  """Filter by lower than or equal to given borrow asset amount, in USD."""
+  borrowAssetsUsd_lte: Float
+
+  """
+  Filter by greater than or equal to given supply asset amount, in underlying token units.
+  """
+  supplyAssets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given supply asset amount, in underlying token units.
+  """
+  supplyAssets_lte: BigInt
+
+  """Filter by greater than or equal to given supply asset amount, in USD."""
+  supplyAssetsUsd_gte: Float
+
+  """Filter by lower than or equal to given supply asset amount, in USD."""
+  supplyAssetsUsd_lte: Float
+
+  """Filter by greater than or equal to given borrow shares amount"""
+  borrowShares_gte: BigInt
+
+  """Filter by lower than or equal to given borrow shares amount"""
+  borrowShares_lte: BigInt
+
+  """Filter by greater than or equal to given supply shares amount"""
+  supplyShares_gte: BigInt
+
+  """Filter by lower than or equal to given borrow shares amount"""
+  supplyShares_lte: BigInt
+
+  """Filter by greater than or equal to given utilization rate"""
+  utilization_gte: Float
+
+  """Filter by lower than or equal to given utilization rate"""
+  utilization_lte: Float
+
+  """Filter by greater than or equal to given apy at target utilization"""
+  apyAtTarget_gte: Float
+
+  """Filter by lower than or equal to given apy at target utilization"""
+  apyAtTarget_lte: Float
+
+  """Filter by greater than or equal to given supply APY"""
+  supplyApy_gte: Float
+
+  """Filter by lower than or equal to given supply APY"""
+  supplyApy_lte: Float
+
+  """Filter by greater than or equal to given net supply APY"""
+  netSupplyApy_gte: Float
+
+  """Filter by lower than or equal to given net supply APY"""
+  netSupplyApy_lte: Float
+
+  """Filter by greater than or equal to given borrow APY"""
+  borrowApy_gte: Float
+
+  """Filter by lower than or equal to given borrow APY"""
+  borrowApy_lte: Float
+
+  """Filter by greater than or equal to given net borrow APY"""
+  netBorrowApy_gte: Float
+
+  """Filter by lower than or equal to given net borrow APY"""
+  netBorrowApy_lte: Float
+
+  """Filter by greater than or equal to given fee rate"""
+  fee_gte: Float
+
+  """Filter by lower than or equal to given fee rate"""
+  fee_lte: Float
+
+  """Filter by credora risk score lower than or equal to given value"""
+  credoraRiskScore_lte: Float
+
+  """Filter by credora risk score greater than or equal to given value"""
+  credoraRiskScore_gte: Float
+}
+
+"""
+Filtering options for curators. AND operator is used for multiple filters, while OR operator is used for multiple values in the same filter.
+"""
+input CuratorFilters {
+  search: String
+  chainId: Int
+  chainId_in: [Int!]
+  address_in: [String!]
+  verified: Boolean
+}
+
+enum MorphoBlueOrderBy {
+  Address
+}
+
+"""Filtering options for morpho blue deployments."""
+input MorphoBlueFilters {
+  """Filter by morpho blue id"""
+  id_in: [String!]
+
+  """Filter by deployment address. Case insensitive."""
+  address_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+}
+
+enum MarketPositionOrderBy {
+  SupplyShares
+  BorrowShares
+  Collateral
+  HealthFactor
+}
+
+"""
+Filtering options for market positions. AND operator is used for multiple filters, while OR operator is used for multiple values in the same filter.
+"""
+input MarketPositionFilters {
+  search: String
+
+  """Filter by market id"""
+  marketId_in: [String!]
+
+  """Filter by market unique key"""
+  marketUniqueKey_in: [String!]
+  marketWhitelisted: Boolean
+
+  """Filter by user id"""
+  userId_in: [String!]
+
+  """Filter by user address. Case insensitive."""
+  userAddress_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """Filter by greater than or equal to given health factor"""
+  healthFactor_gte: Float
+
+  """Filter by lower than or equal to given health factor"""
+  healthFactor_lte: Float
+
+  """Filter by greater than or equal to given supply shares"""
+  supplyShares_gte: BigInt
+
+  """Filter by lower than or equal to given supply shares"""
+  supplyShares_lte: BigInt
+
+  """Filter by greater than or equal to given borrow shares"""
+  borrowShares_gte: BigInt
+
+  """Filter by lower than or equal to given borrow shares"""
+  borrowShares_lte: BigInt
+
+  """
+  Filter by greater than or equal to given collateral amount, in underlying token units.
+  """
+  collateral_gte: BigInt
+
+  """
+  Filter by lower than or equal to given collateral amount, in underlying token units.
+  """
+  collateral_lte: BigInt
+}
+
+input OracleFeedsFilters {
+  """Filter by feed contract address. Case insensitive."""
+  address_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+}
+
+input OracleVaultsFilters {
+  """Filter by vault contract address. Case insensitive."""
+  address_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+}
+
+input OraclesFilters {
+  """Filter by oracle contract address. Case insensitive."""
+  address_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+}
+
+enum PublicAllocatorOrderBy {
+  Address
+}
+
+"""Filtering options for public allocators."""
+input PublicAllocatorFilters {
+  """Filter by ids"""
+  id_in: [String!]
+
+  """Filter by address. Case insensitive."""
+  address_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+}
+
+enum PublicAllocatorReallocateOrderBy {
+  Timestamp
+  Assets
+}
+
+"""
+Filtering options for public allocator reallocates. AND operator is used for multiple filters, while OR operator is used for multiple values in the same filter.
+"""
+input PublicallocatorReallocateFilters {
+  """Filter by MetaMorpho vault id"""
+  vaultId_in: [String!]
+
+  """Filter by MetaMorpho vault address"""
+  vaultAddress_in: [String!]
+
+  """Filter by market id"""
+  marketId_in: [String!]
+
+  """Filter by market unique key"""
+  marketUniqueKey_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """Filter by reallocate type"""
+  type_in: [PublicAllocatorReallocateType!]
+
+  """Filter by greater than or equal to given timestamp"""
+  timestamp_gte: Int
+
+  """Filter by lower than or equal to given timestamp"""
+  timestamp_lte: Int
+
+  """
+  Filter by greater than or equal to given amount of market assets, in underlying token units
+  """
+  assets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of market assets, in underlying token units
+  """
+  assets_lte: BigInt
+}
+
+enum VaultOrderBy {
+  Address
+  TotalAssets
+  TotalAssetsUsd
+  TotalSupply
+  Fee
+  Apy
+  NetApy
+  Name
+  Curator
+  AvgApy
+  AvgNetApy
+  DailyApy
+  DailyNetApy
+  CredoraRiskScore
+}
+
+input VaultFilters {
+  search: String
+  whitelisted: Boolean
+  countryCode: String
+
+  """Filter by MetaMorpho vault id"""
+  id_in: [String!]
+
+  """Filter by MetaMorpho vault address"""
+  address_in: [String!]
+
+  """Filter by MetaMorpho owner address"""
+  ownerAddress_in: [String!]
+
+  """Filter out by MetaMorpho vault address"""
+  address_not_in: [String!]
+
+  """Filter by MetaMorpho creator address"""
+  creatorAddress_in: [String!]
+
+  """Filter by MetaMorphoFactory address"""
+  factoryAddress_in: [String!]
+
+  """Filter by MetaMorpho current curator address"""
+  curatorAddress_in: [String!]
+
+  """Filter by MetaMorpho vault symbol"""
+  symbol_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """Filter by asset id"""
+  assetId_in: [String!]
+
+  """Filter by asset contract address"""
+  assetAddress_in: [String!]
+
+  """Filter by asset symbol"""
+  assetSymbol_in: [String!]
+
+  """Filter by asset tags."""
+  assetTags_in: [String!]
+
+  """Filter by markets in which the vault has positions."""
+  marketUniqueKey_in: [String!]
+
+  """Filter by greater than or equal to given APY."""
+  apy_gte: Float
+
+  """Filter by lower than or equal to given APY."""
+  apy_lte: Float
+
+  """Filter by greater than or equal to given net APY."""
+  netApy_gte: Float
+
+  """Filter by lower than or equal to given net APY."""
+  netApy_lte: Float
+
+  """Filter by greater than or equal to given fee rate."""
+  fee_gte: Float
+
+  """Filter by lower than or equal to given fee rate."""
+  fee_lte: Float
+
+  """
+  Filter by greater than or equal to given amount of total assets, in underlying token units.
+  """
+  totalAssets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of total assets, in underlying token units.
+  """
+  totalAssets_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of total assets, in USD.
+  """
+  totalAssetsUsd_gte: Float
+
+  """Filter by lower than or equal to given amount of total assets, in USD."""
+  totalAssetsUsd_lte: Float
+
+  """
+  Filter by greater than or equal to given amount of shares total supply.
+  """
+  totalSupply_gte: BigInt
+
+  """Filter by lower than or equal to given amount of shares total supply."""
+  totalSupply_lte: BigInt
+
+  """
+  Filter by lower than or equal to given public allocator fee in ETH (wad)
+  """
+  publicAllocatorFee_lte: Float
+
+  """Filter by lower than or equal to given public allocator fee in dollar."""
+  publicAllocatorFeeUsd_lte: Float
+
+  """Filter by credora risk score lower than or equal to given value"""
+  credoraRiskScore_lte: Float
+
+  """Filter by credora risk score greater than or equal to given value"""
+  credoraRiskScore_gte: Float
+
+  """Filter by MetaMorpho curators ids"""
+  curator_in: [String!]
+}
+
+enum VaultPositionOrderBy {
+  Shares
+}
+
+"""
+Filtering options for vault positions. AND operator is used for multiple filters, while OR operator is used for multiple values in the same filter.
+"""
+input VaultPositionFilters {
+  search: String
+
+  """Filter by MetaMorpho vault id"""
+  vaultId_in: [String!]
+
+  """Filter by MetaMorpho vault address"""
+  vaultAddress_in: [String!]
+  vaultWhitelisted: Boolean
+
+  """Filter by user address"""
+  userAddress_in: [String!]
+
+  """Filter by user id"""
+  userId_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """Filter by greater than or equal to given amount of vault shares."""
+  shares_gte: BigInt
+
+  """Filter by lower than or equal to given amount of vault shares."""
+  shares_lte: BigInt
+}
+
+enum VaultReallocateOrderBy {
+  Timestamp
+  Shares
+  Assets
+}
+
+"""
+Filtering options for vault reallocates. AND operator is used for multiple filters, while OR operator is used for multiple values in the same filter.
+"""
+input VaultReallocateFilters {
+  """Filter by MetaMorpho vault id"""
+  vaultId_in: [String!]
+
+  """Filter by MetaMorpho vault address"""
+  vaultAddress_in: [String!]
+
+  """Filter by market id"""
+  marketId_in: [String!]
+
+  """Filter by market unique key"""
+  marketUniqueKey_in: [String!]
+
+  """Filter by reallocate type"""
+  type_in: [VaultReallocateType!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """Filter by greater than or equal to given timestamp"""
+  timestamp_gte: Int
+
+  """Filter by lower than or equal to given timestamp"""
+  timestamp_lte: Int
+
+  """Filter by greater than or equal to given amount of market shares"""
+  shares_gte: BigInt
+
+  """Filter by lower than or equal to given amount of market shares"""
+  shares_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of market assets, in underlying token units
+  """
+  assets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of market assets, in underlying token units
+  """
+  assets_lte: BigInt
+}
+
+input VaultV2sFilters {
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """Filter by vault v2 address"""
+  address_in: [String!]
+  whitelisted: Boolean
+}
+
+enum VaultV2OrderBy {
+  Address
+}
+
+input VaultV2AdaptersFilters {
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """Filter by vault v2 adapter address"""
+  address_in: [String!]
+}
+
+enum VaultV2AdapterOrderBy {
+  Address
+}
+
+input _CrossVersionVaultFilters {
+  search: String
+  whitelisted: Boolean
+  countryCode: String
+
+  """Filter by MetaMorpho vault id"""
+  id_in: [String!]
+
+  """Filter by MetaMorpho vault address"""
+  address_in: [String!]
+
+  """Filter by MetaMorpho owner address"""
+  ownerAddress_in: [String!]
+
+  """Filter out by MetaMorpho vault address"""
+  address_not_in: [String!]
+
+  """Filter by MetaMorpho creator address"""
+  creatorAddress_in: [String!]
+
+  """Filter by MetaMorphoFactory address"""
+  factoryAddress_in: [String!]
+
+  """Filter by MetaMorpho current curator address"""
+  curatorAddress_in: [String!]
+
+  """Filter by MetaMorpho vault symbol"""
+  symbol_in: [String!]
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """Filter by asset id"""
+  assetId_in: [String!]
+
+  """Filter by asset contract address"""
+  assetAddress_in: [String!]
+
+  """Filter by asset symbol"""
+  assetSymbol_in: [String!]
+
+  """Filter by asset tags."""
+  assetTags_in: [String!]
+
+  """Filter by markets in which the vault has positions."""
+  marketUniqueKey_in: [String!]
+
+  """Filter by greater than or equal to given APY."""
+  apy_gte: Float
+
+  """Filter by lower than or equal to given APY."""
+  apy_lte: Float
+
+  """Filter by greater than or equal to given net APY."""
+  netApy_gte: Float
+
+  """Filter by lower than or equal to given net APY."""
+  netApy_lte: Float
+
+  """Filter by greater than or equal to given fee rate."""
+  fee_gte: Float
+
+  """Filter by lower than or equal to given fee rate."""
+  fee_lte: Float
+
+  """
+  Filter by greater than or equal to given amount of total assets, in underlying token units.
+  """
+  totalAssets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of total assets, in underlying token units.
+  """
+  totalAssets_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of total assets, in USD.
+  """
+  totalAssetsUsd_gte: Float
+
+  """Filter by lower than or equal to given amount of total assets, in USD."""
+  totalAssetsUsd_lte: Float
+
+  """
+  Filter by greater than or equal to given amount of shares total supply.
+  """
+  totalSupply_gte: BigInt
+
+  """Filter by lower than or equal to given amount of shares total supply."""
+  totalSupply_lte: BigInt
+
+  """
+  Filter by lower than or equal to given public allocator fee in ETH (wad)
+  """
+  publicAllocatorFee_lte: Float
+
+  """Filter by lower than or equal to given public allocator fee in dollar."""
+  publicAllocatorFeeUsd_lte: Float
+
+  """Filter by credora risk score lower than or equal to given value"""
+  credoraRiskScore_lte: Float
+
+  """Filter by credora risk score greater than or equal to given value"""
+  credoraRiskScore_gte: Float
+
+  """Filter by MetaMorpho curators ids"""
+  curator_in: [String!]
+  version: VaultVersion
+}
+
+enum VaultVersion {
+  V1
+  V2
+}
+
+enum VaultV2TransactionOrderBy {
+  Time
+  Shares
+}
+
+"""
+Filtering options for transactions. AND operator is used for multiple filters, while OR operator is used for multiple values in the same filter.
+"""
+input VaultV2TransactionFilters {
+  """Filter by MetaMorpho vault address"""
+  vaultAddress_in: [String!]
+
+  """Filter by user address. Case insensitive."""
+  userAddress_in: [String!]
+
+  """Filter by transaction type"""
+  type_in: [VaultV2TransactionType!]
+
+  """Filter by transaction hash"""
+  hash: String
+
+  """Filter by greater than or equal to given timestamp"""
+  timestamp_gte: Int
+
+  """Filter by lower than or equal to given timestamp"""
+  timestamp_lte: Int
+
+  """Filter by chain id"""
+  chainId_in: [Int!]
+
+  """
+  Filter by greater than or equal to given amount of MetaMorpho vault shares
+  """
+  shares_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of MetaMorpho vault shares
+  """
+  shares_lte: BigInt
+
+  """
+  Filter by greater than or equal to given amount of market assets, in underlying token units
+  """
+  assets_gte: BigInt
+
+  """
+  Filter by lower than or equal to given amount of market assets, in underlying token units
+  """
+  assets_lte: BigInt
+}
+
+enum CacheControlScope {
+  PUBLIC
+  PRIVATE
+}

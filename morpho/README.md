@@ -38,15 +38,37 @@ The overall risk level of a Morpho Vault is determined by the risk levels of its
 
 To monitor a new Morpho vault, add its address to the `VAULTS_BY_CHAIN` variable in [markets.py#L13](./markets.py#L13). This ensures that both the vault's overall metrics and its individual markets are monitored.
 
+**For YV Collateral Vaults:** If Morpho vault is using Yearn V3 Vault (YV collateral vault) as collateral, additional configuration is needed. Add all Morpho Vaults that are used as strategies in Yearn V3 Vault to `VAULTS_WITH_YV_COLLATERAL_BY_ASSET` mapping, organized by chain and underlying asset address. This enables combined liquidity monitoring for all vaults with the same asset.
+
 For some chains, the Morpho GraphQL API is not available. In this case, alternative script is used [markets_graph.py](./markets_graph.py) which uses The Graph API. Be aware that this script will require additional setup as it uses a different URL for vaults and markets, depending on the curator and frontend. Also, if the new chain is added, it will need new subgraph url define in [`GRAPH_BY_CHAIN`](./markets_graph.py#L29) variable.
 
 ### Bad Debt
 
 Bad debt is fetched from the Morpho GraphQL API. Each market is checked for bad debt; if any market exhibits bad debt, a Telegram message is sent. The script runs hourly via [GitHub Actions](../.github/workflows/hourly.yml). The monitoring logic is implemented in [markets.py#L166](./markets.py#L166).
 
-### Utilization
+### Utilization & Liquidity
 
 The utilization ratio for each market is calculated as the ratio of borrowed assets to total collateral assets. If this ratio exceeds 95%, a Telegram message is sent. The script runs hourly via [GitHub Actions](../.github/workflows/hourly.yml), and the monitoring logic is defined in [markets.py#L263](./markets.py#L263). Note that liquidity is the inverse of utilization—high utilization implies low liquidity (e.g., 95% utilization corresponds to 5% liquidity).
+
+#### YV Collateral Vault Liquidity Monitoring
+
+For vaults that are used as collateral in Yearn v3 strategies (YV collateral vaults), the system implements combined liquidity monitoring. Instead of checking each vault individually, vaults with the same underlying asset are grouped together and their liquidity is aggregated.
+
+**Configuration:** YV collateral vaults are defined in the `VAULTS_WITH_YV_COLLATERAL_BY_ASSET` mapping in [markets.py](./markets.py), organized by chain and asset address.
+
+**Thresholds:**
+
+- **Regular vaults:** 1% liquidity threshold.
+- **YV collateral vaults:** 15% liquidity threshold, more conservative due to their use as collateral and more liquidity is needed for liquidating YV tokens as collateral.
+
+**Logic:** For each asset group (e.g., all USDC vaults at one chain), the system:
+
+1. Calculates combined total assets across all vaults with the same asset
+2. Calculates combined available liquidity across all vaults with the same asset
+3. Checks if combined liquidity ratio falls below the 15% threshold
+4. Sends alerts if the combined liquidity is insufficient
+
+This approach provides a more accurate assessment of liquidity risk for YV collateral tokens where the available liquidity is spread across multiple vault strategies.
 
 ### Vault Risk Level
 
@@ -101,3 +123,7 @@ The system monitors the allocation ratio for each market hourly:
 ```
 
 If any market's allocation exceeds its adjusted threshold, an alert is triggered with a corresponding Telegram message. This mechanism ensures that vaults maintain proper diversification and are not overly concentrated in higher-risk markets.
+
+## API Docs
+
+Morpho GraphQL API wizard is available at [https://api.morpho.org/graphql](https://api.morpho.org/graphql). GraphQL schema is available in [morpho_ql_schema.txt](./morpho_ql_schema.txt) file.
