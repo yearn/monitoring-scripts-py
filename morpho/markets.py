@@ -20,7 +20,7 @@ MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
 LIQUIDITY_THRESHOLD = 0.01  # 1% of total assets
-LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.125  # 12.5% of total assets
+LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.15  # 15% of total assets
 
 # Map vaults by chain
 VAULTS_BY_CHAIN = {
@@ -72,23 +72,38 @@ VAULTS_BY_CHAIN = {
         ["Gauntlet USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E", 1],
         ["SteakhousePrime USDC", "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d", 1],
         ["Gauntlet WETH", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf", 1],
+        ["Gauntlet WBTC", "0xf243523996ADbb273F0B237B53f30017C4364bBC", 1],
     ],
 }
 
 # Morpho Vaults that are used by Yearn Strategies which are used as YV collateral in Morpho Markets
-VAULTS_WITH_YV_COLLATERAL = {
-    Chain.KATANA: [
-        ["Yearn OG USDC", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7"],
-        ["SteakhousePrime USDC", "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d"],
-        ["Gauntlet USDC", "0xE4248e2105508FcBad3fe95691551d1AF14015f7"],
-        ["Yearn OG USDT", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7"],
-        ["Gauntlet USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E"],
-        ["Gauntlet WETH", "0xEA79C91540C7E884e6E0069Ce036E52f7BbB1194"],
-        ["Yearn OG WETH", "0x37a79Bfb9F645F8Ed0a9ead9c722710D8f47C431"],
-        ["Yearn OG WBTC", "0xe107cCdeb8e20E499545C813f98Cc90619b29859"],
-        ["Gauntlet WBTC", "0xf243523996ADbb273F0B237B53f30017C4364bBC"],
-    ],
+# Organized by asset address for easier grouping and management
+VAULTS_WITH_YV_COLLATERAL_BY_ASSET = {
+    Chain.KATANA: {
+        # USDC vaults - using addresses from VAULTS_BY_CHAIN as source of truth
+        "0x203A662b0BD271A6ed5a60EdFbd04bFce608FD36": [  # USDC asset address on Katana
+            ["Yearn OG USDC", "0xCE2b8e464Fc7b5E58710C24b7e5EBFB6027f29D7"],
+            ["SteakhousePrime USDC", "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d"],
+            ["Gauntlet USDC", "0xE4248e2105508FcBad3fe95691551d1AF14015f7"],
+        ],
+        # USDT vaults - using addresses from VAULTS_BY_CHAIN as source of truth
+        "0x2DCa96907fde857dd3D816880A0df407eeB2D2F2": [  # USDT asset address on Katana
+            ["Yearn OG USDT", "0x8ED68f91AfbE5871dCE31ae007a936ebE8511d47"],  # Corrected from VAULTS_BY_CHAIN
+            ["Gauntlet USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E"],
+        ],
+        # WETH vaults - using addresses from VAULTS_BY_CHAIN as source of truth
+        "0xEE7D8BCFb72bC1880D0Cf19822eB0A2e6577aB62": [  # WETH asset address on Katana
+            ["Gauntlet WETH", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf"],  # Corrected from VAULTS_BY_CHAIN
+            ["Yearn OG WETH", "0xFaDe0C546f44e33C134c4036207B314AC643dc2E"],
+        ],
+        # WBTC vaults - using addresses from VAULTS_BY_CHAIN as source of truth
+        "0x0913DA6Da4b42f538B445599b46Bb4622342Cf52": [  # WBTC asset address on Katana
+            ["Yearn OG WBTC", "0xe107cCdeb8e20E499545C813f98Cc90619b29859"],
+            ["Gauntlet WBTC", "0xf243523996ADbb273F0B237B53f30017C4364bBC"],
+        ],
+    },
 }
+
 
 MARKETS_RISK_1 = {
     Chain.MAINNET: [
@@ -440,6 +455,184 @@ def check_high_allocation(vault_data):
         send_telegram_message(message, PROTOCOL)
 
 
+def is_yv_collateral_vault(vault_address: str, chain: Chain) -> bool:
+    """
+    Check if a vault is used as YV collateral by looking in the asset-based config.
+
+    Args:
+        vault_address: Address of the vault to check
+        chain: Chain the vault is on
+
+    Returns:
+        True if vault is used as YV collateral
+    """
+    if chain not in VAULTS_WITH_YV_COLLATERAL_BY_ASSET:
+        return False
+
+    # Check all asset groups for this chain
+    for asset_address, vaults in VAULTS_WITH_YV_COLLATERAL_BY_ASSET[chain].items():
+        for vault_name, vault_addr in vaults:
+            if vault_addr.lower() == vault_address.lower():
+                return True
+
+    return False
+
+
+def get_yv_collateral_vaults_by_asset(chain: Chain) -> Dict[str, List[str]]:
+    """
+    Get YV collateral vaults organized by asset address.
+
+    Args:
+        chain: Chain to get vaults for
+
+    Returns:
+        Dictionary with asset address as key and list of vault addresses as value
+    """
+    result = {}
+
+    if chain not in VAULTS_WITH_YV_COLLATERAL_BY_ASSET:
+        return result
+
+    for asset_address, vaults in VAULTS_WITH_YV_COLLATERAL_BY_ASSET[chain].items():
+        vault_addresses = [vault[1] for vault in vaults]  # Extract addresses from [name, address] pairs
+        result[asset_address.lower()] = vault_addresses
+
+    return result
+
+
+def group_vaults_by_chain(vaults_data: List[Dict[str, Any]]) -> Dict[Chain, List[Dict[str, Any]]]:
+    """Group vaults by their chain."""
+    vaults_by_chain = {}
+    for vault_data in vaults_data:
+        chain = Chain.from_chain_id(vault_data["chain"]["id"])
+        if chain not in vaults_by_chain:
+            vaults_by_chain[chain] = []
+        vaults_by_chain[chain].append(vault_data)
+    return vaults_by_chain
+
+
+def find_yv_vaults_for_asset(
+    chain_vaults: List[Dict[str, Any]], asset_address: str, yv_vault_addresses: List[str]
+) -> List[Dict[str, Any]]:
+    """Find all YV collateral vaults for a specific asset."""
+    asset_yv_vaults = []
+
+    for vault_data in chain_vaults:
+        vault_address = vault_data["address"]
+        vault_asset_address = vault_data.get("asset", {}).get("address", "").lower()
+
+        # Check if this vault is for the current asset and is YV collateral
+        if vault_asset_address == asset_address and vault_address in yv_vault_addresses:
+            asset_yv_vaults.append(vault_data)
+
+    return asset_yv_vaults
+
+
+def calculate_combined_metrics(asset_yv_vaults: List[Dict[str, Any]]) -> tuple[float, float, List[str]]:
+    """Calculate combined total assets, liquidity, and vault names for a group of vaults."""
+    combined_total_assets = 0
+    combined_liquidity = 0
+    vault_names = []
+
+    for vault in asset_yv_vaults:
+        total_assets = vault["state"]["totalAssetsUsd"] or 0
+        liquidity = vault["liquidity"]["usd"] or 0
+
+        # Only include vaults with meaningful assets (>= 10k)
+        if total_assets >= 10_000:
+            combined_total_assets += total_assets
+            combined_liquidity += liquidity
+            vault_names.append(vault["name"])
+
+    return combined_total_assets, combined_liquidity, vault_names
+
+
+def check_combined_liquidity_threshold(
+    asset_symbol: str,
+    chain: Chain,
+    combined_total_assets: float,
+    combined_liquidity: float,
+    vault_names: List[str],
+    vault_count: int,
+) -> None:
+    """Check if combined liquidity meets threshold and send alert if needed."""
+    if combined_total_assets < 10_000:
+        print(
+            f"Skipping {asset_symbol} combined liquidity check: total assets ${combined_total_assets:,.2f} below threshold"
+        )
+        return
+
+    combined_liquidity_ratio = combined_liquidity / combined_total_assets
+
+    print(
+        f"Combined {asset_symbol} liquidity check: {vault_count} vaults, "
+        f"${combined_total_assets:,.2f} total assets, "
+        f"{combined_liquidity_ratio:.1%} liquidity ratio"
+    )
+
+    if combined_liquidity_ratio < LIQUIDITY_THRESHOLD_YV_COLLATERAL:
+        vault_list = ", ".join(vault_names)
+        message = (
+            f"⚠️ Low combined liquidity detected for {asset_symbol} YV collateral vaults on {chain.name}\n"
+            f"🚨 Combined vaults: {vault_list}\n"
+            f"🚨 Min liquidity is {LIQUIDITY_THRESHOLD_YV_COLLATERAL:.1%} of total assets.\n"
+            f"💰 Combined liquidity: {combined_liquidity_ratio:.1%} of total assets\n"
+            f"💵 Combined liquidity: ${combined_liquidity:,.2f}\n"
+            f"📊 Combined total assets: ${combined_total_assets:,.2f}"
+        )
+        send_telegram_message(message, PROTOCOL)
+
+
+def check_yv_collateral_liquidity_for_chain(chain: Chain, chain_vaults: List[Dict[str, Any]]) -> None:
+    """Check combined liquidity for YV collateral vaults on a specific chain."""
+    yv_vaults_by_asset = get_yv_collateral_vaults_by_asset(chain)
+
+    # Check each asset group for combined liquidity
+    for asset_address, yv_vault_addresses in yv_vaults_by_asset.items():
+        # Find all vaults for this asset that are YV collateral
+        asset_yv_vaults = find_yv_vaults_for_asset(chain_vaults, asset_address, yv_vault_addresses)
+
+        if not asset_yv_vaults:
+            continue
+
+        # Get asset symbol from first vault
+        asset_symbol = asset_yv_vaults[0].get("asset", {}).get("symbol", "UNKNOWN")
+
+        # Calculate combined metrics for this asset
+        combined_total_assets, combined_liquidity, vault_names = calculate_combined_metrics(asset_yv_vaults)
+
+        # Check threshold and alert if needed
+        check_combined_liquidity_threshold(
+            asset_symbol, chain, combined_total_assets, combined_liquidity, vault_names, len(asset_yv_vaults)
+        )
+
+
+def check_individual_liquidity_for_chain(chain: Chain, chain_vaults: List[Dict[str, Any]]) -> None:
+    """Check individual liquidity for non-YV collateral vaults on a specific chain."""
+    for vault_data in chain_vaults:
+        vault_address = vault_data["address"]
+        if not is_yv_collateral_vault(vault_address, chain):
+            check_low_liquidity(vault_data)
+
+
+def check_low_liquidity_combined(vaults_data: List[Dict[str, Any]]) -> None:
+    """
+    Check liquidity for vaults, with special logic for VAULTS_WITH_YV_COLLATERAL_BY_ASSET.
+    For YV collateral vaults, combine all vaults with the same asset and check if
+    the combined liquidity passes the threshold.
+    """
+    # Group vaults by chain for processing
+    vaults_by_chain = group_vaults_by_chain(vaults_data)
+
+    # Process each chain separately
+    for chain, chain_vaults in vaults_by_chain.items():
+        # Check combined liquidity for YV collateral vaults
+        check_yv_collateral_liquidity_for_chain(chain, chain_vaults)
+
+        # Check individual liquidity for non-YV collateral vaults
+        check_individual_liquidity_for_chain(chain, chain_vaults)
+
+
 def check_low_liquidity(vault_data):
     """
     Send telegram message if low liquidity is detected.
@@ -458,22 +651,7 @@ def check_low_liquidity(vault_data):
     liquidity = liquidity or 0
     liquidity_ratio = liquidity / total_assets
 
-    # Check if vault is in VAULTS_WITH_YV_COLLATERAL
-    if chain in VAULTS_WITH_YV_COLLATERAL and vault_data["address"] in [
-        vault[1] for vault in VAULTS_WITH_YV_COLLATERAL[chain]
-    ]:
-        if liquidity_ratio < LIQUIDITY_THRESHOLD_YV_COLLATERAL:
-            message = (
-                f"⚠️ Low liquidity detected in [{vault_name}]({vault_url}) on {chain.name}\n"
-                f"🚨 This vault is being used as YV collateral. Min liquidity is {LIQUIDITY_THRESHOLD_YV_COLLATERAL:.1%} of total assets.\n"
-                f"💰 Liquidity: {liquidity_ratio:.1%} of total assets\n"
-                f"💵 Liquidity: ${liquidity:,.2f}\n"
-                f"📊 Total Assets: ${total_assets:,.2f}"
-            )
-            send_telegram_message(message, PROTOCOL)
-            return
-
-    # standard liquidity check
+    # standard liquidity check (YV collateral vaults are handled separately)
     if liquidity_ratio < LIQUIDITY_THRESHOLD:
         message = (
             f"⚠️ Low liquidity detected in [{vault_name}]({vault_url}) on {chain.name}\n"
@@ -504,6 +682,11 @@ def main() -> None:
                 name
                 chain {
                   id
+                }
+                asset {
+                    address
+                    symbol
+                    name
                 }
                 liquidity {
                   usd
@@ -565,10 +748,10 @@ def main() -> None:
         send_telegram_message("🚨 No vaults data found 🚨", PROTOCOL)
         return
 
-    for vault_data in vaults_data:
-        # Check liquidity
-        check_low_liquidity(vault_data)
+    # Check combined liquidity for all vaults (handles YV collateral grouping)
+    check_low_liquidity_combined(vaults_data)
 
+    for vault_data in vaults_data:
         # Check high allocation for each vault
         check_high_allocation(vault_data)
 
