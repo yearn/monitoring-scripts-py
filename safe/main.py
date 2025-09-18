@@ -1,4 +1,5 @@
 import os
+import time
 
 import requests
 from dotenv import load_dotenv
@@ -26,11 +27,11 @@ safe_address_network_prefix = {
 }
 
 safe_apis = {
-    "mainnet": "https://safe-transaction-mainnet.safe.global",
-    "arbitrum-main": "https://safe-transaction-arbitrum.safe.global",
-    "optimism-main": "https://safe-transaction-optimism.safe.global",
-    "polygon-main": "https://safe-transaction-polygon.safe.global",
-    "base-main": "https://safe-transaction-polygon.safe.global",
+    "mainnet": "https://api.safe.global/tx-service/eth",
+    "arbitrum-main": "https://api.safe.global/tx-service/arb1",
+    "optimism-main": "https://api.safe.global/tx-service/oeth",
+    "polygon-main": "https://api.safe.global/tx-service/pol",
+    "base-main": "https://api.safe.global/tx-service/base",
     # "optim-yearn": "https://safe-transaction-optimism.safe.global",
 }
 
@@ -138,7 +139,11 @@ ALL_SAFE_ADDRESSES = [
 
 
 def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
-    base_url = safe_apis[network_name] + "/api/v1"
+    """
+    Docs: https://docs.safe.global/core-api/transaction-service-reference/mainnet#List-a-Safe's-Multisig-Transactions
+    """
+
+    base_url = safe_apis[network_name] + "/api/v2"
     endpoint = f"{base_url}/safes/{safe_address}/multisig-transactions/"
 
     params = {"limit": limit, "ordering": "-nonce"}  # Order by nonce descending
@@ -146,10 +151,21 @@ def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
     if executed is not None:
         params["executed"] = str(executed).lower()
 
-    response = requests.get(endpoint, params=params)
+    api_key = os.getenv("SAFE_API_KEY")
+    if not api_key:
+        raise ValueError("SAFE_API_KEY environment variable not set.")
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+    }
+    response = requests.get(endpoint, params=params, headers=headers)
 
     if response.status_code == 200:
         return response.json()["results"]
+    elif response.status_code == 401:
+        raise ValueError("Invalid API key. Please check your SAFE_API_KEY.")
+    elif response.status_code == 429:
+        raise ValueError("Rate limit exceeded. Safe API allows 5 requests per second by default.")
     else:
         print(f"Error: {response.status_code}")
         return None
@@ -236,15 +252,32 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
         print("No pending transactions found with higher nonce than the last executed transaction.")
 
 
+def check_api_limit(last_api_call_time, request_counter):
+    current_time = time.time()
+    if current_time - last_api_call_time > 1:
+        last_api_call_time = current_time
+        request_counter = 0
+    elif request_counter >= 4:
+        time.sleep(1)
+        request_counter = 0
+        last_api_call_time = time.time()
+
+    return last_api_call_time, request_counter
+
+
 def run_for_network(network_name, safe_address, protocol):
     check_for_pending_transactions(safe_address, network_name, protocol)
 
 
 def main():
+    last_api_call_time = 0
+    request_counter = 0
     # loop all
     for safe in ALL_SAFE_ADDRESSES:
         print(f"Running for {safe[0]} on {safe[1]}")
+        last_api_call_time, request_counter = check_api_limit(last_api_call_time, request_counter)
         run_for_network(safe[1], safe[2], safe[0])
+        request_counter += 2
 
 
 if __name__ == "__main__":
