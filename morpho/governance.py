@@ -33,7 +33,7 @@ VAULTS_BY_CHAIN = {
         # ["Gauntlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2"],
         # ["Gauntlet LRT Core", "0x7Db8c75A903d66D669b2002870975cc5aA842b6D"],
         # ["LlamaRisk crvUSD Vault", "0x67315dd969B8Cd3a3520C245837Bf71f54579C75"],
-        # ["Usual Boosted USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D"],
+        # ["MEV Capital USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D"],
     ],
     Chain.BASE: [
         ["Moonwell Flagship USDC", "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca"],
