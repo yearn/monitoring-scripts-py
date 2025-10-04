@@ -24,6 +24,12 @@ POOL_CONFIGS = [
         0,
         1,
     ),
+    (
+        "pxETH-stETH Curve Pool",
+        "0x6951bDC4734b9f7F3E1B74afeBC670c736A0EDB6",
+        0,
+        1,
+    ),
     # NOTE: bool is unbalanced, whole liquidity is moved to univ3: https://app.uniswap.org/explore/pools/ethereum/0x202a6012894ae5c288ea824cbc8a9bfb26a49b93
     # (
     #     "weETH-WETH Curve Pool",
@@ -55,7 +61,7 @@ def process_pools(chain: Chain = Chain.MAINNET):
         percentage = (balances[idx_lrt] / (balances[idx_lrt] + balances[idx_other_token])) * 100
         print(f"{pool_name} ratio is {percentage:.2f}%")
         if percentage > PEG_THRESHOLD:
-            message = f"🚨 Curve Alert! {pool_name} ratio is {percentage:.2f}% 🚀 "
+            message = f"🚨 Curve Alert! {pool_name} ratio is {percentage:.2f}%"
             send_telegram_message(message, PROTOCOL, True)
 
 

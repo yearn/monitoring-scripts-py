@@ -38,12 +38,6 @@ POOL_CONFIGS = [
         1,
         2,
     ),
-    (
-        "apxETH-WETH 50-50 Pool",
-        "0x88794c65550deb6b4087b7552ecf295113794410000000000000000000000648",
-        0,
-        1,
-    ),
 ]
 
 
@@ -73,7 +67,7 @@ def process_pools(chain: Chain = Chain.MAINNET):
         percentage = (balances[idx_lrt] / total) * 100
         print(f"{pool_name} ratio is {percentage:.2f}%")
         if percentage > PEG_THRESHOLD:
-            message = f"🚨 Balancer Alert! {pool_name} ratio is {percentage:.2f}% 🚀 "
+            message = f"🚨 Balancer Alert! {pool_name} ratio is {percentage:.2f}%"
             send_telegram_message(message, PROTOCOL, True)
 
 

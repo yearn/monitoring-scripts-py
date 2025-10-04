@@ -11,6 +11,7 @@ Curve pools that are checked are:
 - pufETH-wstETH
 - ETH+/WETH
 - weETH-WETH
+- pxETH-stETH
 
 ### Balancer pools
 
@@ -20,7 +21,6 @@ Balancer pools that are checked are:
 - rsETH-WETH
 - weETH-rETH
 - ETHx-wstETH
-- pxETH-WETH
 
 ### Lombard Finance (LBTC)
 
