@@ -24,12 +24,13 @@ POOL_CONFIGS = [
         0,
         1,
     ),
-    (
-        "pxETH-stETH Curve Pool",
-        "0x6951bDC4734b9f7F3E1B74afeBC670c736A0EDB6",
-        0,
-        1,
-    ),
+    # NOTE: pxETH is going to be depricated: https://common.xyz/dinero/discussion/1305032-Plume%20Acquisition%20Of%20Dinero
+    # (
+    #     "pxETH-stETH Curve Pool",
+    #     "0x6951bDC4734b9f7F3E1B74afeBC670c736A0EDB6",
+    #     0,
+    #     1,
+    # ),
     # NOTE: bool is unbalanced, whole liquidity is moved to univ3: https://app.uniswap.org/explore/pools/ethereum/0x202a6012894ae5c288ea824cbc8a9bfb26a49b93
     # (
     #     "weETH-WETH Curve Pool",

@@ -11,7 +11,6 @@ Curve pools that are checked are:
 - pufETH-wstETH
 - ETH+/WETH
 - weETH-WETH
-- pxETH-stETH
 
 ### Balancer pools
 
