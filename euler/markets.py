@@ -168,6 +168,9 @@ def get_market_allocation_threshold(market_risk_level, vault_risk_level):
 def fetch_borrow_metrics_from_gauntlet(market_key, vault_risk_level):
     alerts = []
     charts = get_charts_for_protocol_market(PROTOCOL, market_key)
+    if not charts:
+        send_telegram_message(f"🚨 Market {market_key} charts cannot be fetched", PROTOCOL)
+        return
     cards = charts["scalarCards"]
     total_supply = cards[0]["value"]["amount"]
     total_borrow = cards[1]["value"]["amount"]
