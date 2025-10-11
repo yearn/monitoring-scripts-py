@@ -184,7 +184,6 @@ MARKETS_RISK_2 = {
         "0x8e6aeb10c401de3279ac79b4b2ea15fc94b7d9cfc098d6c2a1ff7b2b26d9d02c",  # USDe / DAI -> lltv 91.5%, same value asset but using hardcoded oracle
         "0xc581c5f70bd1afa283eed57d1418c6432cbff1d862f94eaf58fdd4e46afbb67f",  # USDe / USDC -> lltv 86%, same value asset but using hardcoded oracle
         "0x5f8a138ba332398a9116910f4d5e5dcd9b207024c5290ce5bc87bc2dbd8e4a86",  # ETH+/WETH -> lltv 94.5%, oracle: ETH+ / USD exchange rate adapter and Chainlink: ETH/USD. ETH+ token has monitoring.
-        "0xbc552f0b14dd6f8e60b760a534ac1d8613d3539153b4d9675d697e048f2edc7e",  # PT-sUSDE-31JUL2025 / USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) sUSDE. No price oracle for USDC, USDe = USDC.
         "0x85ab69d50add7daa0934b5224889af0a882f2e3b4572d82c771dd0875f4eaa9b",  # pufETH/WETH -> lltv 94.5%, oracle: pufETH vault exchange rate. Alike assets.
         "0xbf02d6c6852fa0b8247d5514d0c91e6c1fbde9a168ac3fd2033028b5ee5ce6d0",  # LBTC/USDC -> lltv 86%, oracle: Redstone LBTC / BTC Redstone redemption price feed and Chainlink BTC/USD. More info on LBTC/BTC: https://docs.redstone.finance/docs/data/lombard/#how-redstone-delivers-lbtcbtc-fundamental-price
         "0xf6a056627a51e511ec7f48332421432ea6971fc148d8f3c451e14ea108026549",  # LBTC/WBTC -> lltv 94.5%, oracle: readstone exchange rate LBTC/BTC and chainlink WBTC/BTC
@@ -237,6 +236,7 @@ MARKETS_RISK_3 = {
         "0x53ed197357128ed96070e20ba9f5af4250cda6c67dcac5246876beb483f51303",  # sDOLA/USDC -> lltv 91.5%, oracle: sDOLA vault rate. DOLA = USDC hardcoded oracle.
         "0xce68c7aa336675e42bbc8eaa8b5ecc7ebd816bf8625b5316330c6ac2dabc4cf2",  # SolvBTC/BTC -> lltv 94.5%, oracle: upgradeable MetaOracleDeviationTimelock with prime oracle morpho oracle with 1:1 hardcoded rate
         "0xbfed072faee09b963949defcdb91094465c34c6c62d798b906274ef3563c9cac",  # srUSD/USDC -> lltv 91.5%, oracle: saving rate module price. rUSD(USD) is underlying asset. rUSD = USDC hardcoded oracle.
+        "0x7a7018e22a8bb2d08112eae9391e09f065a8ae7ae502c1c23dc96c21411a6efd",  # EIGEN/USDC -> lltv 77%, oracle: Chainlink EIGEN/USD. USD = USDC.
     ],
     Chain.BASE: [
         "0x9a697eb760dd12aaea23699c96ea2ebbfe48b7af64138d92c4d232b9ed380024",  # PT-LBTC-29MAY2025/cbBTC -> lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle. Higher lltv than PT-LBTC-27MAR2025 / WBTC.
