@@ -73,6 +73,8 @@ VAULTS_BY_CHAIN = {
         ["SteakhousePrime USDC", "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d", 1],
         ["Gauntlet WETH", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf", 1],
         ["Gauntlet WBTC", "0xf243523996ADbb273F0B237B53f30017C4364bBC", 1],
+        ["SteakhousePrime AUSD", "0x82c4C641CCc38719ae1f0FBd16A64808d838fDfD", 1],
+        ["Gauntlet AUSD", "0x9540441C503D763094921dbE4f13268E6d1d3B56", 1],
     ],
 }
 
@@ -100,6 +102,11 @@ VAULTS_WITH_YV_COLLATERAL_BY_ASSET = {
         "0x0913DA6Da4b42f538B445599b46Bb4622342Cf52": [  # WBTC asset address on Katana
             ["Yearn OG WBTC", "0xe107cCdeb8e20E499545C813f98Cc90619b29859"],
             ["Gauntlet WBTC", "0xf243523996ADbb273F0B237B53f30017C4364bBC"],
+        ],
+        # AUSD vaults - using addresses from VAULTS_BY_CHAIN as source of truth
+        "0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a": [  # AUSD asset address on Katana
+            ["SteakhousePrime AUSD", "0x82c4C641CCc38719ae1f0FBd16A64808d838fDfD"],
+            ["Gauntlet AUSD", "0x9540441C503D763094921dbE4f13268E6d1d3B56"],
         ],
     },
 }
@@ -163,6 +170,9 @@ MARKETS_RISK_1 = {
         "0x08f67ef41398456dbc5ff72d43c8b6f7917abfd01498a9fc6c89dabe6eb78b8c",  # yvvbETH/USDC -> lltv 77%, oracle: yearn vault exchange rate. Chainlink ETH/USD and Chainlink USDC/USD.
         "0x3a22063bd258f3f75e3135cac4ec53435dfa5b47b3d5173bb8fd5278e6c1b305",  # yvvbWBTC/USDC -> lltv 77%, oracle: yearn vault exchange rate. Chainlink WBTC/BTC, Chainlink BTC/USD and Chainlink USDC/USD.
         "0xcfac40b9f06194a33d9526f73642f6849b908c2b6d8669ad9d2d4a3e7dcb017a",  # yvAUSD/USDC -> lltv 86%, oracle: yearn vault exchange rate. Chainlink AUSD/USD and Chainlink USDC/USD.
+        "0xbeb2f6ad6de1a9eead3302ad57a0180f67d127a22e53fa29bc724147b96cb20d",  # WBTC/AUSD -> lltv 86%, oracle: Chainlink WBTC/BTC, Chainlink BTC/USD and Chainlink AUSD/USD.
+        "0x02a77b251cb27b04b5ddab89c852bdc77ee85d359c082170389001d71571a967",  # vbWETH/AUSD -> lltv 86%, oracle: Chainlink ETH/USD and Chainlink AUSD/USD.
+        "0x0c909f9c866c4250cb2f15ef916b1eed5b1022b34ccd7ca947810011f5758c4f",  # BTCK/AUSD -> lltv 86%, oracle: RedStone Price Feed for BTC. USD=AUSD.
     ],
 }
 
@@ -210,6 +220,7 @@ MARKETS_RISK_2 = {
         "0xfe6cb1b88d8830a884f2459962f4b96ae6e38416af086b8ae49f5d0f7f9fc0cd",  # POL/vbUSDC -> lltv 77%, oracle: Chainlink POL/USD and Chainlink USDC/USD
         "0xdf0f160d591f02931e44010763f892a51a480257a5ff21c41ebff874b0c7d258",  # BTCK/vbUSDT -> lltv 77%, oracle: Redstone BTC/USD
         "0x0e9d558490ed0cd523681a8c51d171fd5568b04311d0906fec47d668fb55f5d9",  # BTCK/vbUSDC -> lltv 77%, oracle: Redstone BTC/USD
+        "0x071ed2047610c7b33e1540e49fcc0a6852cb783cca0dd7dc428f32fd791a020f",  # wstETH/AUSD -> lltv 86%, oracle: RedStone Price Feed for wstETH. USD=AUSD.
     ],
 }
 
