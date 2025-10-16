@@ -42,6 +42,7 @@ env:
   PROVIDER_URL_KATANA: ${{ secrets.PROVIDER_URL_KATANA }}
   PROVIDER_URL_KATANA_1: ${{ secrets.PROVIDER_URL_KATANA_1 }}
   TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
+  SAFE_API_KEY: ${{ secrets.SAFE_API_KEY }}
 
 jobs:
   multisig_checker:
