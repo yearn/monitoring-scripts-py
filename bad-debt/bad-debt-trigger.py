@@ -37,20 +37,34 @@ def get_data():
     message = f"⚠️ {protocol} Bad Debt ratio: {ratio_of_bad_debt}% at {date} ⚠️\nDebt: {debt}\nTVL: {tvl}\nDeposits: {deposits}\nBorrows: {borrows}"
     print(message)
 
+    # Check if data is older than 1 day
+    now = datetime.datetime.now()
+    data_age = now - date
+    is_data_old = data_age.total_seconds() > 24 * 60 * 60  # 1 day in seconds
+
+    if is_data_old:
+        old_data_message = f"🚨 {protocol} Data is stale! Last updated: {date} ({data_age.days} days, {data_age.seconds // 3600} hours ago)"
+        print("Data is older than 1 day, sending telegram message...")
+        send_telegram_message(old_data_message)
+
     if (threshold > 0 and total_bad_debt / 10**decimals > threshold) or ratio_of_bad_debt > threshold_ratio:
         accounts = accounts_with_bad_debt(data)
         message += f"\n{accounts}"
-        print("Sending telegram message...")
-        print(message)
-        bot_token = os.getenv("BAD_DEBT_TELEGRAM_TOKEN")
-        chat_id = os.getenv("BAD_DEBT_TELEGRAM_CHAT_ID")
-        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        params = {"chat_id": chat_id, "text": message}
-        response = requests.get(url, params=params)
-        if response.status_code != 200:
-            raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
+        send_telegram_message(message)
     else:
         print("Thresholds not exceeded, no message sent")
+
+
+def send_telegram_message(message):
+    print("Sending telegram message...")
+    print(message)
+    bot_token = os.getenv("BAD_DEBT_TELEGRAM_TOKEN")
+    chat_id = os.getenv("BAD_DEBT_TELEGRAM_CHAT_ID")
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    params = {"chat_id": chat_id, "text": message}
+    response = requests.get(url, params=params)
+    if response.status_code != 200:
+        raise Exception(f"Failed to send telegram message: {response.status_code} - {response.text}")
 
 
 def accounts_with_bad_debt(data) -> str:
