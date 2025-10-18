@@ -1,5 +1,7 @@
 # SAM Tools
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/yearn/monitoring-scripts-py) [![Hourly Monitoring Scripts](https://github.com/yearn/monitoring-scripts-py/actions/workflows/hourly.yml/badge.svg)](https://github.com/yearn/monitoring-scripts-py/actions/workflows/hourly.yml) [![Daily Monitoring Scripts](https://github.com/yearn/monitoring-scripts-py/actions/workflows/daily.yml/badge.svg)](https://github.com/yearn/monitoring-scripts-py/actions/workflows/daily.yml) [![Safe Multisigs](https://github.com/yearn/monitoring-scripts-py/actions/workflows/multisig-checker.yml/badge.svg)](https://github.com/yearn/monitoring-scripts-py/actions/workflows/multisig-checker.yml)
+
 Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 
 ## Supported Protocols
