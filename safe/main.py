@@ -46,7 +46,6 @@ PROXY_UPGRADE_SIGNATURES = [
 
 # combined addresses, add more addresses if needed, last item is optional for additional info message
 ALL_SAFE_ADDRESSES = [
-    ["Y", "mainnet", "0xe5e2Baf96198c56380dDD5E992D7d1ADa0e989c0"],
     ["SILO", "mainnet", "0xE8e8041cB5E3158A0829A19E014CA1cf91098554"],
     # ["SILO", "optimism-main", "0x468CD12aa9e9fe4301DB146B0f7037831B52382d"],
     ["SILO", "arbitrum-main", "0x865A1DA42d512d8854c7b0599c962F67F5A5A9d9"],
@@ -273,10 +272,6 @@ def run_for_network(network_name, safe_address, protocol):
 def main():
     last_api_call_time = 0
     request_counter = 0
-    safe = ALL_SAFE_ADDRESSES[0]
-    last_api_call_time, request_counter = check_api_limit(last_api_call_time, request_counter)
-    run_for_network(safe[1], safe[2], safe[0])
-    return
     # loop all
     for safe in ALL_SAFE_ADDRESSES:
         print(f"Running for {safe[0]} on {safe[1]}")
