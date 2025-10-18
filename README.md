@@ -73,3 +73,7 @@ Format and lint code with ruff:
 uv run ruff format .
 uv run ruff check --fix .
 ```
+
+## Details
+
+For more details about this repository, check out AI generated docs using DeepWiki at [https://deepwiki.com/yearn/monitoring-scripts-py](https://deepwiki.com/yearn/monitoring-scripts-py).
