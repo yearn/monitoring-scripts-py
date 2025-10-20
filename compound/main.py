@@ -29,8 +29,8 @@ COMPOUND_VAULTS_KEYS = [
     # ["v3-ethereum-wbtc", 1],
     # ["v3-ethereum-wsteth", 1],
     ["v3-ethereum-usds", 2],
-    # Polygon
-    ["v3-polygon-usdc", 1],
+    # Polygon - NOTE: skip polygon because there are only few collaterals which all can have high percentage
+    # ["v3-polygon-usdc", 1],
 ]
 
 
