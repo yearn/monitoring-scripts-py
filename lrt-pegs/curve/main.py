@@ -16,14 +16,14 @@ POOL_CONFIGS = [
         "0xEEda34A377dD0ca676b9511EE1324974fA8d980D",
         0,
         1,
-        80.5,
+        83,
     ),
     (
         "ETH+/WETH Curve Pool",
         "0x2c683fAd51da2cd17793219CC86439C1875c353e",
         0,
         1,
-        64.0,
+        72.0,
     ),
     # NOTE: pxETH is going to be depricated: https://common.xyz/dinero/discussion/1305032-Plume%20Acquisition%20Of%20Dinero
     # (
