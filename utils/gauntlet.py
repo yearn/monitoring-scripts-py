@@ -234,7 +234,9 @@ def fetch_borrow_metrics_from_gauntlet(protocol, market_key, vault_risk_level) -
 
     old_data_threshold = 24
     if last_updated < get_timestamp_before(hours=old_data_threshold):
-        alerts.append(f"🚨 Market {market_key} is not updated for {old_data_threshold} hours. Last updated at {last_updated}")
+        alerts.append(
+            f"🚨 Market {market_key} is not updated for {old_data_threshold} hours. Last updated at {last_updated}"
+        )
         return alerts
 
     charts = charts["charts"]
