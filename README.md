@@ -10,6 +10,7 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 - [Compound V3](./compound/README.md)
 - [Ethena](./ethena/README.md)
 - [Euler](./euler/README.md)
+- [Fluid](./fluid/README.md)
 - [Lido](./lido/README.md)
 - [LRTs](./lrt-pegs/README.md)
 - [Maker DAO](./maker/README.md)
