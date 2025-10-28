@@ -78,7 +78,7 @@ ALLOCATION_TIERS = {
 
 # Define max risk thresholds by risk level
 MAX_RISK_THRESHOLDS = {
-    1: 1.25,  # Risk tier 1 max total risk
+    1: 1.30,  # Risk tier 1 max total risk
     2: 2.30,  # Risk tier 2 max total risk
     3: 3.40,  # Risk tier 3 max total risk
     4: 4.50,  # Risk tier 4 max total risk
