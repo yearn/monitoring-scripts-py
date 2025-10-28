@@ -42,6 +42,9 @@ SUPPLY_ASSETS = [
     ["LBTC", 2],  # Uses chainlink oracle LBTC/BTC and BTC/USD
     ["wOETH", 2],  # Origin ETH
     ["pufETH", 2],  # pufETH
+    ["WPOL", 2],
+    ["MaticX", 2],  # MaticX
+    ["stMATIC", 2],  # stMATIC
     # Risk Tier 3
     ["USD0", 3],  # pyth oracle USD0/USD and medium liquidity (6M)
     ["deUSD", 3],
