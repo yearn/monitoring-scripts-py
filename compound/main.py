@@ -30,7 +30,7 @@ COMPOUND_VAULTS_KEYS = [
     # ["v3-ethereum-wsteth", 1],
     ["v3-ethereum-usds", 2],
     # Polygon
-    ["v3-polygon-usdc", 1],
+    # ["v3-polygon-usdc", 1],
     ["v3-polygon-usdt", 1],
 ]
 
