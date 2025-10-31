@@ -48,6 +48,7 @@ env:
   TELEGRAM_CHAT_ID_RESOLV: ${{ secrets.TELEGRAM_CHAT_ID_RESOLV }}
   TELEGRAM_CHAT_ID_ETHENA: ${{ secrets.TELEGRAM_CHAT_ID_ETHENA }}
   TELEGRAM_CHAT_ID_EULER: ${{ secrets.TELEGRAM_CHAT_ID_EULER }}
+  TELEGRAM_CHAT_ID_FLUID: ${{ secrets.TELEGRAM_CHAT_ID_FLUID }}
   TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
   GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
   TALLY_API_KEY: ${{ secrets.TALLY_API_KEY }}
@@ -101,6 +102,8 @@ jobs:
         run: uv run compound/main.py
       - name: Run Compound Proposals script
         run: uv run compound/proposals.py
+      - name: Run Fluid Proposals script
+        run: uv run fluid/proposals.py
       - name: Run Lido Ethereum script
         run: uv run lido/steth/main.py
       - name: Run LRT Peg Checker Balancer
