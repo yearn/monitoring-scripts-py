@@ -29,9 +29,9 @@ COMPOUND_VAULTS_KEYS = [
     # ["v3-ethereum-wbtc", 1],
     # ["v3-ethereum-wsteth", 1],
     ["v3-ethereum-usds", 2],
-    # Polygon
+    # NOTE: polygon data can be stale, so we don't monitor it
     # ["v3-polygon-usdc", 1],
-    ["v3-polygon-usdt", 1],
+    # ["v3-polygon-usdt", 1],
 ]
 
 
