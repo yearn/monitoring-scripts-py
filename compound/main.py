@@ -80,8 +80,8 @@ def main():
         print(f"Processing {chain.name} assets...")
         process_assets(chain)
 
-    for market_key, vault_risk_level in COMPOUND_VAULTS_KEYS:
-        analyze_compound_market_allocation(market_key, vault_risk_level)
+    # for market_key, vault_risk_level in COMPOUND_VAULTS_KEYS:
+    #     analyze_compound_market_allocation(market_key, vault_risk_level)
 
 
 if __name__ == "__main__":
