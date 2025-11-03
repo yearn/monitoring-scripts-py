@@ -37,7 +37,8 @@
 
 ## Best Practices
 - Create custom exception types for domain-specific errors
-- Extract repeated patterns into utility functions
+- Extract repeated patterns into utility functions. Try to keep utility functions small and focused on a single task and store in utils folder.
 - Use dataclasses for structured data
-- Implement dependency injection for better testability
 - Add proper type annotations to improve IDE support and catch errors
+- Keep files small and focused on a single task. If a file is too large, split it into smaller files.
+- Ask questions if you are not sure about the code. Ask for clarification if needed before writing the code.
