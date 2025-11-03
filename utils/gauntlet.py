@@ -54,6 +54,7 @@ SUPPLY_ASSETS = [
     ["SKY", 3],
     ["UNI", 3],
     ["LINK", 3],
+    ["syrupUSDC", 3],
     # Risk Tier 4
     [
         "wUSDM",
