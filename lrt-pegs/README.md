@@ -11,15 +11,18 @@ Curve pools that are checked are:
 - pufETH-wstETH
 - ETH+/WETH
 - weETH-WETH
+- frxETH-WETH
+- OETH/ETH
 
-### Balancer pools
+### Uniswap V3 pools
 
-Balancer pools that are checked are:
+Uniswap V3 pools that are checked are:
 
-- ezETH-WETH
-- rsETH-WETH
-- weETH-rETH
-- ETHx-wstETH
+- weETH-WETH
+
+### Balancer pools - DISABLED ⚠️
+
+> Disabled after Balancer V2 hack
 
 ### Lombard Finance (LBTC)
 
