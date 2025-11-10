@@ -108,10 +108,10 @@ jobs:
         run: uv run lido/steth/main.py
       # - name: Run LRT Peg Checker Balancer
       #   run: uv run lrt-pegs/balancer/main.py
+      # - name: Run LRT Peg Checker Uniswap V3
+      #   run: uv run lrt-pegs/uniswap_v3.py
       - name: Run LRT Peg Checker Curve
         run: uv run lrt-pegs/curve/main.py
-      - name: Run LRT Peg Checker Uniswap V3
-        run: uv run lrt-pegs/uniswap_v3.py
       - name: Run Moonwell Bad Debt script
         run: uv run moonwell/bad_debt.py
       - name: Run Moonwell Proposals script

@@ -14,7 +14,7 @@ Curve pools that are checked are:
 - frxETH-WETH
 - OETH/ETH
 
-### Uniswap V3 pools
+### Uniswap V3 pools - DISABLED ⚠️
 
 Uniswap V3 pools that are checked are:
 
