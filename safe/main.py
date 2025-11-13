@@ -124,6 +124,12 @@ ALL_SAFE_ADDRESSES = [
         "0x94877640dD9E6F1e3Cb56Bf7b5665b7152601295",
         "thBILL & tULTRA owner multisig. Markets used on Morpho Arbitrum",
     ],  # thBILL & tULTRA owner multisig
+    [
+        "LRT",
+        "mainnet",
+        "0x2536f2ef78b0df34299cad6e59300f8f83fe1ec4",
+        "thBILL minter role. Markets used on Morpho Arbitrum",
+    ],  # thBILL minter role
     # [
     #     "USD0",
     #     "mainnet",
