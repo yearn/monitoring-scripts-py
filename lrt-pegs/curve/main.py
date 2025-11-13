@@ -16,14 +16,14 @@ POOL_CONFIGS = [
         "0xEEda34A377dD0ca676b9511EE1324974fA8d980D",
         0,
         1,
-        83.0,
+        88.0,
     ),
     (
         "ETH+/WETH Curve Pool",
         "0x2c683fAd51da2cd17793219CC86439C1875c353e",
         0,
         1,
-        77.0,
+        78.0,
     ),
     (
         "OETH/ETH Curve Pool",
@@ -38,7 +38,7 @@ POOL_CONFIGS = [
         "0xDB74dfDD3BB46bE8Ce6C33dC9D82777BCFc3dEd5",
         1,
         0,
-        89.0,
+        81.0,
     ),
 ]
 
