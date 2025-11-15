@@ -40,13 +40,6 @@ POOL_CONFIGS = [
         0,
         81.0,
     ),
-    (
-        "frxETH-WETH Curve Pool",
-        "0x9c3B46C0Ceb5B9e304FCd6D88Fc50f7DD24B31Bc",
-        1,
-        0,
-        92.5,
-    ),
 ]
 
 
