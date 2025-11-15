@@ -16,21 +16,21 @@ POOL_CONFIGS = [
         "0xEEda34A377dD0ca676b9511EE1324974fA8d980D",
         0,
         1,
-        88.0,
+        90.0,
     ),
     (
         "ETH+/WETH Curve Pool",
         "0x2c683fAd51da2cd17793219CC86439C1875c353e",
         0,
         1,
-        78.0,
+        80.0,
     ),
     (
         "OETH/ETH Curve Pool",
         "0xcc7d5785AD5755B6164e21495E07aDb0Ff11C2A8",
         0,
         1,
-        75.0,
+        78.0,
     ),
     # NOTE: bool is unbalanced, whole liquidity is moved to univ3: https://app.uniswap.org/explore/pools/ethereum/0x202a6012894ae5c288ea824cbc8a9bfb26a49b93
     (
@@ -39,6 +39,13 @@ POOL_CONFIGS = [
         1,
         0,
         81.0,
+    ),
+    (
+        "frxETH-WETH Curve Pool",
+        "0x9c3B46C0Ceb5B9e304FCd6D88Fc50f7DD24B31Bc",
+        1,
+        0,
+        92.5,
     ),
 ]
 
