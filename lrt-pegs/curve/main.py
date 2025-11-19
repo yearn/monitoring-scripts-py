@@ -30,7 +30,7 @@ POOL_CONFIGS = [
         "0xcc7d5785AD5755B6164e21495E07aDb0Ff11C2A8",
         0,
         1,
-        78.0,
+        80.0,
     ),
     # NOTE: bool is unbalanced, whole liquidity is moved to univ3: https://app.uniswap.org/explore/pools/ethereum/0x202a6012894ae5c288ea824cbc8a9bfb26a49b93
     (
