@@ -38,7 +38,7 @@ POOL_CONFIGS = [
         "0xDB74dfDD3BB46bE8Ce6C33dC9D82777BCFc3dEd5",
         1,
         0,
-        81.0,
+        85.0,
     ),
 ]
 
