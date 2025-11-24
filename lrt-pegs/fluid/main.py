@@ -1,0 +1,70 @@
+from utils.abi import load_abi
+from utils.chains import Chain
+from utils.telegram import send_telegram_message
+from utils.web3_wrapper import ChainManager
+
+PROTOCOL = "PEGS"
+
+# FLUID DEX RESOLVER ADDRESS
+FLUID_DEX_RESERVES_RESOLVER = "0xC93876C0EEd99645DD53937b25433e311881A27C"
+# Load FLUID ABI
+ABI_FLUID_POOL = load_abi("lrt-pegs/abi/Fluid_DexResolver.json")
+# Collateral Reserves Index
+COLLATERAL_RESERVES_INDEX = 5
+
+
+# Pool configurations
+POOL_CONFIGS = [
+    # name, pool address, index of lrt, index of other asset, peg threshold
+    (
+        "rsETH/ETH Fluid Pool",
+        "0x276084527B801e00Db8E4410504F9BaF93f72C67",
+        0,
+        1,
+        80.0,
+    ),
+    (
+        "ezETH/ETH FLUID Pool",
+        "0xDD72157A021804141817d46D9852A97addfB9F59",
+        0,
+        1,
+        80.0,
+    ),
+]
+
+
+def process_pools(chain: Chain = Chain.MAINNET):
+    client = ChainManager.get_client(chain)
+    resolver = client.eth.contract(address=FLUID_DEX_RESERVES_RESOLVER, abi=ABI_FLUID_POOL)
+
+    with client.batch_requests() as batch:
+        for _, pool_address, _, _, _ in POOL_CONFIGS:
+            batch.add(resolver.functions.getPoolReserves(pool_address))
+
+        responses = batch.execute()
+
+    if len(responses) != len(POOL_CONFIGS):
+        raise ValueError(f"Expected {len(POOL_CONFIGS)} responses from batch, got: {len(responses)}")
+
+    # Process results
+    for (pool_name, _, idx_lrt, idx_other_token, peg_threshold), pool_reserves in zip(POOL_CONFIGS, responses):
+        percentage = (
+            pool_reserves[COLLATERAL_RESERVES_INDEX][idx_lrt]
+            / (
+                pool_reserves[COLLATERAL_RESERVES_INDEX][idx_lrt]
+                + pool_reserves[COLLATERAL_RESERVES_INDEX][idx_other_token]
+            )
+        ) * 100
+        print(f"{pool_name} ratio is {percentage:.2f}%")
+        if percentage > peg_threshold:
+            message = f"🚨 Fluid Alert! {pool_name} ratio is {percentage:.2f}%"
+            send_telegram_message(message, PROTOCOL, True)
+
+
+def main():
+    print("Checking Fluid pools...")
+    process_pools()
+
+
+if __name__ == "__main__":
+    main()
