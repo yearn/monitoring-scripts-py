@@ -112,6 +112,8 @@ jobs:
       #   run: uv run lrt-pegs/uniswap_v3.py
       - name: Run LRT Peg Checker Curve
         run: uv run lrt-pegs/curve/main.py
+      - name: Run LRT Peg Checker Fluid
+        run: uv run lrt-pegs/fluid/main.py
       - name: Run Moonwell Bad Debt script
         run: uv run moonwell/bad_debt.py
       - name: Run Moonwell Proposals script
