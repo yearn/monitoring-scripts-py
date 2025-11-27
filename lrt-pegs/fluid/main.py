@@ -37,24 +37,28 @@ def process_pools(chain: Chain = Chain.MAINNET):
     client = ChainManager.get_client(chain)
     resolver = client.eth.contract(address=FLUID_DEX_RESERVES_RESOLVER, abi=ABI_FLUID_POOL)
 
-    with client.batch_requests() as batch:
-        for _, pool_address, _, _, _ in POOL_CONFIGS:
-            batch.add(resolver.functions.getPoolReserves(pool_address))
+    poolsArray = []
 
+    for _, pool_address, _, _, _ in POOL_CONFIGS:
+        poolsArray.append(pool_address)
+
+    with client.batch_requests() as batch:
+        batch.add(resolver.functions.getPoolsReserves(poolsArray))
         responses = batch.execute()
 
-    if len(responses) != len(POOL_CONFIGS):
+    if len(responses[0]) != len(POOL_CONFIGS):
         raise ValueError(f"Expected {len(POOL_CONFIGS)} responses from batch, got: {len(responses)}")
 
     # Process results
-    for (pool_name, _, idx_lrt, idx_other_token, peg_threshold), pool_reserves in zip(POOL_CONFIGS, responses):
-        percentage = (
-            pool_reserves[COLLATERAL_RESERVES_INDEX][idx_lrt]
-            / (
-                pool_reserves[COLLATERAL_RESERVES_INDEX][idx_lrt]
-                + pool_reserves[COLLATERAL_RESERVES_INDEX][idx_other_token]
-            )
-        ) * 100
+    for (pool_name, pool_address, idx_lrt, idx_other_token, peg_threshold), pool_reserves in zip(
+        POOL_CONFIGS, responses[0]
+    ):
+        assert pool_address == pool_reserves[0], f"Expected {pool_address} but got {pool_reserves[0]}"
+
+        lrt_balance = int(pool_reserves[COLLATERAL_RESERVES_INDEX][idx_lrt])
+        other_token_balance = int(pool_reserves[COLLATERAL_RESERVES_INDEX][idx_other_token])
+
+        percentage = (lrt_balance / (lrt_balance + other_token_balance)) * 100
         print(f"{pool_name} ratio is {percentage:.2f}%")
         if percentage > peg_threshold:
             message = f"🚨 Fluid Alert! {pool_name} ratio is {percentage:.2f}%"
