@@ -42,19 +42,16 @@ def process_pools(chain: Chain = Chain.MAINNET):
     for _, pool_address, _, _, _ in POOL_CONFIGS:
         poolsArray.append(pool_address)
 
-    with client.batch_requests() as batch:
-        batch.add(resolver.functions.getPoolsReserves(poolsArray))
-        responses = batch.execute()
+    responses = resolver.functions.getPoolsReserves(poolsArray).call()
 
-    if len(responses[0]) != len(POOL_CONFIGS):
+    if len(responses) != len(POOL_CONFIGS):
         raise ValueError(f"Expected {len(POOL_CONFIGS)} responses from batch, got: {len(responses)}")
 
     # Process results
     for (pool_name, pool_address, idx_lrt, idx_other_token, peg_threshold), pool_reserves in zip(
-        POOL_CONFIGS, responses[0]
+        POOL_CONFIGS, responses
     ):
         assert pool_address == pool_reserves[0], f"Expected {pool_address} but got {pool_reserves[0]}"
-
         lrt_balance = int(pool_reserves[COLLATERAL_RESERVES_INDEX][idx_lrt])
         other_token_balance = int(pool_reserves[COLLATERAL_RESERVES_INDEX][idx_other_token])
 
