@@ -30,6 +30,13 @@ POOL_CONFIGS = [
         1,
         80.0,
     ),
+    (
+        "weETH / ETH FLUID Pool",
+        "0x86f874212335Af27C41cDb855C2255543d1499cE",
+        0,
+        1,
+        80.0,
+    ),
 ]
 
 
