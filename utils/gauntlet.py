@@ -63,7 +63,7 @@ SUPPLY_ASSETS = [
         "SolvBTC",
         4,
     ],  # Uses chainlink oracle solvBTC/BTC and BTC/USD https://solv.finance/
-    ["USDtb", 4], # onboarded by aave: https://app.aave.com/governance/v3/proposal/?proposalId=305
+    ["USDtb", 4],  # onboarded by aave: https://app.aave.com/governance/v3/proposal/?proposalId=305
     # Risk Tier 5
     [
         "USD0++",
