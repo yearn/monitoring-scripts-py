@@ -47,8 +47,6 @@ SUPPLY_ASSETS = [
     ["stMATIC", 2],  # stMATIC
     # Risk Tier 3
     ["USD0", 3],  # pyth oracle USD0/USD and medium liquidity (6M)
-    ["deUSD", 3],
-    ["sdeUSD", 3],
     ["osETH", 3],  # StakeWise osETH
     ["tETH", 3],  # Treehouse tETH
     ["SKY", 3],
@@ -65,6 +63,7 @@ SUPPLY_ASSETS = [
         "SolvBTC",
         4,
     ],  # Uses chainlink oracle solvBTC/BTC and BTC/USD https://solv.finance/
+    ["USDtb", 4], # onboarded by aave: https://app.aave.com/governance/v3/proposal/?proposalId=305
     # Risk Tier 5
     [
         "USD0++",
@@ -74,6 +73,8 @@ SUPPLY_ASSETS = [
     ["mTBILL", 5],  # Euler Vault uses fixed rate oracle. https://midas.app/
     ["wM", 5],  # Euler Vault uses fixed rate oracle. https://www.m0.org/
     ["mBASIS", 5],
+    ["deUSD", 5],
+    ["sdeUSD", 5],
 ]
 
 # Convert SUPPLY_ASSETS list to dictionary for easier lookup
@@ -235,6 +236,7 @@ def fetch_borrow_metrics_from_gauntlet(protocol, market_key, vault_risk_level) -
     total_supply = cards[0]["value"]["amount"]
     total_borrow = cards[1]["value"]["amount"]
     last_updated = cards[0]["lastUpdated"]
+    print(f"Last updated: {last_updated}")
 
     old_data_threshold = 36  # hours is the max time for a market to be updated
     if last_updated < get_timestamp_before(hours=old_data_threshold):
