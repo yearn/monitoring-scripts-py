@@ -223,6 +223,7 @@ MARKETS_RISK_2 = {
         "0x534e7046c3aebaa0c6c363cdbeb9392fc87af71cc16862479403a198fe04b206",  # PT-USDe-27NOV2025/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) USDe. No price oracle for USDC, USDe = USDC.
         "0x550edc2e9fe71158ccfa7c478a31f4e60ef508d94ada3931dc2aee4f666f8f81",  # yvUSDC-1/USDC -> lltv 91.5%, oracle: yvUSDC-1 vault rate.
         "0x973e9dd45799efe8775417bcc420a3ab84a583587b2108985746e2fe201d0c83",  # YFI/USDC -> lltv 77%, oracle: Chainlink YFI/USD and Chainlink USDC/USD.
+        "0xb8fef900b383db2dbbf4458c7f46acf5b140f26d603a6d1829963f241b82510e",  # OETH/USDC -> lltv 86%, oracle: Chainlink ETH/USD and Chainlink USDC/USD. OETH = ETH
     ],
     Chain.BASE: [
         "0x6aa81f51dfc955df598e18006deae56ce907ac02b0b5358705f1a28fcea23cc0",  # wstETH/WETH -> lltv 96.5%, oracle: Chainlink wstETH-stETH Exchange Rate
@@ -269,7 +270,6 @@ MARKETS_RISK_3 = {
         "0xce68c7aa336675e42bbc8eaa8b5ecc7ebd816bf8625b5316330c6ac2dabc4cf2",  # SolvBTC/BTC -> lltv 94.5%, oracle: upgradeable MetaOracleDeviationTimelock with prime oracle morpho oracle with 1:1 hardcoded rate
         "0x7a7018e22a8bb2d08112eae9391e09f065a8ae7ae502c1c23dc96c21411a6efd",  # EIGEN/USDC -> lltv 77%, oracle: Redstone EIGEN/USD. USD = USDC.
         "0xb8afc953c3cc8077b4a4bf459bede8d3f80be45ca1f244e4bca13b7b1030eed5",  # PT-syrupUSDC-30OCT2025/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) syrupUSDC. syrupUSDC = USDC.
-        "0xb8fef900b383db2dbbf4458c7f46acf5b140f26d603a6d1829963f241b82510e",  # OETH/USDC -> lltv 86%, oracle: Chainlink ETH/USD and Chainlink USDC/USD. OETH = ETH
     ],
     Chain.BASE: [
         "0x9a697eb760dd12aaea23699c96ea2ebbfe48b7af64138d92c4d232b9ed380024",  # PT-LBTC-29MAY2025/cbBTC -> lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle. Higher lltv than PT-LBTC-27MAR2025 / WBTC.
