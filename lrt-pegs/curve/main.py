@@ -16,7 +16,7 @@ POOL_CONFIGS = [
         "0xEEda34A377dD0ca676b9511EE1324974fA8d980D",
         0,
         1,
-        90.0,
+        84.0,
     ),
     (
         "ETH+/WETH Curve Pool",
@@ -38,7 +38,7 @@ POOL_CONFIGS = [
         "0xDB74dfDD3BB46bE8Ce6C33dC9D82777BCFc3dEd5",
         1,
         0,
-        85.0,
+        80.0,
     ),
 ]
 
