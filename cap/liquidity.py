@@ -1,15 +1,16 @@
-from utils.chains import Chain
-from utils.web3_wrapper import ChainManager
 from utils.abi import load_abi
+from utils.chains import Chain
 from utils.telegram import send_telegram_message
+from utils.web3_wrapper import ChainManager
 
 CUSD = "0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC"
 PROTOCOL = "cap"
 
+
 def main():
     client = ChainManager.get_client(Chain.MAINNET)
 
-    ctoken = client.eth.contract(address=CUSD, abi=load_abi("cap/abi/CToken.json")) # aka cusd
+    ctoken = client.eth.contract(address=CUSD, abi=load_abi("cap/abi/CToken.json"))  # aka cusd
 
     assets = ctoken.functions.assets().call()
 
@@ -48,6 +49,7 @@ def main():
     if len(lines) > 0:
         message = "💧 CAP Withdrawable Liquidity (Mainnet)\n" + "\n".join(lines)
         send_telegram_message(message, PROTOCOL, True)
-    
+
+
 if __name__ == "__main__":
     main()

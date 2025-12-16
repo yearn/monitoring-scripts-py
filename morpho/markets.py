@@ -103,12 +103,18 @@ VAULTS_WITH_YV_COLLATERAL_BY_ASSET = {
         ],
         # USDT vaults - using addresses from VAULTS_BY_CHAIN as source of truth
         "0x2DCa96907fde857dd3D816880A0df407eeB2D2F2": [  # USDT asset address on Katana
-            ["Yearn OG USDT", "0x8ED68f91AfbE5871dCE31ae007a936ebE8511d47"],  # Corrected from VAULTS_BY_CHAIN
+            [
+                "Yearn OG USDT",
+                "0x8ED68f91AfbE5871dCE31ae007a936ebE8511d47",
+            ],  # Corrected from VAULTS_BY_CHAIN
             ["Gauntlet USDT", "0x1ecDC3F2B5E90bfB55fF45a7476FF98A8957388E"],
         ],
         # WETH vaults - using addresses from VAULTS_BY_CHAIN as source of truth
         "0xEE7D8BCFb72bC1880D0Cf19822eB0A2e6577aB62": [  # WETH asset address on Katana
-            ["Gauntlet WETH", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf"],  # Corrected from VAULTS_BY_CHAIN
+            [
+                "Gauntlet WETH",
+                "0xC5e7AB07030305fc925175b25B93b285d40dCdFf",
+            ],  # Corrected from VAULTS_BY_CHAIN
             ["Yearn OG WETH", "0xFaDe0C546f44e33C134c4036207B314AC643dc2E"],
         ],
         # WBTC vaults - using addresses from VAULTS_BY_CHAIN as source of truth
@@ -551,7 +557,9 @@ def group_vaults_by_chain(vaults_data: List[Dict[str, Any]]) -> Dict[Chain, List
 
 
 def find_yv_vaults_for_asset(
-    chain_vaults: List[Dict[str, Any]], asset_address: str, yv_vault_addresses: List[str]
+    chain_vaults: List[Dict[str, Any]],
+    asset_address: str,
+    yv_vault_addresses: List[str],
 ) -> List[Dict[str, Any]]:
     """Find all YV collateral vaults for a specific asset."""
     asset_yv_vaults = []
@@ -638,11 +646,20 @@ def check_yv_collateral_liquidity_for_chain(chain: Chain, chain_vaults: List[Dic
         asset_symbol = asset_yv_vaults[0].get("asset", {}).get("symbol", "UNKNOWN")
 
         # Calculate combined metrics for this asset
-        combined_total_assets, combined_liquidity, vault_names = calculate_combined_metrics(asset_yv_vaults)
+        (
+            combined_total_assets,
+            combined_liquidity,
+            vault_names,
+        ) = calculate_combined_metrics(asset_yv_vaults)
 
         # Check threshold and alert if needed
         check_combined_liquidity_threshold(
-            asset_symbol, chain, combined_total_assets, combined_liquidity, vault_names, len(asset_yv_vaults)
+            asset_symbol,
+            chain,
+            combined_total_assets,
+            combined_liquidity,
+            vault_names,
+            len(asset_yv_vaults),
         )
 
 
@@ -773,13 +790,23 @@ def main() -> None:
         response = requests.post(API_URL, json=json_data, timeout=30)
         response.raise_for_status()
     except requests.RequestException as e:
-        send_telegram_message(f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨", PROTOCOL, True, True)
+        send_telegram_message(
+            f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨",
+            PROTOCOL,
+            True,
+            True,
+        )
         return
 
     data = response.json()
     if "errors" in data:
         error_msg = data["errors"][0]["message"] if data["errors"] else "Unknown GraphQL error"
-        send_telegram_message(f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨", PROTOCOL, True, True)
+        send_telegram_message(
+            f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨",
+            PROTOCOL,
+            True,
+            True,
+        )
         return
 
     vaults_data = data.get("data", {}).get("vaults", {}).get("items", [])

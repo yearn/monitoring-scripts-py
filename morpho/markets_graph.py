@@ -333,7 +333,12 @@ def check_graph_data_for_chain(chain: Chain):
         response = requests.post(api_url, json=json_data, timeout=30)
         response.raise_for_status()
     except requests.RequestException as e:
-        send_telegram_message(f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨", PROTOCOL, True, True)
+        send_telegram_message(
+            f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨",
+            PROTOCOL,
+            True,
+            True,
+        )
         return
 
     data = response.json()
@@ -342,7 +347,12 @@ def check_graph_data_for_chain(chain: Chain):
         if "indexing_error" in error_msg:
             print(f"🚨 GraphQL indexing error when fetching Morpho data: {error_msg} 🚨")
         else:
-            send_telegram_message(f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨", PROTOCOL, True, True)
+            send_telegram_message(
+                f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨",
+                PROTOCOL,
+                True,
+                True,
+            )
         return
 
     vaults_data = data.get("data", {}).get("metaMorphos", {})

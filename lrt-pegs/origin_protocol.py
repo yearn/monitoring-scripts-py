@@ -51,7 +51,9 @@ def process_origin(chain: Chain):
         responses = client.execute_batch(batch)
         if len(responses) != 2:
             send_telegram_message(
-                f"🚨 Origin Protocol Alert! Expected 2 responses from batch, got: {len(responses)}", PROTOCOL, True
+                f"🚨 Origin Protocol Alert! Expected 2 responses from batch, got: {len(responses)}",
+                PROTOCOL,
+                True,
             )
 
         redeem_value = responses[0]

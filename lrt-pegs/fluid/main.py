@@ -56,14 +56,21 @@ def process_pools(chain: Chain = Chain.MAINNET):
         raise ValueError(f"Expected {len(POOL_CONFIGS)} responses from batch, got: {len(responses)}")
 
     # Process results
-    for (pool_name, pool_address, idx_lrt, idx_other_token, peg_threshold), pool_reserves in zip(
-        POOL_CONFIGS, responses
-    ):
+    for (
+        pool_name,
+        pool_address,
+        idx_lrt,
+        idx_other_token,
+        peg_threshold,
+    ), pool_reserves in zip(POOL_CONFIGS, responses):
         assert pool_address == pool_reserves[0], f"Expected {pool_address} but got {pool_reserves[0]}"
         lrt_balance = int(pool_reserves[COLLATERAL_RESERVES_INDEX][idx_lrt])
         other_token_balance = int(pool_reserves[COLLATERAL_RESERVES_INDEX][idx_other_token])
         if lrt_balance < MIN_ASSET_BALANCE or other_token_balance < MIN_ASSET_BALANCE:
-            send_telegram_message(f"🚨 Fluid Alert! {pool_name} has less than {MIN_ASSET_BALANCE} balance", PROTOCOL)
+            send_telegram_message(
+                f"🚨 Fluid Alert! {pool_name} has less than {MIN_ASSET_BALANCE} balance",
+                PROTOCOL,
+            )
 
         percentage = (lrt_balance / (lrt_balance + other_token_balance)) * 100
         print(f"{pool_name} ratio is {percentage:.2f}%")

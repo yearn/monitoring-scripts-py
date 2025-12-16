@@ -112,7 +112,9 @@ def main():
         check_thresholds(metrics)
     else:
         send_telegram_message(
-            "🚨 Moonwell metrics cannot be fetched from any source", PROTOCOL, disable_notification=True
+            "🚨 Moonwell metrics cannot be fetched from any source",
+            PROTOCOL,
+            disable_notification=True,
         )
 
 

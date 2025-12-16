@@ -63,7 +63,10 @@ def test_with_different_timeouts():
         try:
             start_time = time.time()
             response = requests.post(
-                "https://api.tally.xyz/query", json={"query": query}, headers=headers, timeout=timeout
+                "https://api.tally.xyz/query",
+                json={"query": query},
+                headers=headers,
+                timeout=timeout,
             )
 
             elapsed = time.time() - start_time
