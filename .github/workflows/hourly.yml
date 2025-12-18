@@ -92,8 +92,6 @@ jobs:
 
       - name: Run Morpho Bad Debt script
         run: uv run morpho/markets.py
-      - name: Run Morpho Markets Graph script
-        run: uv run morpho/markets_graph.py
       - name: Run Aave script
         run: uv run aave/main.py
       - name: Run Aave Proposals script
@@ -106,8 +104,6 @@ jobs:
         run: uv run fluid/proposals.py
       - name: Run Lido Ethereum script
         run: uv run lido/steth/main.py
-      # - name: Run LRT Peg Checker Balancer
-      #   run: uv run lrt-pegs/balancer/main.py
       # - name: Run LRT Peg Checker Uniswap V3
       #   run: uv run lrt-pegs/uniswap_v3.py
       - name: Run LRT Peg Checker Curve

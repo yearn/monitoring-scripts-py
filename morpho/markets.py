@@ -76,6 +76,11 @@ VAULTS_BY_CHAIN = {
         ["SteakhousePrime AUSD", "0x82c4C641CCc38719ae1f0FBd16A64808d838fDfD", 1],
         ["Gauntlet AUSD", "0x9540441C503D763094921dbE4f13268E6d1d3B56", 1],
     ],
+    Chain.POLYGON: [
+        ["Compound WETH", "0xF5C81d25ee174d83f1FD202cA94AE6070d073cCF", 1],
+        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 2],
+        ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8", 1],
+    ],
 }
 
 # Morpho Vaults that are used by Yearn Strategies which are used as YV collateral in Morpho Markets
@@ -190,6 +195,18 @@ MARKETS_RISK_1 = {
         "0xa6ce59291d90ae348b2fa956cc66f31df605a3304a9325e494c94e2cf5b0485a",  # weETH/vbUSDT -> lltv 77%, oracle: RedStone weETH/ETH fundamental price, Chainlink ETH/USD and Chainlink USDT/USD.
         "0x76e311d4b0e2e6ae88ad9bab18063452a6d39837d7104c430ff62457b91cb2cb",  # weETH/vbUSDC -> lltv 77%, oracle: RedStone weETH/ETH fundamental price, Chainlink ETH/USD and Chainlink USDC/USD.
     ],
+    Chain.POLYGON: [
+        "0xb8ae474af3b91c8143303723618b31683b52e9c86566aa54c06f0bc27906bcae",  # wstETH/WETH -> lltv 91.5%, oracle: Chainlink wstETH-stETH Exchange Rate
+        "0xa5b7ae7654d5041c28cb621ee93397394c7aee6c6e16c7e0fd030128d87ee1a3",  # WETH/USDC -> lltv 86%, oracle: Chainlink ETH/USD but there is no oracle for USDC/USD
+        "0x01550b8779f4ca978fc16591537f3852c02c3491f597db93d9bb299dcbf5ddbe",  # WETH/USDT -> lltv 86%, oracle: Chainlink ETH/USD but there is no oracle for USDT/USD
+        "0x1cfe584af3db05c7f39d60e458a87a8b2f6b5d8c6125631984ec489f1d13553b",  # WBTC/USDC -> lltv 86%, oracle: Chainlink WBTC/USD but there is no oracle for USDC/USD
+        "0x2476bb905e3d94acd7b402b3d70d411eeb6ace82afd3007da69a0d5904dfc998",  # WBTC/USDT -> lltv 86%, oracle: Chainlink WBTC/USD but there is no oracle for USDT/USD
+        "0x9eacb622c6ef9c2f0fa5f1fda58a8702eb8132d8f49783f6eea6acc3a398e741",  # WBTC/ETH-> lltv 86%, oracle: Chainlink BTC/USD and ETH/USD
+        "0x267f344f5af0d85e95f253a2f250985a9fb9fca34a3342299e20c83b6906fc80",  # WPOL/USDT -> lltv 77%, oracle: Chainlink WPOL/USD, but there is no oracle for USDT/USD
+        "0x7506b33817b57f686e37b87b5d4c5c93fdef4cffd21bbf9291f18b2f29ab0550",  # WPOL/USDC -> lltv 77%, oracle: Chainlink WPOL/USD, but there is no oracle for USDC/USD
+        "0xd1485762dd5256b99530b6b07ab9d20c8d31b605dd5f27ad0c6dec2a18179ac6",  # compWETH/USDC -> lltv 86%, oracle: Chainlink ETH/USD and vault conversion rate for compoundWETH metamorpho vault
+        "0xa8c2e5b31d1f3fb6c000bd49355d091f71e7c866fcb74a1cb2562ef67157bc2a",  # compWETH/USDT -> lltv 86%, oracle: Chainlink ETH/USD and vault conversion rate for compoundWETH metamorpho vault
+    ],
 }
 
 MARKETS_RISK_2 = {
@@ -244,6 +261,11 @@ MARKETS_RISK_2 = {
         "0x071ed2047610c7b33e1540e49fcc0a6852cb783cca0dd7dc428f32fd791a020f",  # wstETH/AUSD -> lltv 86%, oracle: RedStone Price Feed for wstETH. USD=AUSD.
         "0xa7cd449cc319d65be3d0926d6b6f599a8c3434bd95ba3e91bbf1ee5e80e72b56",  # LBTC/vbUSDC -> lltv 86%, oracle: RedStone Price Feed for LBTC_FUNDAMENTAL and RedStone BTC/USD. USD=vbUSDC.
     ],
+    Chain.POLYGON: [
+        "0x41e537c46cc0e2f82aa69107cd72573f585602d8c33c9b440e08eaba5e8fded1",  # MATICX/USDT -> lltv 77%, oracle: Chainlink Calculated MaticX / USD, but there is no oracle for USDT/USD. Maticx has liquidity around 7M without slippage, around 1.7M USD. Withdrawing Matic will take 90 checkpoints (2-3 days) as per Polygon's native unstaking
+        "0x1947267c49c3629c5ed59c88c411e8cf28c4d2afdb5da046dc8e3846a4761794",  # MATICX/USDC -> lltv 77%, oracle: Chainlink Calculated MaticX / USD, but there is no oracle for USDC/USD. Maticx has liquidity around 7M without slippage, around 1.7M USD. Withdrawing Matic will take 90 checkpoints (2-3 days) as per Polygon's native unstaking
+        "0x8513df298cab92cafba1bae394420b7150aa40a5fac649c7168404bd5174a54c",  # sACRED/USDC -> lltv 86%, oracle: Redstone ACRED/USD which is connect only to securitize-api. Using vault conversion rate for sACRED/ACRED
+    ],
 }
 
 MARKETS_RISK_3 = {
@@ -281,6 +303,7 @@ MARKETS_RISK_3 = {
         "0x0138c47c8f7e0a785ec20a46edc6dc7747c8cd6e318d02f6506a5b6a5f5be7b0",  # PT-LBTC-scaled18-25SEP2025/cbBTC -> lltv 91.5%, oracle: Pendle PT exchange ratePT with TWAP 900s
     ],
     Chain.KATANA: [],
+    Chain.POLYGON: [],
 }
 
 MARKETS_RISK_4 = {
@@ -310,6 +333,7 @@ MARKETS_RISK_4 = {
         "0xff0f2bd52ca786a4f8149f96622885e880222d8bed12bbbf5950296be8d03f89",  # USR/USDC -> lltv 91.5%, oracle: pyth USR/USD and qoute pyth USDC/USD
     ],
     Chain.KATANA: [],
+    Chain.POLYGON: [],
 }
 
 MARKETS_RISK_5 = {

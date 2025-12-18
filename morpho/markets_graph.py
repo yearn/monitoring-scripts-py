@@ -23,49 +23,22 @@ load_dotenv()
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
 LIQUIDITY_THRESHOLD = 0.01  # 1% of total assets
-COMPOUND_URL = "https://compound.blue"
+MARKET_URL = "https://compound.blue"
 
-GRAPH_BY_CHAIN = {
-    Chain.POLYGON: "https://gateway.thegraph.com/api/{api_key}/subgraphs/id/EhFokmwryNs7qbvostceRqVdjc3petuD13mmdUiMBw8Y",
-}
+GRAPH_BY_CHAIN = {}
 
 # Map vaults by chain
-VAULTS_BY_CHAIN = {
-    Chain.POLYGON: [
-        ["Compound WETH", "0xF5C81d25ee174d83f1FD202cA94AE6070d073cCF", 1],
-        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 2],
-        ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8", 1],
-    ]
-}
+VAULTS_BY_CHAIN = {}
 
-MARKETS_RISK_1 = {
-    Chain.POLYGON: [
-        "0xb8ae474af3b91c8143303723618b31683b52e9c86566aa54c06f0bc27906bcae",  # wstETH/WETH -> lltv 91.5%, oracle: Chainlink wstETH-stETH Exchange Rate
-        "0xa5b7ae7654d5041c28cb621ee93397394c7aee6c6e16c7e0fd030128d87ee1a3",  # WETH/USDC -> lltv 86%, oracle: Chainlink ETH/USD but there is no oracle for USDC/USD
-        "0x01550b8779f4ca978fc16591537f3852c02c3491f597db93d9bb299dcbf5ddbe",  # WETH/USDT -> lltv 86%, oracle: Chainlink ETH/USD but there is no oracle for USDT/USD
-        "0x1cfe584af3db05c7f39d60e458a87a8b2f6b5d8c6125631984ec489f1d13553b",  # WBTC/USDC -> lltv 86%, oracle: Chainlink WBTC/USD but there is no oracle for USDC/USD
-        "0x2476bb905e3d94acd7b402b3d70d411eeb6ace82afd3007da69a0d5904dfc998",  # WBTC/USDT -> lltv 86%, oracle: Chainlink WBTC/USD but there is no oracle for USDT/USD
-        "0x9eacb622c6ef9c2f0fa5f1fda58a8702eb8132d8f49783f6eea6acc3a398e741",  # WBTC/ETH-> lltv 86%, oracle: Chainlink BTC/USD and ETH/USD
-        "0x267f344f5af0d85e95f253a2f250985a9fb9fca34a3342299e20c83b6906fc80",  # WPOL/USDT -> lltv 77%, oracle: Chainlink WPOL/USD, but there is no oracle for USDT/USD
-        "0x7506b33817b57f686e37b87b5d4c5c93fdef4cffd21bbf9291f18b2f29ab0550",  # WPOL/USDC -> lltv 77%, oracle: Chainlink WPOL/USD, but there is no oracle for USDC/USD
-        "0xd1485762dd5256b99530b6b07ab9d20c8d31b605dd5f27ad0c6dec2a18179ac6",  # compWETH/USDC -> lltv 86%, oracle: Chainlink ETH/USD and vault conversion rate for compoundWETH metamorpho vault
-        "0xa8c2e5b31d1f3fb6c000bd49355d091f71e7c866fcb74a1cb2562ef67157bc2a",  # compWETH/USDT -> lltv 86%, oracle: Chainlink ETH/USD and vault conversion rate for compoundWETH metamorpho vault
-    ],
-}
+MARKETS_RISK_1 = {}
 
-MARKETS_RISK_2 = {
-    Chain.POLYGON: [
-        "0x41e537c46cc0e2f82aa69107cd72573f585602d8c33c9b440e08eaba5e8fded1",  # MATICX/USDT -> lltv 77%, oracle: Chainlink Calculated MaticX / USD, but there is no oracle for USDT/USD. Maticx has liquidity around 7M without slippage, around 1.7M USD. Withdrawing Matic will take 90 checkpoints (2-3 days) as per Polygon's native unstaking
-        "0x1947267c49c3629c5ed59c88c411e8cf28c4d2afdb5da046dc8e3846a4761794",  # MATICX/USDC -> lltv 77%, oracle: Chainlink Calculated MaticX / USD, but there is no oracle for USDC/USD. Maticx has liquidity around 7M without slippage, around 1.7M USD. Withdrawing Matic will take 90 checkpoints (2-3 days) as per Polygon's native unstaking
-        "0x8513df298cab92cafba1bae394420b7150aa40a5fac649c7168404bd5174a54c",  # sACRED/USDC -> lltv 86%, oracle: Redstone ACRED/USD which is connect only to securitize-api. Using vault conversion rate for sACRED/ACRED
-    ],
-}
+MARKETS_RISK_2 = {}
 
-MARKETS_RISK_3 = {Chain.POLYGON: []}
+MARKETS_RISK_3 = {}
 
-MARKETS_RISK_4 = {Chain.POLYGON: []}
+MARKETS_RISK_4 = {}
 
-MARKETS_RISK_5 = {Chain.POLYGON: []}
+MARKETS_RISK_5 = {}
 
 # Define base allocation tiers
 ALLOCATION_TIERS = {
@@ -78,10 +51,10 @@ ALLOCATION_TIERS = {
 
 # Define max risk thresholds by risk level
 MAX_RISK_THRESHOLDS = {
-    1: 1.30,  # Risk tier 1 max total risk
-    2: 2.30,  # Risk tier 2 max total risk
-    3: 3.40,  # Risk tier 3 max total risk
-    4: 4.50,  # Risk tier 4 max total risk
+    1: 1.10,  # Risk tier 1 max total risk
+    2: 2.20,  # Risk tier 2 max total risk
+    3: 3.30,  # Risk tier 3 max total risk
+    4: 4.40,  # Risk tier 4 max total risk
     5: 5.00,  # Risk tier 5 max total risk
 }
 
@@ -106,12 +79,12 @@ def get_market_allocation_threshold(market_risk_level: int, vault_risk_level: in
 
 def get_market_url(market_id: str) -> str:
     """Generate URL for a Morpho market."""
-    return f"{COMPOUND_URL}/borrow/{market_id}"
+    return f"{MARKET_URL}/borrow/{market_id}"
 
 
 def get_vault_url(vault_address: str) -> str:
     """Generate URL for a Morpho vault."""
-    return f"{COMPOUND_URL}/{vault_address}"
+    return f"{MARKET_URL}/{vault_address}"
 
 
 def check_high_allocation(vault_data, chain: Chain):
@@ -358,4 +331,6 @@ def check_graph_data_for_chain(chain: Chain):
 
 
 if __name__ == "__main__":
-    check_graph_data_for_chain(Chain.POLYGON)
+    # TODO: define chain to check and add ci trigger
+    # check_graph_data_for_chain(Chain.POLYGON)
+    print("No chain defined")
