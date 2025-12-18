@@ -5,7 +5,7 @@ from utils.web3_wrapper import ChainManager
 
 CUSD = "0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC"
 PROTOCOL = "cap"
-
+ALERT_THRESHOLD=100_000_000 # 100M
 
 def main():
     client = ChainManager.get_client(Chain.MAINNET)
@@ -33,6 +33,7 @@ def main():
 
     # Parse batched results (4 entries per asset)
     lines = []
+    total_normalized = 0
     for i in range(0, len(responses), 4):
         vault_withdrawable = responses[i] or 0
         direct_balance = responses[i + 1] or 0
@@ -40,15 +41,16 @@ def main():
         symbol = responses[i + 3] or "UNKNOWN"
 
         total_units = int(vault_withdrawable) + int(direct_balance)
+        
         divisor = 10 ** int(decimals)
         normalized = total_units / divisor if divisor else 0
         line = f"{symbol}: {normalized:,.6f}"
-        print(line)
+        total_normalized += normalized
         lines.append(line)
 
-    if len(lines) > 0:
+    if total_normalized < ALERT_THRESHOLD:
         message = "💧 CAP Withdrawable Liquidity (Mainnet)\n" + "\n".join(lines)
-        send_telegram_message(message, PROTOCOL, True)
+        send_telegram_message(message, PROTOCOL, False)
 
 
 if __name__ == "__main__":
