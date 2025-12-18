@@ -26,6 +26,7 @@ env:
   PROVIDER_URL_KATANA: ${{ secrets.PROVIDER_URL_KATANA }}
   PROVIDER_URL_KATANA_1: ${{ secrets.PROVIDER_URL_KATANA_1 }}
   TELEGRAM_CHAT_ID_MORPHO: ${{ secrets.TELEGRAM_CHAT_ID_MORPHO }}
+  TELEGRAM_CHAT_ID_CAP: ${{ secrets.TELEGRAM_CHAT_ID_CAP }}
   TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
   GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
   TALLY_API_KEY: ${{ secrets.TALLY_API_KEY }}
@@ -78,6 +79,9 @@ jobs:
 
       - name: Run Ethena Monitoring
         run: uv run ethena/ethena.py
+
+      - name: Run Cap Liquidity Monitoring
+        run: uv run cap/liquidity.py
 
       # Check final hash
       - name: Check final hash
