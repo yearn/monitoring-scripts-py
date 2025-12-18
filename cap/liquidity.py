@@ -5,7 +5,8 @@ from utils.web3_wrapper import ChainManager
 
 CUSD = "0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC"
 PROTOCOL = "cap"
-ALERT_THRESHOLD=100_000_000 # 100M
+ALERT_THRESHOLD = 100_000_000  # 100M
+
 
 def main():
     client = ChainManager.get_client(Chain.MAINNET)
@@ -41,7 +42,7 @@ def main():
         symbol = responses[i + 3] or "UNKNOWN"
 
         total_units = int(vault_withdrawable) + int(direct_balance)
-        
+
         divisor = 10 ** int(decimals)
         normalized = total_units / divisor if divisor else 0
         line = f"{symbol}: {normalized:,.6f}"
