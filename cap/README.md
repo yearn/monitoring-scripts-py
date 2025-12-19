@@ -1,0 +1,22 @@
+# CAP
+
+For more info about CAP protocol check [the docs](https://docs.cap.app/).
+
+## Governance
+
+[cUSD](https://etherscan.io/address/0x16d06500192c12a3306748346511c07c955f0f96#code) contract is upgradable proxy on Mainnet. The roles are set in `AccessStorageLocation` at `0xb413d65cb88f23816c329284a0d3eb15a99df7963ab7402ade4c5da22bff6b00` which points to [AccessControl](https://etherscan.io/address/0x7731129a10d51e18cde607c5c115f26503d2c683#code) proxy contract. Default admin role of the contract is set to [Timelock contact](https://etherscan.io/address/0xD8236031d8279d82E615aF2BFab5FC0127A329ab#readContract) with minimum [24h delay](https://etherscan.io/address/0xD8236031d8279d82E615aF2BFab5FC0127A329ab#readContract#F5).
+
+Tenderly alert for emitted event `CallScheduled` by [Timelock contract on Mainnet](https://dashboard.tenderly.co/yearn/sam/alerts/rules/a22678ba-dc69-4f22-86d9-18757a688d3d).
+
+## Data Monitoring
+
+The script [liquidity.py](./liquidity.py) is run [daily by Github actions](../.github/workflows/daily.yml#L84).
+
+It monitors withdrawable liquidity for the CAP protocol's cUSD contract [`0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC`](https://etherscan.io/address/0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC#code):
+
+1. **Fetches all assets** from the cUSD contract
+2. **For each asset**, calculates total withdrawable liquidity:
+   - Withdrawable amount from the fractional reserve vault (via `maxWithdraw` for the cUSD contract)
+   - Direct token balance held by the cUSD contract
+3. **Sums normalized values** across all assets
+4. **Sends Telegram alert** if total withdrawable liquidity falls below [defined threshold](./liquidity.py#L8) telegram alert is sent
