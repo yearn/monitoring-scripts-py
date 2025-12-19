@@ -10,7 +10,6 @@ ALERT_THRESHOLD = 100_000_000  # 100M
 
 def main():
     client = ChainManager.get_client(Chain.MAINNET)
-
     ctoken = client.eth.contract(address=CUSD, abi=load_abi("cap/abi/CToken.json"))  # aka cusd
 
     assets = ctoken.functions.assets().call()
@@ -46,6 +45,7 @@ def main():
         divisor = 10 ** int(decimals)
         normalized = total_units / divisor if divisor else 0
         line = f"{symbol}: {normalized:,.6f}"
+        print(line)
         total_normalized += normalized
         lines.append(line)
 
@@ -55,4 +55,5 @@ def main():
 
 
 if __name__ == "__main__":
+    print("Running liquidity checks for CAP protocol")
     main()
