@@ -127,7 +127,9 @@ def get_llamarisk_data() -> LlamaRiskData | None:
     hours_ago = 12
     if is_stale_timestamp(timestamp_collateral, hours_ago):
         send_telegram_message(
-            f"⚠️ Collateral data is older than {hours_ago} hours. Timestamp: {timestamp_collateral}", PROTOCOL, True
+            f"⚠️ Collateral data is older than {hours_ago} hours. Timestamp: {timestamp_collateral}",
+            PROTOCOL,
+            True,
         )
 
     if is_stale_timestamp(timestamp_chain, hours_ago):
@@ -136,7 +138,9 @@ def get_llamarisk_data() -> LlamaRiskData | None:
 
     if is_stale_timestamp(timestamp_reserve, hours_ago):
         send_telegram_message(
-            f"⚠️ Reserve data is older than {hours_ago} hours. Timestamp: {timestamp_reserve}", PROTOCOL, True
+            f"⚠️ Reserve data is older than {hours_ago} hours. Timestamp: {timestamp_reserve}",
+            PROTOCOL,
+            True,
         )
 
     # sum all collateral values

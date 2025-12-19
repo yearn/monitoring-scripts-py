@@ -16,7 +16,10 @@ class TelegramError(Exception):
 
 
 def send_telegram_message(
-    message: str, protocol: str, disable_notification: bool = False, plain_text: bool = False
+    message: str,
+    protocol: str,
+    disable_notification: bool = False,
+    plain_text: bool = False,
 ) -> None:
     """
     Send a message to a Telegram chat using a bot.
