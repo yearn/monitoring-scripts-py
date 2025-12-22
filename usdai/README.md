@@ -22,9 +22,6 @@ We track the following on-chain metrics to verify backing:
 ## Alerts
 
 - **Ratio Swing**: Triggers a Telegram alert if the Ratio drops by **0.05%** or more from the last cached value.
-- **Governance**: Monitors critical admin roles for changes:
-  - **Proxy Admin**: Checks for implementation upgrades.
-  - **Roles**: Tracks changes to `Owner`, `Pauser`, `Blacklister`, and `Rescuer` addresses on the Vault.
 
 ## Contracts (Arbitrum One)
 
