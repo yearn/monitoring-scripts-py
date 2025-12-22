@@ -58,17 +58,17 @@ def extract_summary_from_description(description):
 def get_proposals():
     """Fetch and process Fluid governance proposals"""
     try:
-        # Fetch executed proposals
+        # Fetch queued proposals
         response = requests.get(f"{FLUID_API_URL}?status=queued", timeout=30)
         response.raise_for_status()
         data = response.json()
 
         if "data" not in data or not data["data"]:
-            print("No executed proposals found")
+            print("No queued proposals found")
             return
 
         proposals = data["data"]
-        print(f"Found {len(proposals)} executed proposals")
+        print(f"Found {len(proposals)} queued proposals")
 
         # Sort proposals by id from lowest to highest
         proposals.sort(key=lambda x: int(x["id"]))
@@ -98,13 +98,13 @@ def get_proposals():
                 message += f"📝 Title: {title}\n"
 
             # Add execution info
-            executed_at = proposal.get("executed_at")
-            if executed_at:
+            queued_at = proposal.get("queued_at")
+            if queued_at:
                 try:
-                    exec_date = datetime.fromisoformat(executed_at.replace("Z", "+00:00"))
-                    message += f"✅ Executed: {exec_date.strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
+                    queued_date = datetime.fromisoformat(queued_at.replace("Z", "+00:00"))
+                    message += f"✅ Queued: {queued_date.strftime('%Y-%m-%d %H:%M:%S UTC')}\n"
                 except Exception:
-                    message += f"✅ Executed: {executed_at}\n"
+                    message += f"✅ Queued: {queued_at}\n"
 
             # Add summary if available
             description = proposal.get("description", "")
