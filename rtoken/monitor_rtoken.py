@@ -190,7 +190,7 @@ def main():
     Main function to monitor RToken on multiple chains.
     """
     # Define chains to monitor
-    chains_to_monitor = [Chain.MAINNET, Chain.BASE]
+    chains_to_monitor = [Chain.MAINNET]
 
     for chain in chains_to_monitor:
         try:
