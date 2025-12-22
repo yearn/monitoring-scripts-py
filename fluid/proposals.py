@@ -6,7 +6,7 @@ from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_fi
 from utils.telegram import send_telegram_message
 
 PROTOCOL = "fluid"
-FLUID_API_URL = "https://atlas.api.instadapp.io/proposals/"
+FLUID_API_URL = "https://atlas.api.instadapp.io/proposals"
 FLUID_PROPOSAL_URL = "https://fluid.io/gov/proposal/"
 
 max_length_summary = 450
@@ -59,7 +59,7 @@ def get_proposals():
     """Fetch and process Fluid governance proposals"""
     try:
         # Fetch executed proposals
-        response = requests.get(f"{FLUID_API_URL}?status=executed", timeout=30)
+        response = requests.get(f"{FLUID_API_URL}?status=queued", timeout=30)
         response.raise_for_status()
         data = response.json()
 
