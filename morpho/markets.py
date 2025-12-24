@@ -247,6 +247,9 @@ MARKETS_RISK_2 = {
         "0x550edc2e9fe71158ccfa7c478a31f4e60ef508d94ada3931dc2aee4f666f8f81",  # yvUSDC-1/USDC -> lltv 91.5%, oracle: yvUSDC-1 vault rate.
         "0x973e9dd45799efe8775417bcc420a3ab84a583587b2108985746e2fe201d0c83",  # YFI/USDC -> lltv 77%, oracle: Chainlink YFI/USD and Chainlink USDC/USD.
         "0xb8fef900b383db2dbbf4458c7f46acf5b140f26d603a6d1829963f241b82510e",  # OETH/USDC -> lltv 86%, oracle: Chainlink ETH/USD and Chainlink USDC/USD. OETH = ETH
+        "0xeb17955ea422baeddbfb0b8d8c9086c5be7a9cfdefb292119a102e981a30062e",  # stcUSD/USDC -> lltv 91.5%, oracle: Ojo Yield Risk Engine stcUSD/cUSD Exchange Rate, RedStone Price Feed for cUSD_FUNDAMENTAL and Chainlink USDC/USD.
+        "0x03f715ef1ae508ab3e1faf4dffdbf2a077d1f0ad10c5aad42cf4438d5e3328af",  # PT-stcUSD-29JAN2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to SY) stcUSD. RedStone Price Feed for cUSD_FUNDAMENTAL and Chainlink USDC/USD.
+        "0x802ec6e878dc9fe6905b8a0a18962dcca10440a87fa2242fbf4a0461c7b0c789",  # PT-cUSD-29JAN2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to SY) with quote oracle set to RedStone Price Feed for cUSD_FUNDAMENTAL. USDC = USD.
     ],
     Chain.BASE: [
         "0x6aa81f51dfc955df598e18006deae56ce907ac02b0b5358705f1a28fcea23cc0",  # wstETH/WETH -> lltv 96.5%, oracle: Chainlink wstETH-stETH Exchange Rate
