@@ -20,7 +20,7 @@ MORPHO_URL = "https://app.morpho.org"
 PROTOCOL = "MORPHO"
 BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
 LIQUIDITY_THRESHOLD = 0.01  # 1% of total assets
-LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.15  # 15% of total assets
+LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.095  # 9.5% of total assets
 
 # Map vaults by chain
 VAULTS_BY_CHAIN = {
