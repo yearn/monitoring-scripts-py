@@ -86,18 +86,19 @@ VAULTS_BY_CHAIN = {
 # Morpho Vaults that are used by Yearn Strategies which are used as YV collateral in Morpho Markets
 # Organized by asset address for easier grouping and management
 VAULTS_WITH_YV_COLLATERAL_BY_ASSET = {
-    Chain.MAINNET: {
-        # USDC vaults
-        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": [
-            ["OEV USDC", "0x68Aea7b82Df6CcdF76235D46445Ed83f85F845A3"],
-            ["SteakhousePrime USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"],
-            ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d"],
-        ],
-        # WETH vaults
-        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": [
-            ["Gauntlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618"],
-        ],
-    },
+    # NOTE: Mainnet is disabled because there is no borrowing demand for yvUSDC as collateral
+    # Chain.MAINNET: {
+    #     # USDC vaults
+    #     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": [
+    #         ["OEV USDC", "0x68Aea7b82Df6CcdF76235D46445Ed83f85F845A3"],
+    #         ["SteakhousePrime USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"],
+    #         ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d"],
+    #     ],
+    #     # WETH vaults
+    #     "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": [
+    #         ["Gauntlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618"],
+    #     ],
+    # },
     Chain.KATANA: {
         # USDC vaults - using addresses from VAULTS_BY_CHAIN as source of truth
         "0x203A662b0BD271A6ed5a60EdFbd04bFce608FD36": [  # USDC asset address on Katana
