@@ -85,6 +85,9 @@ uv run usdai/main.py
 
 Governance Monitoring:
 
+We monitor the USDai Admin Safe (`0xf223f...`) for queued transactions using the shared Safe monitoring script. This runs every 10 minutes via GitHub Actions.
+
 ```bash
-uv run usdai/governance.py
+# To run locally (checks all configured Safes)
+uv run safe/main.py
 ```

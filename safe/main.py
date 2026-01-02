@@ -130,6 +130,12 @@ ALL_SAFE_ADDRESSES = [
         "0x2536f2ef78b0df34299cad6e59300f8f83fe1ec4",
         "thBILL minter role. Markets used on Morpho Arbitrum",
     ],  # thBILL minter role
+    [
+        "USDAI",
+        "arbitrum-main",
+        "0xf223f8D92465Cfc303B3395FA3a25bFAe02aEd51",
+        "USDai Admin Safe",
+    ],
     # [
     #     "USD0",
     #     "mainnet",

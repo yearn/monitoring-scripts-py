@@ -80,8 +80,6 @@ jobs:
 
       - name: Run Safe script
         run: uv run safe/main.py
-      - name: Run USDai Governance script
-        run: uv run usdai/governance.py
 
       # Check final hash
       - name: Check final hash
