@@ -133,7 +133,7 @@ ALL_SAFE_ADDRESSES = [
     [
         "USDAI",
         "arbitrum-main",
-        "0xf223f8D92465Cfc303B3395FA3a25bFAe02aEd51",
+        "0xF223F8d92465CfC303B3395fA3A25bfaE02AED51",
         "USDai Admin Safe",
     ],
     # [
