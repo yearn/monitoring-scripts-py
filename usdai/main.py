@@ -27,12 +27,8 @@ def main():
     client = ChainManager.get_client(Chain.ARBITRUM)
     
     # Common ABI
-    erc20_abi = [
-        {"inputs": [], "name": "totalSupply", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
-        {"inputs": [], "name": "decimals", "outputs": [{"type": "uint8"}], "stateMutability": "view", "type": "function"},
-        {"inputs": [{"type": "address"}], "name": "balanceOf", "outputs": [{"type": "uint256"}], "stateMutability": "view", "type": "function"},
-        {"inputs": [], "name": "symbol", "outputs": [{"type": "string"}], "stateMutability": "view", "type": "function"}
-    ]
+    from utils.abi import load_abi
+    erc20_abi = load_abi("common-abi/ERC20.json")
     
     wm = client.get_contract(WM_TOKEN, erc20_abi)
     
@@ -113,18 +109,14 @@ def main():
             last_buffer_str = get_last_value_for_key_from_file(cache_filename, cache_key_buffer)
             last_buffer = float(last_buffer_str) if last_buffer_str != 0 else 0.0
 
-            if last_buffer == 0:
-                write_last_value_to_file(cache_filename, cache_key_buffer, buffer)
-            else:
+            if last_buffer != 0:
                 change = buffer - last_buffer
                 # Alert if buffer drops by more than $10,000 (approx $2M redemption)
                 if change < -10000: 
                     msg = f"📉 *USDai Buffer Drop Alert*\n\nBuffer dropped by ${abs(change):,.2f}!\nOld Buffer: ${last_buffer:,.2f}\nNew Buffer: ${buffer:,.2f}\n(Collateral: ${collateral_metric:,.2f})"
                     send_telegram_message(msg, PROTOCOL)
-                    write_last_value_to_file(cache_filename, cache_key_buffer, buffer)
-                elif change > 0:
-                     # Update baseline on rise
-                     write_last_value_to_file(cache_filename, cache_key_buffer, buffer)
+
+            write_last_value_to_file(cache_filename, cache_key_buffer, buffer)
 
         
     except Exception as e:
