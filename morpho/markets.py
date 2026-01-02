@@ -314,6 +314,11 @@ MARKETS_RISK_3 = {
     ],
     Chain.KATANA: [],
     Chain.POLYGON: [],
+    Chain.ARBITRUM: [
+        "0x71c2954e00c8f72864600c9d1d1cd70fa15202c4294cd938d80add3be2eced26",  # sUSDai/USDC -> lltv 91.5%, oracle: Chronicle sUSDai/USD and Chainlink USDC/USD.
+        "0x8147c63f3f6f5a0825c84bf2cb11443c72b609fa39cf9a362e3d4dc2c5ca76c4",  # PT-USDai-19FEB2026/USDC -> lltv 91.5% oracle: MetaOracleDeviationTimelock by Steakhouse with primary oracle set to Pendle PT where USDai=USDC and backup oracle set to
+        "0x7717f1e04510390518811b3133ea47c298094ddd1d806ed8f8867d88c727bad7",  # PT-sUSDai-19FEB2026/USDC -> lltv 86%, oracle: Pendle PT exchange rate(PT to asset) sUSDai with ERC4626 vault rate sUSDai to USDai. Chainlink oracle USDC/USD.
+    ],
 }
 
 MARKETS_RISK_4 = {
