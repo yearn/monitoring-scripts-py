@@ -34,7 +34,7 @@ We track the following key metrics to ensure solvency and stability:
 
 ## Contracts (Arbitrum One)
 
-- **USDai Vault**: `0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF`
+- **USDai Token (Vault)**: `0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF`
 - **wM Token**: `0x437cc33344a0b27a429f795ff6b469c72698b291`
 - **sUSDai**: `0x0B2b2B2076d95dda7817e785989fE353fe955ef9`
 
@@ -85,9 +85,13 @@ uv run usdai/main.py
 
 Governance Monitoring:
 
-We monitor the USDai Admin Safe (`0xf223f...`) for queued transactions using the shared Safe monitoring script. This runs every 10 minutes via GitHub Actions.
+We monitor the following Safes for queued transactions using the shared Safe monitoring script:
+
+- **USDai Admin Safe**: `0xF223F...` (2/4 multisig) - Admin of wM Token.
+- **sUSDai Admin Safe**: `0x783B...` (3/3 multisig) - Admin of USDai Token (Vault) and sUSDai.
+
+This runs every 10 minutes via GitHub Actions.
 
 ```bash
-# To run locally (checks all configured Safes)
 uv run safe/main.py
 ```
