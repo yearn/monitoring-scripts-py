@@ -104,7 +104,7 @@ def main():
 
             if last_buffer != 0:
                 change = buffer - last_buffer
-                # Alert if buffer drops by more than $10,000 (approx $2M redemption)
+                # Alert if buffer drops by more than $10,000
                 if change < -10000:
                     msg = f"📉 *USDai Buffer Drop Alert*\n\nBuffer dropped by ${abs(change):,.2f}!\nOld Buffer: ${last_buffer:,.2f}\nNew Buffer: ${buffer:,.2f}\n(Collateral: ${collateral_metric:,.2f})"
                     send_telegram_message(msg, PROTOCOL)

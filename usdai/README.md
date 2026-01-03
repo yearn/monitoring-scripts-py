@@ -26,7 +26,7 @@ We track the following key metrics to ensure solvency and stability:
   - An issue with the yield accrual mechanism.
   - An unexpected withdrawal or rebalancing event.
 - **Mint Ratio Change**: A Telegram alert is triggered if the protocol's Mint Ratio changes from its previous value. This is a critical parameter that determines backing requirements.
-- **Governance Events**: We monitor for critical governance actions on the USDai Vault, USDai Token, and wM Token contracts, including:
+- **Governance Events**: We monitor for critical governance actions on the USDai Token, and sUSDai Token contracts, including:
   - Role Grants/Revocations (Access Control)
   - Contract Upgrades
   - Admin/Ownership Changes
