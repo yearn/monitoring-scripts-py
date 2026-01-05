@@ -26,11 +26,7 @@ We track the following key metrics to ensure solvency and stability:
   - An issue with the yield accrual mechanism.
   - An unexpected withdrawal or rebalancing event.
 - **Mint Ratio Change**: A Telegram alert is triggered if the protocol's Mint Ratio changes from its previous value. This is a critical parameter that determines backing requirements.
-- **Governance Events**: We monitor for critical governance actions on the USDai Token, and sUSDai Token contracts, including:
-  - Role Grants/Revocations (Access Control)
-  - Contract Upgrades
-  - Admin/Ownership Changes
-  - Supply Cap Changes (`SupplyCapSet`)
+- **Governance Events**: We monitor for queued governance actions on the USDai Admin Safe and sUSDai Admin Safe contracts.
 
 ## Contracts (Arbitrum One)
 
@@ -87,8 +83,8 @@ Governance Monitoring:
 
 We monitor the following Safes for queued transactions using the shared Safe monitoring script:
 
-- **USDai Admin Safe**: `0xF223F...` (2/4 multisig) - Admin of wM Token.
-- **sUSDai Admin Safe**: `0x783B...` (3/3 multisig) - Admin of USDai Token (Vault) and sUSDai.
+- **USDai Admin Safe**: [`0xF223F...`](https://arbiscan.io/address/0xF223F8d92465CfC303B3395fA3A25bfaE02AED51) (2/4 multisig) - Admin of wM Token.
+- **sUSDai Admin Safe**: [`0x783B...`](https://arbiscan.io/address/0x783B08aA21DE056717173f72E04Be0E91328A07b) (3/3 multisig) - Admin of USDai Token (Vault) and sUSDai.
 
 This runs every 10 minutes via GitHub Actions.
 
