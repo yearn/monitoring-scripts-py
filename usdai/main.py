@@ -16,11 +16,13 @@ WM_TOKEN = Web3.to_checksum_address("0x437cc33344a0b27a429f795ff6b469c72698b291"
 SUSDAI_ADDR = Web3.to_checksum_address("0x0B2b2B2076d95dda7817e785989fE353fe955ef9")
 GRAPHQL_URL = "https://protocol-api.m0.org/graphql"
 
+
 def main():
     client = ChainManager.get_client(Chain.ARBITRUM)
 
     # Common ABI
     from utils.abi import load_abi
+
     erc20_abi = load_abi("common-abi/ERC20.json")
 
     wm = client.get_contract(WM_TOKEN, erc20_abi)
@@ -31,7 +33,7 @@ def main():
         vault_shares = wm.functions.balanceOf(VAULT_ADDR).call()
         # Decimals will always be the same = 6
         wm_decimals = 6
-        usdai_supply_fmt = vault_shares / (10 ** wm_decimals)
+        usdai_supply_fmt = vault_shares / (10**wm_decimals)
 
         # 2. Get Mint Ratio via API
         query = """
@@ -48,7 +50,7 @@ def main():
         }
         """
 
-        mint_ratio = 10000 # Default to 1:1 (scaled 1e4 for bps) if not found
+        mint_ratio = 10000  # Default to 1:1 (scaled 1e4 for bps) if not found
 
         try:
             res = requests.post(GRAPHQL_URL, json={"query": query}, timeout=10)
@@ -92,7 +94,7 @@ def main():
             last_ratio = int(get_last_value_for_key_from_file(cache_filename, cache_key_ratio))
 
             if last_ratio != 0 and last_ratio != mint_ratio:
-                msg = f"⚠️ *USDai Mint Ratio Changed*\n\nOld: {last_ratio/10000:.4f}\nNew: {mint_ratio/10000:.4f}"
+                msg = f"⚠️ *USDai Mint Ratio Changed*\n\nOld: {last_ratio / 10000:.4f}\nNew: {mint_ratio / 10000:.4f}"
                 send_telegram_message(msg, PROTOCOL)
 
             # Always update ratio cache
@@ -111,10 +113,10 @@ def main():
 
             write_last_value_to_file(cache_filename, cache_key_buffer, buffer)
 
-
     except Exception as e:
         print(f"Error: {e}")
         send_telegram_message(f"⚠️ USDai monitoring failed: {e}", PROTOCOL, False, True)
+
 
 if __name__ == "__main__":
     main()
