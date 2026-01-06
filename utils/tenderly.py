@@ -14,6 +14,7 @@ load_dotenv()
 TENDERLY_API_KEY = os.getenv("TENDERLY_API_KEY")
 TENDERLY_API_URL = "https://api.tenderly.co/api/v1/account/yearn/project/sam/alerts"
 EXPECTED_ALERT_HASH = "e7aaa5b96aaed6354011eb3f33a5c8c1e14cc13b0f1bae83dd231d64340d0e0c"
+NUMBER_OF_ALERTS = 29  # on 6th Jan 2026
 
 
 def get_response_hash(data: dict) -> str:
@@ -39,6 +40,8 @@ def main():
         raise Exception(
             f"❌ Check who has updated Tenderly alerts for SAM project, expected hash {EXPECTED_ALERT_HASH}, got {response_hash}"
         )
+    if alert_count != NUMBER_OF_ALERTS:
+        raise Exception(f"❌ Expected {NUMBER_OF_ALERTS} alerts, got {alert_count}")
     print(f"✓ Verified {alert_count} alerts match expected count and response hash")
 
 
