@@ -85,7 +85,7 @@ jobs:
         run: uv run cap/liquidity.py
 
       - name: Run Tenderly Monitoring
-        run: uv run utils/tenderly.py
+        run: uv run utils/tenderly/tenderly.py
 
       # Check final hash
       - name: Check final hash
