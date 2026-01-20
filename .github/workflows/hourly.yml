@@ -127,6 +127,8 @@ jobs:
         run: uv run silo/ur_sniff.py
       - name: Run USDai script
         run: uv run usdai/main.py
+      - name: Run Yearn Large Flows script
+        run: uv run yearn/alert_large_flows.py
 
       # Check final hash
       - name: Check final hash
