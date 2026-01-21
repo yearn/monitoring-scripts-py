@@ -9,6 +9,14 @@ import urllib.parse
 import urllib.request
 from decimal import Decimal, getcontext
 
+from dotenv import load_dotenv
+
+from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
+from utils.chains import Chain
+from utils.telegram import send_telegram_message
+
+load_dotenv()
+
 getcontext().prec = 40
 
 ENVIO_GRAPHQL_URL = os.getenv("ENVIO_GRAPHQL_URL")
@@ -18,6 +26,13 @@ COINGECKO_MAX_RETRIES = int(os.getenv("COINGECKO_MAX_RETRIES", "4"))
 COINGECKO_BACKOFF_BASE_SECONDS = float(os.getenv("COINGECKO_BACKOFF_BASE_SECONDS", "1.5"))
 DEFAULT_LOG_LEVEL = os.getenv("ALERT_LARGE_FLOWS_LOG_LEVEL", "WARNING")
 IGNORED_FROM_ADDRESS = "0x283132390ea87d6ecc20255b59ba94329ee17961"
+PROTOCOL = "YEARN"
+CACHE_KEY_LAST_ALERT_TX = f"{PROTOCOL}_LARGE_FLOW_LAST_TX"
+
+EXPLORER_BASE_URL = {
+    1: "https://etherscan.io",
+    8453: "https://basescan.org",
+}
 
 VAULTS = {
     "0xbe53a109b494e5c9f97b9cd39fe969be68bf6204": {
@@ -177,7 +192,7 @@ def get_token_price_usd(chain_id: int, token_address: str, symbol: str) -> Decim
         except urllib.error.HTTPError as exc:
             _logger.warning("coingecko HTTPError %s", exc.code)
             if exc.code == 429:
-                backoff = COINGECKO_BACKOFF_BASE_SECONDS * (2 ** attempt)
+                backoff = COINGECKO_BACKOFF_BASE_SECONDS * (2**attempt)
                 time.sleep(backoff)
                 continue
             raise
@@ -228,9 +243,60 @@ def load_events(limit: int, chain_ids: list[int], since_ts: int | None):
     return gql_request(query, variables)
 
 
-def alert_on_large_flows(events: list[dict], threshold_usd: Decimal):
+def filter_events_since_last_alert(events: list[dict], use_cache: bool) -> list[dict]:
+    if not use_cache:
+        return events
+    last_alerted_tx = str(get_last_value_for_key_from_file(cache_filename, CACHE_KEY_LAST_ALERT_TX))
+    if not last_alerted_tx or last_alerted_tx == "0":
+        return events
+
+    events_sorted = sorted(
+        events,
+        key=lambda e: int(e.get("blockNumber", 0)),
+        reverse=True,
+    )
+    for idx, event in enumerate(events_sorted):
+        if event.get("transactionHash") == last_alerted_tx:
+            return events_sorted[:idx]
+
+    return events_sorted
+
+
+def send_large_flow_alert(event: dict, vault: dict, amount: Decimal, value: Decimal) -> str:
+    chain = Chain.from_chain_id(vault["chain_id"])
+    explorer_base = EXPLORER_BASE_URL.get(vault["chain_id"])
+    tx_hash = event["transactionHash"]
+    tx_url = f"{explorer_base}/tx/{tx_hash}" if explorer_base else None
+    vault_address = event["vaultAddress"]
+    vault_url = f"{explorer_base}/address/{vault_address}" if explorer_base else None
+    from_address = event.get("transactionFrom")
+    from_url = f"{explorer_base}/address/{from_address}" if explorer_base and from_address else None
+
+    flow_type = event["type"].capitalize()
+    message_lines = [
+        f"🚨 Large {flow_type} detected",
+        f"🏦 Vault: [{vault_address}]({vault_url}) ({vault['symbol']}) on {chain.name}",
+        f"💰 Amount: {amount:,.6f} {vault['symbol']}",
+        f"💵 Value: ${value:,.2f}",
+        f"🔗 Tx: [{tx_hash}]({tx_url})" if tx_url else f"🔗 Tx: {tx_hash}",
+    ]
+    if from_address:
+        message_lines.append(f"👤 From: [{from_address}]({from_url})" if from_url else f"👤 From: {from_address}")
+
+    message = "\n".join(message_lines)
+    send_telegram_message(message, PROTOCOL)
+    return tx_hash
+
+
+def alert_on_large_flows(events: list[dict], threshold_usd: Decimal, use_cache: bool):
     _logger.info("evaluating %s events", len(events))
-    for event in events:
+    events_to_alert = filter_events_since_last_alert(events, use_cache)
+    events_sorted = sorted(
+        events_to_alert,
+        key=lambda e: int(e.get("blockNumber", 0)),
+    )
+    cached_tx_to_write = None
+    for event in events_sorted:
         tx_from = event.get("transactionFrom") or ""
         tx_from = tx_from.lower()
         if tx_from == IGNORED_FROM_ADDRESS:
@@ -244,31 +310,18 @@ def alert_on_large_flows(events: list[dict], threshold_usd: Decimal):
         price = get_token_price_usd(vault["chain_id"], vault["token_address"], vault["symbol"])
         value = amount * price
         if value >= threshold_usd:
-            ts = int(event["blockTimestamp"])
-            print(
-                json.dumps(
-                    {
-                        "alert": True,
-                        "type": event["type"],
-                        "value_usd": f"{value:.2f}",
-                        "amount": f"{amount}",
-                        "symbol": vault["symbol"],
-                        "chain_id": vault["chain_id"],
-                        "vault_address": event["vaultAddress"],
-                        "from_address": event.get("transactionFrom"),
-                        "transaction_hash": event["transactionHash"],
-                        "block_timestamp": ts,
-                    }
-                )
-            )
+            cached_tx_to_write = send_large_flow_alert(event, vault, amount, value)
+    if use_cache and cached_tx_to_write:
+        write_last_value_to_file(cache_filename, CACHE_KEY_LAST_ALERT_TX, cached_tx_to_write)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Alert on large deposit/withdraw events.")
     parser.add_argument("--limit", type=int, default=100)
-    parser.add_argument("--threshold-usd", type=Decimal, default=Decimal("5000000"))
-    parser.add_argument("--since-seconds", type=int, default=7200) # 2 hours is default
+    parser.add_argument("--threshold-usd", type=Decimal, default=Decimal("5000000"))  # 5M USD
+    parser.add_argument("--since-seconds", type=int, default=7200)  # 2 hours is default
     parser.add_argument("--chain-ids", type=str, default="1")
+    parser.add_argument("--no-cache", action="store_true", help="Disable caching of last alerted tx")
     parser.add_argument(
         "--log-level",
         type=str,
@@ -315,7 +368,7 @@ def main():
     for event in withdrawals:
         event["type"] = "withdraw"
 
-    alert_on_large_flows(deposits + withdrawals, args.threshold_usd)
+    alert_on_large_flows(deposits + withdrawals, args.threshold_usd, not args.no_cache)
 
 
 if __name__ == "__main__":
