@@ -21,10 +21,9 @@ We track the following key metrics to ensure solvency and stability:
 
 ## Alerts
 
-- **Buffer Drop**: A Telegram alert is triggered if the **Buffer** value decreases by more than **$10,000** from the last cached value. Since the buffer represents accumulated yield, it is expected to grow or remain stable. A significant drop could indicate:
-  - A loss of backing value (depegging of underlying asset).
-  - An issue with the yield accrual mechanism.
-  - An unexpected withdrawal or rebalancing event.
+- **Buffer Drop**: A Telegram alert is triggered if the **Buffer** value drops below $1M.
+A significant drop could indicate loss of backing value.
+
 - **Mint Ratio Change**: A Telegram alert is triggered if the protocol's Mint Ratio changes from its previous value. This is a critical parameter that determines backing requirements.
 - **Governance Events**: We monitor for queued governance actions on the USDai Admin Safe and sUSDai Admin Safe contracts.
 
