@@ -100,15 +100,22 @@ def main():
             # Always update ratio cache
             write_last_value_to_file(cache_filename, cache_key_ratio, mint_ratio)
 
-            # 2. Check for Buffer Drop (Activity)
+            # 2. Check for Low Buffer (ignore withdrawals)
             cache_key_buffer = f"{PROTOCOL}_buffer"
             last_buffer = float(get_last_value_for_key_from_file(cache_filename, cache_key_buffer))
 
+            # Only alert when buffer drops below $1,000,000
+            buffer_alert_threshold = 1_000_000
             if last_buffer != 0:
-                change = buffer - last_buffer
-                # Alert if buffer drops by more than $10,000
-                if change < -10000:
-                    msg = f"📉 *USDai Buffer Drop Alert*\n\nBuffer dropped by ${abs(change):,.2f}!\nOld Buffer: ${last_buffer:,.2f}\nNew Buffer: ${buffer:,.2f}\n(Collateral: ${collateral_metric:,.2f})"
+                crossed_below = last_buffer >= buffer_alert_threshold and buffer < buffer_alert_threshold
+                if crossed_below:
+                    msg = (
+                        "📉 *USDai Low Buffer Alert*\n\n"
+                        f"Buffer dropped below ${buffer_alert_threshold:,.0f}.\n"
+                        f"Old Buffer: ${last_buffer:,.2f}\n"
+                        f"New Buffer: ${buffer:,.2f}\n"
+                        f"(Collateral: ${collateral_metric:,.2f})"
+                    )
                     send_telegram_message(msg, PROTOCOL)
 
             write_last_value_to_file(cache_filename, cache_key_buffer, buffer)
