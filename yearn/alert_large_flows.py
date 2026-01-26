@@ -11,9 +11,11 @@ from decimal import Decimal, getcontext
 
 from dotenv import load_dotenv
 
+from utils.abi import load_abi
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.telegram import send_telegram_message
+from utils.web3_wrapper import ChainManager
 
 load_dotenv()
 
@@ -33,6 +35,11 @@ EXPLORER_BASE_URL = {
     1: "https://etherscan.io",
     8453: "https://basescan.org",
 }
+
+FALLBACK_LARGE_FLOW_RATIO = Decimal("0.1")
+
+ERC20_ABI = load_abi("common-abi/ERC20.json")
+_total_supply_cache: dict[tuple[int, str], Decimal] = {}
 
 VAULTS = {
     "0xbe53a109b494e5c9f97b9cd39fe969be68bf6204": {
@@ -262,7 +269,32 @@ def filter_events_since_last_alert(events: list[dict], use_cache: bool) -> list[
     return events_sorted
 
 
-def send_large_flow_alert(event: dict, vault: dict, amount: Decimal, value: Decimal) -> str:
+def get_vault_total_supply(chain_id: int, vault_address: str, decimals: int) -> Decimal | None:
+    cache_key = (chain_id, vault_address.lower())
+    cached = _total_supply_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    try:
+        chain = Chain.from_chain_id(chain_id)
+        client = ChainManager.get_client(chain)
+        contract = client.get_contract(vault_address, ERC20_ABI)
+        total_supply_raw = client.execute(contract.functions.totalSupply().call)
+    except Exception as exc:
+        _logger.warning("failed to fetch totalSupply for %s: %s", vault_address, exc)
+        return None
+
+    total_supply = format_units(str(total_supply_raw), decimals)
+    _total_supply_cache[cache_key] = total_supply
+    return total_supply
+
+
+def send_large_flow_alert(
+    event: dict,
+    vault: dict,
+    amount: Decimal,
+    value: Decimal | None,
+) -> str:
     chain = Chain.from_chain_id(vault["chain_id"])
     explorer_base = EXPLORER_BASE_URL.get(vault["chain_id"])
     tx_hash = event["transactionHash"]
@@ -277,9 +309,10 @@ def send_large_flow_alert(event: dict, vault: dict, amount: Decimal, value: Deci
         f"🚨 Large {flow_type} detected",
         f"🏦 Vault: [{vault_address}]({vault_url}) ({vault['symbol']}) on {chain.name}",
         f"💰 Amount: {amount:,.6f} {vault['symbol']}",
-        f"💵 Value: ${value:,.2f}",
+        f"💵 Value: ${value:,.2f}" if value is not None else None,
         f"🔗 Tx: [{tx_hash}]({tx_url})" if tx_url else f"🔗 Tx: {tx_hash}",
     ]
+    message_lines = [line for line in message_lines if line]
     if from_address:
         message_lines.append(f"👤 From: [{from_address}]({from_url})" if from_url else f"👤 From: {from_address}")
 
@@ -307,10 +340,36 @@ def alert_on_large_flows(events: list[dict], threshold_usd: Decimal, use_cache: 
             _logger.warning("skip unknown vault %s", event["vaultAddress"])
             continue
         amount = format_units(event["assets"], vault["decimals"])
-        price = get_token_price_usd(vault["chain_id"], vault["token_address"], vault["symbol"])
-        value = amount * price
-        if value >= threshold_usd:
-            cached_tx_to_write = send_large_flow_alert(event, vault, amount, value)
+        if vault["symbol"] in STABLES:
+            value = amount
+            if value >= threshold_usd:
+                cached_tx_to_write = send_large_flow_alert(event, vault, amount, value)
+            continue
+
+        price = None
+        try:
+            price = get_token_price_usd(vault["chain_id"], vault["token_address"], vault["symbol"])
+        except Exception as exc:
+            _logger.warning("price unavailable for %s on %s: %s", vault["symbol"], vault["chain_id"], exc)
+
+        if price is not None:
+            value = amount * price
+            if value >= threshold_usd:
+                cached_tx_to_write = send_large_flow_alert(event, vault, amount, value)
+            continue
+
+        total_supply = get_vault_total_supply(vault["chain_id"], event["vaultAddress"], vault["decimals"])
+        if total_supply is None or total_supply == 0:
+            continue
+        ratio = amount / total_supply
+        ratio_threshold = FALLBACK_LARGE_FLOW_RATIO
+        if ratio >= ratio_threshold:
+            cached_tx_to_write = send_large_flow_alert(
+                event,
+                vault,
+                amount,
+                None,
+            )
     if use_cache and cached_tx_to_write:
         write_last_value_to_file(cache_filename, CACHE_KEY_LAST_ALERT_TX, cached_tx_to_write)
 
