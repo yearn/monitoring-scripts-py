@@ -12,7 +12,7 @@ FLUID_DEX_RESOLVER = "0x05Bd8269A20C472b148246De20E6852091BF16Ff"
 ABI_FLUID_POOL = load_abi("lrt-pegs/abi/Fluid_DexResolver.json")
 # Collateral Reserves Index
 COLLATERAL_RESERVES_INDEX = 5
-MIN_ASSET_BALANCE = 100e18
+MIN_ASSET_BALANCE = 1e18
 
 
 # Pool configurations
