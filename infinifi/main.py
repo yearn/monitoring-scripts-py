@@ -111,8 +111,8 @@ def main():
         if total_backing == 0:
             strategy_assets = get_strategy_assets_onchain(client, erc20_abi)
             if strategy_assets > 0:
-                 total_backing = liquid_reserves + strategy_assets
-                 print("Calculated Total Backing from On-Chain (Fallback).")
+                total_backing = liquid_reserves + strategy_assets
+                print("Calculated Total Backing from On-Chain (Fallback).")
 
         print("\n--- Infinifi Stats ---")
         print(f"iUSD Supply:     ${iusd_supply:,.2f}")
