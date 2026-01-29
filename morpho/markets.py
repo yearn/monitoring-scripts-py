@@ -78,8 +78,8 @@ VAULTS_BY_CHAIN = {
     ],
     Chain.POLYGON: [
         ["Compound WETH", "0xF5C81d25ee174d83f1FD202cA94AE6070d073cCF", 1],
-        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 2],
-        ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8", 1],
+        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 1],
+        # ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8", 1],  # NOTE: disable because we don't have funds there currently
     ],
 }
 
@@ -302,6 +302,7 @@ MARKETS_RISK_3 = {
         "0xce68c7aa336675e42bbc8eaa8b5ecc7ebd816bf8625b5316330c6ac2dabc4cf2",  # SolvBTC/BTC -> lltv 94.5%, oracle: upgradeable MetaOracleDeviationTimelock with prime oracle morpho oracle with 1:1 hardcoded rate
         "0x7a7018e22a8bb2d08112eae9391e09f065a8ae7ae502c1c23dc96c21411a6efd",  # EIGEN/USDC -> lltv 77%, oracle: Redstone EIGEN/USD. USD = USDC.
         "0xb8afc953c3cc8077b4a4bf459bede8d3f80be45ca1f244e4bca13b7b1030eed5",  # PT-syrupUSDC-30OCT2025/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) syrupUSDC. syrupUSDC = USDC.
+        "0xbbf7ce1b40d32d3e3048f5cf27eeaa6de8cb27b80194690aab191a63381d8c99",  # siUSD/USDC -> lltv 91.5%, oracle: infinity accouting contract provides the price iUSD, vault rate siUSD to iUSD. usdc = 1 using dummy oracle.
     ],
     Chain.BASE: [
         "0x9a697eb760dd12aaea23699c96ea2ebbfe48b7af64138d92c4d232b9ed380024",  # PT-LBTC-29MAY2025/cbBTC -> lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle. Higher lltv than PT-LBTC-27MAR2025 / WBTC.
@@ -858,7 +859,7 @@ def main() -> None:
         vault_markets = []
         for allocation in vault_data["state"]["allocation"]:
             market_supply_usd = allocation.get("market", {}).get("state", {}).get("supplyAssetsUsd")
-            if allocation["enabled"] and (market_supply_usd or 0) > 0:
+            if allocation["enabled"] and (market_supply_usd or 0) > 1e4:  # skip low value markets
                 market = allocation["market"]
                 if market["collateralAsset"] is not None:
                     # market without collateral asset is idle asset
