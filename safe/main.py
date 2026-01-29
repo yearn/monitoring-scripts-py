@@ -142,6 +142,18 @@ ALL_SAFE_ADDRESSES = [
         "0x783B08aA21DE056717173f72E04Be0E91328A07b",
         "sUSDai Admin Safe",
     ],
+    [
+        "INFINIFI",
+        "mainnet",
+        "0x80608f852D152024c0a2087b16939235fEc2400c",
+        "Infinifi Team Multisig",
+    ],
+    [
+        "CAP MONEY",
+        "mainnet",
+        "0xb8FC49402dF3ee4f8587268FB89fda4d621a8793",
+        "Cap Money Multisig",
+    ],
     # [
     #     "USD0",
     #     "mainnet",
