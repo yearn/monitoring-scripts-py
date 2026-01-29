@@ -1,7 +1,6 @@
-import os
 import requests
-from web3 import Web3
 from dotenv import load_dotenv
+from web3 import Web3
 
 from utils.abi import load_abi
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
@@ -90,7 +89,7 @@ def main():
         if api_data:
             if api_data.get("code") == "OK" and "data" in api_data:
                 stats = api_data["data"]["stats"]
-                
+
                 # Extract Liquid Reserves (using 'asset' key for USDC)
                 if "asset" in stats and "totalLiquidAssetNormalized" in stats["asset"]:
                     liquid_reserves = float(stats["asset"]["totalLiquidAssetNormalized"])
@@ -117,7 +116,7 @@ def main():
 
         print("\n--- Infinifi Stats ---")
         print(f"iUSD Supply:     ${iusd_supply:,.2f}")
-        
+
         if liquid_reserves > 0:
             print(f"Liquid Reserves: ${liquid_reserves:,.2f}")
         else:
