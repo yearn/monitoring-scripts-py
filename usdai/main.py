@@ -1,4 +1,5 @@
 import datetime
+
 import requests
 from web3 import Web3
 
@@ -8,7 +9,6 @@ from utils.chains import Chain
 from utils.config import Config
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
-
 
 # Constants
 PROTOCOL = "usdai"
@@ -20,6 +20,7 @@ GRAPHQL_URL = "https://protocol-api.m0.org/graphql"
 
 LOAN_ROUTER_ADDR = Web3.to_checksum_address("0x0C2ED170F2bB1DF1a44292Ad621B577b3C9597D1")
 
+
 def get_loan_details(client, owner_addr):
     """
     Reads active loan NFTs held by the owner.
@@ -29,43 +30,55 @@ def get_loan_details(client, owner_addr):
     try:
         # Minimal ABI for ERC721 Enumerable + raw call for loanState
         abi = [
-            {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-            {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"uint256","name":"index","type":"uint256"}],"name":"tokenOfOwnerByIndex","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+            {
+                "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function",
+            },
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "owner", "type": "address"},
+                    {"internalType": "uint256", "name": "index", "type": "uint256"},
+                ],
+                "name": "tokenOfOwnerByIndex",
+                "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function",
+            },
         ]
         router = client.get_contract(LOAN_ROUTER_ADDR, abi)
         count = router.functions.balanceOf(owner_addr).call()
-        
+
         for i in range(count):
             token_id = router.functions.tokenOfOwnerByIndex(owner_addr, i).call()
-            
+
             # Raw call to loanState(uint256) -> signature 0x0d92c757
             selector = Web3.keccak(text="loanState(uint256)")[:4].hex()
-            data = selector + int(token_id).to_bytes(32, 'big').hex()
-            
+            data = selector + int(token_id).to_bytes(32, "big").hex()
+
             raw_res = client.eth.call({"to": LOAN_ROUTER_ADDR, "data": data})
-            
+
             # Decode: we found the structure is likely:
             # 0: State (uint256)
             # 1: Maturity Timestamp (uint256)
             # 2: Start Timestamp (uint256)
             # 3: Principal (uint256)
-            
-            if len(raw_res) >= 128: # At least 4 words
+
+            if len(raw_res) >= 128:  # At least 4 words
                 # skip 0-32 (state), read 32-64 (maturity)
-                maturity = int.from_bytes(raw_res[32:64], 'big')
+                maturity = int.from_bytes(raw_res[32:64], "big")
                 # skip 64-96 (start), read 96-128 (principal)
-                principal = int.from_bytes(raw_res[96:128], 'big')
-                
-                loans.append({
-                    "id": token_id,
-                    "principal": principal / 1e18,
-                    "maturity": maturity
-                })
-                
+                principal = int.from_bytes(raw_res[96:128], "big")
+
+                loans.append({"id": token_id, "principal": principal / 1e18, "maturity": maturity})
+
     except Exception as e:
         print(f"Loan scan error: {e}")
-        
+
     return loans
+
 
 def main():
     client = ChainManager.get_client(Chain.ARBITRUM)
@@ -137,33 +150,33 @@ def main():
         print(f"Buffer:          ${buffer:,.2f}")
 
         # --- sUSDai Monitoring (GPU Loans) ---
-        
+
         try:
             # 4. Scan Individual Loan NFTs
             # Scan sUSDai Vault
             all_loans = get_loan_details(client, SUSDAI_ADDR)
-            
+
             # --- Manual Adjustment for Legacy Loan ---
             # There is one active loan (NVIDIA H200s) originated before the Loan Router deployment.
             # Principal: ~$560k (Remaining Principal from UI: $559,542)
             # We hardcode this to ensure accurate Total Principal tracking.
             legacy_loan_principal = 559_542.00
-            
+
             if all_loans or legacy_loan_principal > 0:
                 print("\n--- Active Loan NFTs (Direct Read) ---")
                 total_verified_principal = 0
-                
+
                 # Add Legacy Loan
                 print(f"Legacy Loan (H200s): ${legacy_loan_principal:,.2f} (Hardcoded)")
                 total_verified_principal += legacy_loan_principal
-                
-                for l in all_loans:
-                    mat_date = datetime.datetime.fromtimestamp(l['maturity']).strftime('%Y-%m-%d')
-                    print(f"Loan #{l['id'] % 10000:04d}...: ${l['principal']:,.2f} (Mat: {mat_date})")
-                    total_verified_principal += l['principal']
-                
+
+                for loan in all_loans:
+                    mat_date = datetime.datetime.fromtimestamp(loan["maturity"]).strftime("%Y-%m-%d")
+                    print(f"Loan #{loan['id'] % 10000:04d}...: ${loan['principal']:,.2f} (Mat: {mat_date})")
+                    total_verified_principal += loan["principal"]
+
                 print(f"Total Verified Principal: ${total_verified_principal:,.2f}")
-                
+
                 # Calculate Ratio to Total Supply
                 verified_ratio = (total_verified_principal / usdai_supply_fmt * 100) if usdai_supply_fmt > 0 else 0
                 print(f"Verified Loan Ratio: {verified_ratio:.2f}% of Total Supply")
@@ -171,12 +184,14 @@ def main():
                 # --- Alerting on Principal Change ---
                 cache_key_principal = f"{PROTOCOL}_verified_principal"
                 last_principal = float(get_last_value_for_key_from_file(cache_filename, cache_key_principal))
-                
+
                 # Check for change (allow small dust difference < $1.00)
                 if last_principal != 0 and abs(total_verified_principal - last_principal) > 1.0:
-                    change_type = "increased (New Loan)" if total_verified_principal > last_principal else "reduced (Repayment)"
+                    change_type = (
+                        "increased (New Loan)" if total_verified_principal > last_principal else "reduced (Repayment)"
+                    )
                     diff = abs(total_verified_principal - last_principal)
-                    
+
                     msg = (
                         f"📢 *sUSDai Loan Activity*\n\n"
                         f"Total Verified Principal has {change_type}.\n"
@@ -186,7 +201,7 @@ def main():
                         f"Current Ratio: {verified_ratio:.2f}% of Supply"
                     )
                     send_telegram_message(msg, PROTOCOL)
-                
+
                 # Update cache
                 write_last_value_to_file(cache_filename, cache_key_principal, total_verified_principal)
 
