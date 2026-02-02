@@ -137,38 +137,8 @@ def main():
         print(f"Buffer:          ${buffer:,.2f}")
 
         # --- sUSDai Monitoring (GPU Loans) ---
-        print("\n--- sUSDai Stats ---")
-        
-        # 1. Get sUSDai Total Assets
-        erc4626_abi = [
-             {"inputs":[],"name":"totalAssets","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
-        ]
-        susdai_contract = client.get_contract(SUSDAI_ADDR, erc4626_abi)
-        
-        usdai_decimals = 18 
         
         try:
-            total_assets_raw = susdai_contract.functions.totalAssets().call()
-            total_assets_fmt = total_assets_raw / (10**usdai_decimals)
-            
-            # 2. Get Liquid Holdings (USDai + wM) in sUSDai
-            # USDai Token is VAULT_ADDR
-            usdai_token = client.get_contract(VAULT_ADDR, erc20_abi)
-            
-            usdai_bal_raw = usdai_token.functions.balanceOf(SUSDAI_ADDR).call()
-            usdai_bal_fmt = usdai_bal_raw / (10**usdai_decimals)
-            
-            wm_bal_raw = wm.functions.balanceOf(SUSDAI_ADDR).call()
-            wm_bal_fmt = wm_bal_raw / (10**wm_decimals)
-            
-            liquid_assets_fmt = usdai_bal_fmt + wm_bal_fmt
-            liquid_share = (liquid_assets_fmt / total_assets_fmt * 100) if total_assets_fmt > 0 else 0
-            
-            print(f"Total Assets:    ${total_assets_fmt:,.2f}")
-            print(f"Liquid (Cash):   ${liquid_assets_fmt:,.2f} ({liquid_share:.2f}%)")
-            print(f"  - USDai:       ${usdai_bal_fmt:,.2f}")
-            print(f"  - wM:          ${wm_bal_fmt:,.2f}")
-
             # 4. Scan Individual Loan NFTs
             # Scan sUSDai Vault
             all_loans = get_loan_details(client, SUSDAI_ADDR)
