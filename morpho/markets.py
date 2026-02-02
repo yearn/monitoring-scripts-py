@@ -78,26 +78,27 @@ VAULTS_BY_CHAIN = {
     ],
     Chain.POLYGON: [
         ["Compound WETH", "0xF5C81d25ee174d83f1FD202cA94AE6070d073cCF", 1],
-        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 2],
-        ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8", 1],
+        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 1],
+        # ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8", 1],  # NOTE: disable because we don't have funds there currently
     ],
 }
 
 # Morpho Vaults that are used by Yearn Strategies which are used as YV collateral in Morpho Markets
 # Organized by asset address for easier grouping and management
 VAULTS_WITH_YV_COLLATERAL_BY_ASSET = {
-    Chain.MAINNET: {
-        # USDC vaults
-        "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": [
-            ["OEV USDC", "0x68Aea7b82Df6CcdF76235D46445Ed83f85F845A3"],
-            ["SteakhousePrime USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"],
-            ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d"],
-        ],
-        # WETH vaults
-        "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": [
-            ["Gauntlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618"],
-        ],
-    },
+    # NOTE: Mainnet is disabled because there is no borrowing demand for yvUSDC as collateral
+    # Chain.MAINNET: {
+    #     # USDC vaults
+    #     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": [
+    #         ["OEV USDC", "0x68Aea7b82Df6CcdF76235D46445Ed83f85F845A3"],
+    #         ["SteakhousePrime USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB"],
+    #         ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d"],
+    #     ],
+    #     # WETH vaults
+    #     "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": [
+    #         ["Gauntlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618"],
+    #     ],
+    # },
     Chain.KATANA: {
         # USDC vaults - using addresses from VAULTS_BY_CHAIN as source of truth
         "0x203A662b0BD271A6ed5a60EdFbd04bFce608FD36": [  # USDC asset address on Katana
@@ -301,6 +302,7 @@ MARKETS_RISK_3 = {
         "0xce68c7aa336675e42bbc8eaa8b5ecc7ebd816bf8625b5316330c6ac2dabc4cf2",  # SolvBTC/BTC -> lltv 94.5%, oracle: upgradeable MetaOracleDeviationTimelock with prime oracle morpho oracle with 1:1 hardcoded rate
         "0x7a7018e22a8bb2d08112eae9391e09f065a8ae7ae502c1c23dc96c21411a6efd",  # EIGEN/USDC -> lltv 77%, oracle: Redstone EIGEN/USD. USD = USDC.
         "0xb8afc953c3cc8077b4a4bf459bede8d3f80be45ca1f244e4bca13b7b1030eed5",  # PT-syrupUSDC-30OCT2025/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) syrupUSDC. syrupUSDC = USDC.
+        "0xbbf7ce1b40d32d3e3048f5cf27eeaa6de8cb27b80194690aab191a63381d8c99",  # siUSD/USDC -> lltv 91.5%, oracle: infinity accouting contract provides the price iUSD, vault rate siUSD to iUSD. usdc = 1 using dummy oracle.
     ],
     Chain.BASE: [
         "0x9a697eb760dd12aaea23699c96ea2ebbfe48b7af64138d92c4d232b9ed380024",  # PT-LBTC-29MAY2025/cbBTC -> lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle. Higher lltv than PT-LBTC-27MAR2025 / WBTC.
@@ -313,6 +315,11 @@ MARKETS_RISK_3 = {
     ],
     Chain.KATANA: [],
     Chain.POLYGON: [],
+    Chain.ARBITRUM: [
+        "0x71c2954e00c8f72864600c9d1d1cd70fa15202c4294cd938d80add3be2eced26",  # sUSDai/USDC -> lltv 91.5%, oracle: Chronicle sUSDai/USD and Chainlink USDC/USD.
+        "0x8147c63f3f6f5a0825c84bf2cb11443c72b609fa39cf9a362e3d4dc2c5ca76c4",  # PT-USDai-19FEB2026/USDC -> lltv 91.5% oracle: MetaOracleDeviationTimelock by Steakhouse with primary oracle set to Pendle PT where USDai=USDC and backup oracle set to
+        "0x7717f1e04510390518811b3133ea47c298094ddd1d806ed8f8867d88c727bad7",  # PT-sUSDai-19FEB2026/USDC -> lltv 86%, oracle: Pendle PT exchange rate(PT to asset) sUSDai with ERC4626 vault rate sUSDai to USDai. Chainlink oracle USDC/USD.
+    ],
 }
 
 MARKETS_RISK_4 = {
@@ -852,7 +859,7 @@ def main() -> None:
         vault_markets = []
         for allocation in vault_data["state"]["allocation"]:
             market_supply_usd = allocation.get("market", {}).get("state", {}).get("supplyAssetsUsd")
-            if allocation["enabled"] and (market_supply_usd or 0) > 0:
+            if allocation["enabled"] and (market_supply_usd or 0) > 1e4:  # skip low value markets
                 market = allocation["market"]
                 if market["collateralAsset"] is not None:
                     # market without collateral asset is idle asset

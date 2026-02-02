@@ -34,6 +34,7 @@ env:
   POLYGONSCAN_TOKEN: ${{ secrets.POLYGONSCAN_TOKEN }}
   OPTIMISMSCAN_TOKEN: ${{ secrets.OPTIMISMSCAN_TOKEN }}
   ARBISCAN_TOKEN: ${{ secrets.ARBISCAN_TOKEN }}
+  TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
 
 jobs:
   daily_monitoring:
@@ -82,6 +83,9 @@ jobs:
 
       - name: Run Cap Liquidity Monitoring
         run: uv run cap/liquidity.py
+
+      - name: Run Tenderly Monitoring
+        run: uv run utils/tenderly/tenderly.py
 
       # Check final hash
       - name: Check final hash

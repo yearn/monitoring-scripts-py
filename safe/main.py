@@ -127,7 +127,7 @@ ALL_SAFE_ADDRESSES = [
     [
         "LRT",
         "mainnet",
-        "0x2536f2ef78b0df34299cad6e59300f8f83fe1ec4",
+        "0x2536f2Ef78B0DF34299CaD6e59300F8f83fE1Ec4",
         "thBILL minter role. Markets used on Morpho Arbitrum",
     ],  # thBILL minter role
     [
@@ -156,7 +156,7 @@ ALL_SAFE_ADDRESSES = [
 ]
 
 
-def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
+def get_safe_transactions(safe_address, network_name, executed=None, limit=10, max_retries=3):
     """
     Docs: https://docs.safe.global/core-api/transaction-service-reference/mainnet#List-a-Safe's-Multisig-Transactions
     """
@@ -176,23 +176,41 @@ def get_safe_transactions(safe_address, network_name, executed=None, limit=10):
     headers = {
         "Authorization": f"Bearer {api_key}",
     }
-    response = requests.get(endpoint, params=params, headers=headers)
 
-    if response.status_code == 200:
-        return response.json()["results"]
-    elif response.status_code == 401:
-        raise ValueError("Invalid API key. Please check your SAFE_API_KEY.")
-    elif response.status_code == 429:
-        raise ValueError("Rate limit exceeded. Safe API allows 5 requests per second by default.")
-    else:
-        print(f"Error: {response.status_code}")
-        return None
+    for attempt in range(max_retries):
+        response = requests.get(endpoint, params=params, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()["results"]
+        elif response.status_code == 401:
+            raise ValueError("Invalid API key. Please check your SAFE_API_KEY.")
+        elif response.status_code == 429:
+            # rate limit - wait and retry
+            wait_time = 2**attempt
+            print(f"Rate limit hit, waiting {wait_time}s before retry...")
+            time.sleep(wait_time)
+            continue
+        elif response.status_code >= 500:
+            # server error - wait and retry with exponential backoff
+            wait_time = 2**attempt
+            print(
+                f"Server error {response.status_code}, waiting {wait_time}s before retry (attempt {attempt + 1}/{max_retries})..."
+            )
+            time.sleep(wait_time)
+            continue
+        else:
+            print(f"Error: {response.status_code}")
+            print(f"Response text: {response.text}")
+            return []
+
+    print(f"Failed after {max_retries} retries for {safe_address} on {network_name}")
+    return []
 
 
 def get_last_executed_nonce(safe_address, network_name):
     executed_txs = get_safe_transactions(safe_address, network_name, executed=True, limit=1)
     if executed_txs:
-        return executed_txs[0]["nonce"]
+        return int(executed_txs[0]["nonce"])
     return -1  # Return -1 if no executed transactions found
 
 
@@ -201,7 +219,7 @@ def get_pending_transactions_after_last_executed(safe_address, network_name):
     pending_txs = get_safe_transactions(safe_address, network_name, executed=False)
 
     if pending_txs:
-        return [tx for tx in pending_txs if tx["nonce"] > last_executed_nonce]
+        return [tx for tx in pending_txs if int(tx["nonce"]) > last_executed_nonce]
     return []
 
 

@@ -5,13 +5,14 @@ from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "PEGS"
 
-# FLUID DEX RESOLVER ADDRESS
-FLUID_DEX_RESERVES_RESOLVER = "0xC93876C0EEd99645DD53937b25433e311881A27C"
+# Fluid DEX Resolver
+# https://github.com/Instadapp/fluid-contracts-public/blob/main/deployments/deployments.md
+FLUID_DEX_RESOLVER = "0x05Bd8269A20C472b148246De20E6852091BF16Ff"
 # Load FLUID ABI
 ABI_FLUID_POOL = load_abi("lrt-pegs/abi/Fluid_DexResolver.json")
 # Collateral Reserves Index
 COLLATERAL_RESERVES_INDEX = 5
-MIN_ASSET_BALANCE = 100e18
+MIN_ASSET_BALANCE = 1e18
 
 
 # Pool configurations
@@ -43,7 +44,7 @@ POOL_CONFIGS = [
 
 def process_pools(chain: Chain = Chain.MAINNET):
     client = ChainManager.get_client(chain)
-    resolver = client.eth.contract(address=FLUID_DEX_RESERVES_RESOLVER, abi=ABI_FLUID_POOL)
+    resolver = client.eth.contract(address=FLUID_DEX_RESOLVER, abi=ABI_FLUID_POOL)
 
     poolsArray = []
 
