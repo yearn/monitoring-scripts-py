@@ -18,7 +18,6 @@ We track the following key metrics to ensure solvency and stability:
 - **Mint Ratio**: The collateralization ratio retrieved from the protocol API (0.995).
 - **Collateral**: Calculated as `USDai Supply / Mint Ratio`.
 - **Buffer**: `Implied Collateral` - `USDai Supply`. A positive buffer indicates the system is functioning within the expected Mint Ratio parameters.
-- **sUSDai Loans**: Tracks the total principal of sUSDai assets deployed into GPU loans (replacing USDai/wM backing). We calculate this by directly reading the `Loan NFT` principals from the Loan Router contract and adding known legacy loans.
 
 ## Alerts
 
@@ -43,12 +42,8 @@ We track the following key metrics to ensure solvency and stability:
 The following addresses and events should be watched via Tenderly alerts:
 
 1.  **Loan Router** (`0x0C2ED170F2bB1DF1a44292Ad621B577b3C9597D1`):
-    *   **Transfer**: Monitor for minting/burning of Loan NFTs.
-    *   **LoanOriginated** (or similar): Monitor for new GPU loan creation.
-2.  **sUSDai Vault** (`0x0B2b2B2076d95dda7817e785989fE353fe955ef9`):
-    *   **Deposit/Withdraw**: Large movements in/out of the savings vault.
-3.  **USDai Token (Vault)** (`0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF`):
-    *   **Transfer**: Large redemptions or mints of the base stablecoin.
+    - **Transfer**: Monitor for minting/burning of Loan NFTs.
+    - **LoanOriginated** (or similar): Monitor for new GPU loan creation.
 
 ## Governance & Security
 
