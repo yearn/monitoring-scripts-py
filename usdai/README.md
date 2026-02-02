@@ -18,13 +18,12 @@ We track the following key metrics to ensure solvency and stability:
 - **Mint Ratio**: The collateralization ratio retrieved from the protocol API (0.995).
 - **Collateral**: Calculated as `USDai Supply / Mint Ratio`.
 - **Buffer**: `Implied Collateral` - `USDai Supply`. A positive buffer indicates the system is functioning within the expected Mint Ratio parameters.
+- **Loans**: Directly fetched from the Loan Router contract. Then calculated `Active loan amounts / total USDai supply`. to calculate the ratio.
 
 ## Alerts
 
-- **Buffer Drop**: A Telegram alert is triggered if the **Buffer** value decreases by more than **$10,000** from the last cached value. Since the buffer represents accumulated yield, it is expected to grow or remain stable. A significant drop could indicate:
-  - A loss of backing value (depegging of underlying asset).
-  - An issue with the yield accrual mechanism.
-  - An unexpected withdrawal or rebalancing event.
+- **Buffer Drop**: A Telegram alert is triggered if the **Buffer** value drops below $1M.
+  A significant drop could indicate loss of backing value.
 - **Loan Activity**: A Telegram alert is triggered if the **Total Verified Principal** changes (indicating a new loan origination or a repayment).
 
 - **Mint Ratio Change**: A Telegram alert is triggered if the protocol's Mint Ratio changes from its previous value. This is a critical parameter that determines backing requirements.
