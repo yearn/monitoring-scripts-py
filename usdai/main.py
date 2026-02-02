@@ -1,13 +1,14 @@
+import datetime
 import requests
-from dotenv import load_dotenv
 from web3 import Web3
 
+from utils.abi import load_abi
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
+from utils.config import Config
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-load_dotenv()
 
 # Constants
 PROTOCOL = "usdai"
@@ -70,8 +71,6 @@ def main():
     client = ChainManager.get_client(Chain.ARBITRUM)
 
     # Common ABI
-    from utils.abi import load_abi
-
     erc20_abi = load_abi("common-abi/ERC20.json")
 
     wm = client.get_contract(WM_TOKEN, erc20_abi)
@@ -102,7 +101,7 @@ def main():
         mint_ratio = 10000  # Default to 1:1 (scaled 1e4 for bps) if not found
 
         try:
-            res = requests.post(GRAPHQL_URL, json={"query": query}, timeout=10)
+            res = requests.post(GRAPHQL_URL, json={"query": query}, timeout=Config.get_request_timeout())
             if res.status_code == 200:
                 data = res.json().get("data", {})
 
@@ -189,7 +188,6 @@ def main():
                 total_verified_principal += legacy_loan_principal
                 
                 for l in all_loans:
-                    import datetime
                     mat_date = datetime.datetime.fromtimestamp(l['maturity']).strftime('%Y-%m-%d')
                     print(f"Loan #{l['id'] % 10000:04d}...: ${l['principal']:,.2f} (Mat: {mat_date})")
                     total_verified_principal += l['principal']
