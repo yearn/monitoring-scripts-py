@@ -17,6 +17,55 @@ SUSDAI_ADDR = Web3.to_checksum_address("0x0B2b2B2076d95dda7817e785989fE353fe955e
 GRAPHQL_URL = "https://protocol-api.m0.org/graphql"
 
 
+LOAN_ROUTER_ADDR = Web3.to_checksum_address("0x0C2ED170F2bB1DF1a44292Ad621B577b3C9597D1")
+
+def get_loan_details(client, owner_addr):
+    """
+    Reads active loan NFTs held by the owner.
+    Returns list of (token_id, principal, maturity).
+    """
+    loans = []
+    try:
+        # Minimal ABI for ERC721 Enumerable + raw call for loanState
+        abi = [
+            {"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"uint256","name":"index","type":"uint256"}],"name":"tokenOfOwnerByIndex","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+        ]
+        router = client.get_contract(LOAN_ROUTER_ADDR, abi)
+        count = router.functions.balanceOf(owner_addr).call()
+        
+        for i in range(count):
+            token_id = router.functions.tokenOfOwnerByIndex(owner_addr, i).call()
+            
+            # Raw call to loanState(uint256) -> signature 0x0d92c757
+            selector = Web3.keccak(text="loanState(uint256)")[:4].hex()
+            data = selector + int(token_id).to_bytes(32, 'big').hex()
+            
+            raw_res = client.eth.call({"to": LOAN_ROUTER_ADDR, "data": data})
+            
+            # Decode: we found the structure is likely:
+            # 0: State (uint256)
+            # 1: Maturity Timestamp (uint256)
+            # 2: Start Timestamp (uint256)
+            # 3: Principal (uint256)
+            
+            if len(raw_res) >= 128: # At least 4 words
+                # skip 0-32 (state), read 32-64 (maturity)
+                maturity = int.from_bytes(raw_res[32:64], 'big')
+                # skip 64-96 (start), read 96-128 (principal)
+                principal = int.from_bytes(raw_res[96:128], 'big')
+                
+                loans.append({
+                    "id": token_id,
+                    "principal": principal / 1e18,
+                    "maturity": maturity
+                })
+                
+    except Exception as e:
+        print(f"Loan scan error: {e}")
+        
+    return loans
+
 def main():
     client = ChainManager.get_client(Chain.ARBITRUM)
 
@@ -87,6 +136,94 @@ def main():
 
         print(f"Collateral:      ${collateral_metric:,.2f}")
         print(f"Buffer:          ${buffer:,.2f}")
+
+        # --- sUSDai Monitoring (GPU Loans) ---
+        print("\n--- sUSDai Stats ---")
+        
+        # 1. Get sUSDai Total Assets
+        erc4626_abi = [
+             {"inputs":[],"name":"totalAssets","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+        ]
+        susdai_contract = client.get_contract(SUSDAI_ADDR, erc4626_abi)
+        
+        usdai_decimals = 18 
+        
+        try:
+            total_assets_raw = susdai_contract.functions.totalAssets().call()
+            total_assets_fmt = total_assets_raw / (10**usdai_decimals)
+            
+            # 2. Get Liquid Holdings (USDai + wM) in sUSDai
+            # USDai Token is VAULT_ADDR
+            usdai_token = client.get_contract(VAULT_ADDR, erc20_abi)
+            
+            usdai_bal_raw = usdai_token.functions.balanceOf(SUSDAI_ADDR).call()
+            usdai_bal_fmt = usdai_bal_raw / (10**usdai_decimals)
+            
+            wm_bal_raw = wm.functions.balanceOf(SUSDAI_ADDR).call()
+            wm_bal_fmt = wm_bal_raw / (10**wm_decimals)
+            
+            liquid_assets_fmt = usdai_bal_fmt + wm_bal_fmt
+            liquid_share = (liquid_assets_fmt / total_assets_fmt * 100) if total_assets_fmt > 0 else 0
+            
+            print(f"Total Assets:    ${total_assets_fmt:,.2f}")
+            print(f"Liquid (Cash):   ${liquid_assets_fmt:,.2f} ({liquid_share:.2f}%)")
+            print(f"  - USDai:       ${usdai_bal_fmt:,.2f}")
+            print(f"  - wM:          ${wm_bal_fmt:,.2f}")
+
+            # 4. Scan Individual Loan NFTs
+            # Scan sUSDai Vault
+            all_loans = get_loan_details(client, SUSDAI_ADDR)
+            
+            # --- Manual Adjustment for Legacy Loan ---
+            # There is one active loan (NVIDIA H200s) originated before the Loan Router deployment.
+            # Principal: ~$560k (Remaining Principal from UI: $559,542)
+            # We hardcode this to ensure accurate Total Principal tracking.
+            legacy_loan_principal = 559_542.00
+            
+            if all_loans or legacy_loan_principal > 0:
+                print("\n--- Active Loan NFTs (Direct Read) ---")
+                total_verified_principal = 0
+                
+                # Add Legacy Loan
+                print(f"Legacy Loan (H200s): ${legacy_loan_principal:,.2f} (Hardcoded)")
+                total_verified_principal += legacy_loan_principal
+                
+                for l in all_loans:
+                    import datetime
+                    mat_date = datetime.datetime.fromtimestamp(l['maturity']).strftime('%Y-%m-%d')
+                    print(f"Loan #{l['id'] % 10000:04d}...: ${l['principal']:,.2f} (Mat: {mat_date})")
+                    total_verified_principal += l['principal']
+                
+                print(f"Total Verified Principal: ${total_verified_principal:,.2f}")
+                
+                # Calculate Ratio to Total Supply
+                verified_ratio = (total_verified_principal / usdai_supply_fmt * 100) if usdai_supply_fmt > 0 else 0
+                print(f"Verified Loan Ratio: {verified_ratio:.2f}% of Total Supply")
+
+                # --- Alerting on Principal Change ---
+                cache_key_principal = f"{PROTOCOL}_verified_principal"
+                last_principal = float(get_last_value_for_key_from_file(cache_filename, cache_key_principal))
+                
+                # Check for change (allow small dust difference < $1.00)
+                if last_principal != 0 and abs(total_verified_principal - last_principal) > 1.0:
+                    change_type = "increased (New Loan)" if total_verified_principal > last_principal else "reduced (Repayment)"
+                    diff = abs(total_verified_principal - last_principal)
+                    
+                    msg = (
+                        f"📢 *sUSDai Loan Activity*\n\n"
+                        f"Total Verified Principal has {change_type}.\n"
+                        f"Change: ${diff:,.2f}\n"
+                        f"Old Total: ${last_principal:,.2f}\n"
+                        f"New Total: ${total_verified_principal:,.2f}\n"
+                        f"Current Ratio: {verified_ratio:.2f}% of Supply"
+                    )
+                    send_telegram_message(msg, PROTOCOL)
+                
+                # Update cache
+                write_last_value_to_file(cache_filename, cache_key_principal, total_verified_principal)
+
+        except Exception as e:
+            print(f"sUSDai Monitoring Error: {e}")
 
         if collateral_metric > 0:
             # 1. Check for Mint Ratio Change (Critical)
