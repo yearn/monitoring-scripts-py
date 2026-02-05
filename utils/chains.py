@@ -1,5 +1,13 @@
 from enum import Enum
 
+EXPLORER_URLS: dict[int, str] = {
+    1: "https://etherscan.io",
+    10: "https://optimistic.etherscan.io",
+    137: "https://polygonscan.com",
+    8453: "https://basescan.org",
+    42161: "https://arbiscan.io",
+}
+
 
 class Chain(Enum):
     MAINNET = (1, "mainnet", "eth")
@@ -13,6 +21,11 @@ class Chain(Enum):
         self.chain_id = chain_id
         self.network_name = network_name
         self.symbol = symbol
+
+    @property
+    def explorer_url(self) -> str | None:
+        """Block explorer base URL for this chain (e.g. https://etherscan.io)."""
+        return EXPLORER_URLS.get(self.chain_id)
 
     @classmethod
     def from_chain_id(cls, chain_id: int) -> "Chain":

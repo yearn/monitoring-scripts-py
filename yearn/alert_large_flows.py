@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 from utils.abi import load_abi
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
-from utils.chains import Chain
+from utils.chains import EXPLORER_URLS, Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
@@ -30,11 +30,6 @@ DEFAULT_LOG_LEVEL = os.getenv("ALERT_LARGE_FLOWS_LOG_LEVEL", "WARNING")
 IGNORED_FROM_ADDRESS = "0x283132390ea87d6ecc20255b59ba94329ee17961"
 PROTOCOL = "YEARN"
 CACHE_KEY_LAST_ALERT_TX = f"{PROTOCOL}_LARGE_FLOW_LAST_TX"
-
-EXPLORER_BASE_URL = {
-    1: "https://etherscan.io",
-    8453: "https://basescan.org",
-}
 
 FALLBACK_LARGE_FLOW_RATIO = Decimal("0.1")
 
@@ -296,7 +291,7 @@ def send_large_flow_alert(
     value: Decimal | None,
 ) -> str:
     chain = Chain.from_chain_id(vault["chain_id"])
-    explorer_base = EXPLORER_BASE_URL.get(vault["chain_id"])
+    explorer_base = EXPLORER_URLS.get(vault["chain_id"])
     tx_hash = event["transactionHash"]
     tx_url = f"{explorer_base}/tx/{tx_hash}" if explorer_base else None
     vault_address = event["vaultAddress"]
