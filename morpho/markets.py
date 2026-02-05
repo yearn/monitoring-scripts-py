@@ -461,7 +461,7 @@ def check_high_allocation(vault_data):
     Send telegram message if high allocation is detected in any market.
     Send another message if total risk level is too high.
     """
-    total_assets = vault_data.get("state", {}).get("totalAssetsUsd", 0)
+    total_assets = vault_data.get("state", {}).get("totalAssetsUsd", 0) or 0
     if total_assets == 0:
         return
 
@@ -489,7 +489,10 @@ def check_high_allocation(vault_data):
 
         market = allocation["market"]
         unique_key = market["uniqueKey"]
-        market_supply = allocation.get("supplyAssetsUsd", 0)
+        market_supply = allocation.get("supplyAssetsUsd", 0) or 0
+        if market_supply == 0:
+            print(f"🔄 Skipping market {unique_key} with no supply assets")
+            continue
         allocation_ratio = min(market_supply / total_assets, 1.0)  # prevent allocation ratio from exceeding 100%
 
         # Determine market risk level
