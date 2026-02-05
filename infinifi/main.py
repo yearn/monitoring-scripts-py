@@ -10,7 +10,7 @@ from utils.web3_wrapper import ChainManager
 # Constants
 PROTOCOL = "infinifi"
 IUSD_ADDRESS = Web3.to_checksum_address("0x48f9e38f3070AD8945DFEae3FA70987722E3D89c")
-LIQUID_RESERVES_THRESHOLD = 30_000_000
+LIQUID_RESERVES_THRESHOLD = 25_000_000
 
 # API Configuration
 API_BASE_URL = "https://api.infinifi.xyz"
@@ -97,7 +97,7 @@ def main():
         # --- Alerts ---
 
         # Alert 1: Low Liquid Reserves
-        # Check against a threshold ($30M, current is $34.9M)
+        # Check against a threshold ($25M)
         if liquid_reserves > 0:
             cache_key_reserves = f"{PROTOCOL}_liquid_reserves"
             last_reserves = float(get_last_value_for_key_from_file(cache_filename, cache_key_reserves))
