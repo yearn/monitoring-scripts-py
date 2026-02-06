@@ -92,7 +92,7 @@ build-backend = "setuptools.build_meta"
 packages = [
     "aave", "bad-debt", "cap", "compound", "ethena", "euler",
     "fluid", "infinifi", "lido", "lrt-pegs", "maker", "moonwell",
-    "morpho", "pendle", "reservoir", "resolv", "rtoken",
+    "morpho", "pendle", "resolv", "rtoken",
     "safe", "silo", "spark", "stargate", "usd0", "usdai",
     "utils", "yearn",
 ]
