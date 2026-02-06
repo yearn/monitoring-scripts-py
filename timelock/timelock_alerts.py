@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Monitor TimelockController CallScheduled events and send Telegram alerts."""
+"""Monitor all TimelockEvent types and send Telegram alerts."""
 
 import argparse
 import json
@@ -43,6 +43,13 @@ TIMELOCK_LIST: list[TimelockConfig] = [
     TimelockConfig("0x81f6e9914136da1a1d3b1efd14f7e0761c3d4cc7", 1, "LRT", "Renzo(ezETH) TimelockController"),
     TimelockConfig("0x9f26d4c958fd811a1f59b01b86be7dffc9d20761", 1, "LRT", "EtherFi Timelock"),
     TimelockConfig("0x49bd9989e31ad35b0a62c20be86335196a3135b1", 1, "LRT", "KelpDAO(rsETH) Timelock"),
+    TimelockConfig("0x3d18480cc32b6ab3b833dcabd80e76cfd41c48a9", 1, "INFINIFI", "Infinifi Longtimelock"),
+    TimelockConfig("0x4b174afbed7b98ba01f50e36109eee5e6d327c32", 1, "INFINIFI", "Infinifi Shorttimelock"),
+    TimelockConfig("0x404d18b35063275882c568495992440124055207", 1, "AAVE", "Aave Timelock"),
+    TimelockConfig("0x6d903f6003cca6255d85cca4d3b5e5146dc33925", 1, "COMPOUND", "Compound Timelock"),
+    TimelockConfig("0x2386dc45added673317ef068992f19421b481f4c", 1, "FLUID", "Fluid Timelock"),
+    TimelockConfig("0x3c28b7c7ba1a1f55c9ce66b263b33b204f2126ea", 1, "PUFFER", "Puffer Timelock"),
+    TimelockConfig("0x2e59a20f205bb85a89c53f1936454680651e618e", 1, "LIDO", "Lido Timelock"),
     # Chain 8453 - Base
     TimelockConfig("0xf817cb3092179083c48c014688d98b72fb61464f", 8453, "LRT", "superOETH Timelock"),
 ]
@@ -100,12 +107,12 @@ def format_delay(seconds: int) -> str:
 
 
 def load_events(limit: int, since_ts: int) -> dict:
-    """Fetch CallScheduled events from the Envio GraphQL API."""
+    """Fetch TimelockEvent events from the Envio GraphQL API."""
     addresses = [t.address for t in TIMELOCK_LIST]
     _logger.info("load_events limit=%s since_ts=%s addresses=%s", limit, since_ts, len(addresses))
     query = """
-    query GetCallScheduled($limit: Int!, $sinceTs: Int!, $addresses: [String!]!) {
-      CallScheduled(
+    query GetTimelockEvents($limit: Int!, $sinceTs: Int!, $addresses: [String!]!) {
+      TimelockEvent(
         where: {
           timelockAddress: { _in: $addresses }
           blockTimestamp: { _gt: $sinceTs }
@@ -115,6 +122,8 @@ def load_events(limit: int, since_ts: int) -> dict:
       ) {
         id
         timelockAddress
+        timelockType
+        eventName
         chainId
         blockNumber
         blockTimestamp
@@ -126,6 +135,11 @@ def load_events(limit: int, since_ts: int) -> dict:
         data
         predecessor
         delay
+        signature
+        creator
+        metadata
+        votesFor
+        votesAgainst
       }
     }
     """
@@ -133,54 +147,113 @@ def load_events(limit: int, since_ts: int) -> dict:
     return gql_request(query, variables)
 
 
+def _format_address(address: str, explorer: str | None, prefix: str = "") -> str:
+    """Format an address with optional explorer link."""
+    if explorer:
+        return f"{prefix}[{address}]({explorer}/address/{address})"
+    return f"{prefix}{address}"
+
+
+def _format_delay_info(delay: int | None, timelock_type: str) -> str | None:
+    """Format delay based on timelock type semantics."""
+    if delay is None:
+        return None
+
+    delay_val = int(delay)
+    if timelock_type in ("Compound", "Puffer"):
+        # Absolute timestamp
+        relative = delay_val - int(time.time())
+        if relative > 0:
+            return f"⏳ Executable In: {format_delay(relative)}"
+        return "⏳ Executable: Now"
+    # Relative delay (TimelockController)
+    return f"⏳ Delay: {format_delay(delay_val)}"
+
+
+def _build_call_info(event: dict, explorer: str | None, show_index: bool) -> list[str]:
+    """Build call info lines for TimelockController/Compound/Puffer events."""
+    lines: list[str] = []
+    target = event.get("target")
+    if not target:
+        return lines
+
+    if show_index and event.get("index") is not None:
+        lines.append(f"--- Call {int(event['index'])} ---")
+
+    lines.append(_format_address(target, explorer, "🎯 Target: "))
+
+    # Prefer human-readable signature (Compound), fallback to selector
+    signature = event.get("signature")
+    data_hex = event.get("data") or "0x"
+    if signature:
+        lines.append(f"📝 Function: `{signature}`")
+    elif len(data_hex) >= 10:
+        lines.append(f"📝 Function: `{data_hex[:10]}`")
+
+    # Value only for types that have it (not Puffer)
+    value = event.get("value")
+    if value and int(value) > 0:
+        lines.append(f"💰 Value: {int(value) / 1e18:.4f} ETH")
+
+    return lines
+
+
 def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> str:
-    """Build a Telegram alert message for a group of CallScheduled events (same operationId)."""
+    """Build a Telegram alert message for a group of TimelockEvent events (same operationId)."""
     first = events[0]
     chain_id = int(first["chainId"])
     try:
-        chain = Chain.from_chain_id(chain_id)
-        chain_name = chain.network_name.capitalize()
+        chain_name = Chain.from_chain_id(chain_id).network_name.capitalize()
     except ValueError:
         chain_name = f"Chain {chain_id}"
+
     explorer = EXPLORER_URLS.get(chain_id)
     tx_hash = first["transactionHash"]
-    tx_url = f"{explorer}/tx/{tx_hash}" if explorer else None
-    delay_seconds = int(first["delay"])
-    timelock_address = first["timelockAddress"]
-    timelock_url = f"{explorer}/address/{timelock_address}" if explorer else None
+    timelock_type = first.get("timelockType", "Unknown")
 
+    # Header
     lines: list[str] = [
         "⏰ *TIMELOCK: New Operation Scheduled*",
         f"🅿️ Protocol: {timelock_info.protocol}",
+        _format_address(first["timelockAddress"], explorer, f"📋 {timelock_info.label}: "),
+        f"🔗 Chain: {chain_name}",
     ]
-    if timelock_url:
-        lines.append(f"📋 Timelock: [{timelock_info.label}]({timelock_url})")
+
+    # Delay (if applicable)
+    delay_line = _format_delay_info(first.get("delay"), timelock_type)
+    if delay_line:
+        lines.append(delay_line)
+
+    # Type-specific content
+    if timelock_type == "Aave":
+        votes_for = first.get("votesFor")
+        votes_against = first.get("votesAgainst")
+        if votes_for is not None:
+            lines.append(f"✅ Votes For: {votes_for}")
+        if votes_against is not None:
+            lines.append(f"❌ Votes Against: {votes_against}")
+        lines.append(f"🆔 Proposal: {first.get('operationId', '')}")
+
+    elif timelock_type == "Lido":
+        creator = first.get("creator")
+        if creator:
+            lines.append(_format_address(creator, explorer, "👤 Creator: "))
+        metadata = first.get("metadata")
+        if metadata:
+            lines.append(f"📄 Metadata: {metadata}")
+        lines.append(f"🆔 Vote: {first.get('operationId', '')}")
+
+    elif timelock_type in ("TimelockController", "Compound", "Puffer"):
+        for event in events:
+            lines.extend(_build_call_info(event, explorer, len(events) > 1))
+
     else:
-        lines.append(f"📋 Timelock: {timelock_info.label}")
-    lines.append(f"🔗 Chain: {chain_name}")
-    lines.append(f"⏳ Delay: {format_delay(delay_seconds)}")
+        # Unknown type - show operationId at minimum
+        lines.append(f"🆔 Operation: {first.get('operationId', '')}")
 
-    for event in events:
-        target = event["target"]
-        target_url = f"{explorer}/address/{target}" if explorer else None
-        value_wei = int(event["value"])
-        data_hex = event.get("data", "0x")
-        fn_selector = data_hex[:10] if len(data_hex) >= 10 else data_hex
-
-        if len(events) > 1:
-            lines.append(f"--- Call {int(event['index'])} ---")
-
-        if target_url:
-            lines.append(f"🎯 Target: [{target}]({target_url})")
-        else:
-            lines.append(f"🎯 Target: {target}")
-        lines.append(f"📝 Function: `{fn_selector}`")
-        if value_wei > 0:
-            value_eth = value_wei / 1e18
-            lines.append(f"💰 Value: {value_eth:.4f} ETH")
-
-    if tx_url:
-        lines.append(f"🔗 Tx: [{tx_hash}]({tx_url})")
+    # Footer
+    if explorer:
+        lines.append(f"🔗 Tx: [{tx_hash}]({explorer}/tx/{tx_hash})")
     else:
         lines.append(f"🔗 Tx: {tx_hash}")
 
@@ -188,7 +261,7 @@ def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> st
 
 
 def process_events(events: list[dict], use_cache: bool) -> None:
-    """Process CallScheduled events, group by operationId, and send alerts."""
+    """Process TimelockEvent events, group by operationId, and send alerts."""
     if not events:
         _logger.info("No new events to process")
         return
@@ -203,10 +276,13 @@ def process_events(events: list[dict], use_cache: bool) -> None:
 
     _logger.info("Processing %s operations from %s events", len(operations), len(events))
 
+    messages: list[str] = []
+    first_protocol: str | None = None
     max_timestamp = 0
+
     for op_id, op_events in operations.items():
-        # Sort by index within the operation
-        op_events.sort(key=lambda e: int(e["index"]))
+        # Sort by index within the operation (if index exists)
+        op_events.sort(key=lambda e: int(e.get("index", 0)))
 
         timelock_addr = op_events[0]["timelockAddress"].lower()
         timelock_info = TIMELOCKS.get(timelock_addr)
@@ -214,8 +290,10 @@ def process_events(events: list[dict], use_cache: bool) -> None:
             _logger.warning("Unknown timelock address: %s", timelock_addr)
             continue
 
-        message = build_alert_message(op_events, timelock_info)
-        send_telegram_message(message, timelock_info.protocol)
+        if first_protocol is None:
+            first_protocol = timelock_info.protocol
+
+        messages.append(build_alert_message(op_events, timelock_info))
 
         # Track max timestamp
         for event in op_events:
@@ -223,13 +301,18 @@ def process_events(events: list[dict], use_cache: bool) -> None:
             if ts > max_timestamp:
                 max_timestamp = ts
 
+    # Send all alerts in one message to the first protocol's channel
+    if messages and first_protocol:
+        combined = "\n\n---\n\n".join(messages)
+        send_telegram_message(combined, first_protocol)
+
     if use_cache and max_timestamp > 0:
         write_last_value_to_file(cache_filename, CACHE_KEY, str(max_timestamp))
         _logger.info("Updated cache: %s = %s", CACHE_KEY, max_timestamp)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Alert on TimelockController CallScheduled events.")
+    parser = argparse.ArgumentParser(description="Alert on all TimelockEvent types.")
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument(
         "--since-seconds",
@@ -262,10 +345,11 @@ def main() -> None:
             _logger.info("Using cached timestamp: %s", since_ts)
 
     if since_ts == 0:
-        since_ts = int(time.time()) - args.since_seconds
+        since_ts = args.since_seconds or 24 * 60 * 60
+        since_ts = int(time.time()) - since_ts
         _logger.info("No cached timestamp, using fallback: %s", since_ts)
 
-    _logger.info("Fetching CallScheduled events since timestamp %s", since_ts)
+    _logger.info("Fetching TimelockEvent events since timestamp %s", since_ts)
 
     response = load_events(args.limit, since_ts)
     if "errors" in response:
@@ -274,8 +358,8 @@ def main() -> None:
         sys.exit(1)
 
     data = response.get("data", {})
-    events = data.get("CallScheduled", [])
-    _logger.info("Fetched %s CallScheduled events", len(events))
+    events = data.get("TimelockEvent", [])
+    _logger.info("Fetched %s TimelockEvent events", len(events))
 
     process_events(events, use_cache)
 

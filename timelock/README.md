@@ -1,15 +1,79 @@
 # Timelock Monitoring
 
-Monitors [OpenZeppelin TimelockController](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/governance/TimelockController.sol) contracts for `CallScheduled` events and sends Telegram alerts to protocol-specific channels.
+Monitors all timelock contract types (TimelockController, Aave, Compound, Puffer, Lido) and sends Telegram alerts to protocol-specific channels.
 
 ## How It Works
 
-1. Queries the Envio GraphQL indexer (`ENVIO_GRAPHQL_URL`) for new `CallScheduled` events across all monitored timelocks.
+1. Queries the Envio GraphQL indexer (`ENVIO_GRAPHQL_URL`) for new `TimelockEvent` events across all monitored timelocks (all types).
 2. Groups events by `operationId` so batch operations (`scheduleBatch`) are sent as a single alert.
 3. Routes each alert to the correct Telegram channel based on the protocol mapping.
 4. Stores the latest processed `blockTimestamp` in `cache-id.txt` (key: `TIMELOCK_LAST_TS`) to avoid duplicate alerts between runs.
 
 The script runs [hourly via GitHub Actions](../.github/workflows/hourly.yml).
+
+## GraphQL Schema
+
+The script queries the unified `TimelockEvent` type from the Envio indexer. The query fetches all timelock types (TimelockController, Aave, Compound, Puffer, Lido) for monitored addresses.
+
+### Query Structure
+
+```graphql
+query GetTimelockEvents($limit: Int!, $sinceTs: Int!, $addresses: [String!]!) {
+  TimelockEvent(
+    where: {
+      timelockAddress: { _in: $addresses }
+      blockTimestamp: { _gt: $sinceTs }
+    }
+    order_by: { blockTimestamp: asc, blockNumber: asc, logIndex: asc }
+    limit: $limit
+  ) {
+    id
+    timelockAddress
+    timelockType
+    eventName
+    chainId
+    blockNumber
+    blockTimestamp
+    transactionHash
+    operationId
+    index
+    target
+    value
+    data
+    predecessor
+    delay
+    signature
+    creator
+    metadata
+    votesFor
+    votesAgainst
+  }
+}
+```
+
+### Schema Fields
+
+The `TimelockEvent` type includes fields that vary by timelock type:
+
+**Common fields (all types):**
+- **`id`** - Unique identifier: `${chainId}_${blockNumber}_${logIndex}`
+- **`timelockAddress`** - Address of the timelock contract
+- **`timelockType`** - Type discriminator: `"TimelockController"`, `"Aave"`, `"Compound"`, `"Puffer"`, or `"Lido"`
+- **`eventName`** - Original event name (e.g., `"CallScheduled"`, `"ProposalQueued"`, `"QueueTransaction"`, etc.)
+- **`chainId`** - Chain ID (1 for Mainnet, 8453 for Base, etc.)
+- **`blockNumber`** - Block number where the event was emitted
+- **`blockTimestamp`** - Unix timestamp of the block
+- **`transactionHash`** - Transaction hash
+- **`operationId`** - Unified identifier for the queued operation
+
+**Type-specific fields:**
+- **TimelockController**: `target`, `value`, `data`, `delay` (relative seconds), `predecessor`, `index`
+- **Aave**: `votesFor`, `votesAgainst`, `operationId` (proposalId)
+- **Compound**: `target`, `value`, `data`, `delay` (absolute timestamp/eta), `signature`, `operationId` (txHash)
+- **Puffer**: `target`, `data`, `delay` (absolute timestamp/lockedUntil), `operationId` (txHash)
+- **Lido**: `creator`, `metadata`, `operationId` (voteId)
+
+For complete field mapping details, see [`detils.md`](./detils.md).
 
 ## Monitored Timelocks
 
@@ -45,14 +109,47 @@ Parameters:
 
 ## Alert Format
 
+The alert format varies by timelock type:
+
+**TimelockController/Compound/Puffer:**
 ```
 ⏰ TIMELOCK: New Operation Scheduled
 🅿️ Protocol: LRT
 📋 Timelock: EtherFi Timelock
 🔗 Chain: Mainnet
+📌 Type: TimelockController
+📝 Event: CallScheduled
 ⏳ Delay: 2d
 🎯 Target: 0x1234...
 📝 Function: 0xabcdef12
+🔗 Tx: https://etherscan.io/tx/0x...
+```
+
+**Aave:**
+```
+⏰ TIMELOCK: New Operation Scheduled
+🅿️ Protocol: AAVE
+📋 Timelock: Aave Timelock
+🔗 Chain: Mainnet
+📌 Type: Aave
+📝 Event: ProposalQueued
+✅ Votes For: 12345
+❌ Votes Against: 6789
+🆔 Proposal ID: 42
+🔗 Tx: https://etherscan.io/tx/0x...
+```
+
+**Lido:**
+```
+⏰ TIMELOCK: New Operation Scheduled
+🅿️ Protocol: LIDO
+📋 Timelock: Lido DAO
+🔗 Chain: Mainnet
+📌 Type: Lido
+📝 Event: StartVote
+👤 Creator: 0x1234...
+📄 Metadata: ipfs://...
+🆔 Vote ID: 123
 🔗 Tx: https://etherscan.io/tx/0x...
 ```
 
@@ -73,4 +170,8 @@ Optional flags:
 
 ## Caching
 
-The script stores the latest processed `blockTimestamp` in `cache-id.txt` under key `TIMELOCK_LAST_BLOCK_TS`. This value is universal across chains (unlike block numbers) so a single cache entry covers all monitored timelocks. On the first run (or with `--no-cache`), it falls back to querying events from the last 2 hours.
+The script stores the latest processed `blockTimestamp` in `cache-id.txt` under key `TIMELOCK_LAST_TS`. This value is universal across chains (unlike block numbers) so a single cache entry covers all monitored timelocks. On the first run (or with `--no-cache`), it falls back to querying events from the last 2 hours.
+
+## Schema Details
+
+For comprehensive information about the unified `TimelockEvent` schema, including field mappings for all supported timelock types (TimelockController, Aave, Compound, Puffer, Lido), see [`detils.md`](./detils.md).
