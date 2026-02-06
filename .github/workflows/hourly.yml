@@ -49,6 +49,7 @@ env:
   TELEGRAM_CHAT_ID_ETHENA: ${{ secrets.TELEGRAM_CHAT_ID_ETHENA }}
   TELEGRAM_CHAT_ID_EULER: ${{ secrets.TELEGRAM_CHAT_ID_EULER }}
   TELEGRAM_CHAT_ID_FLUID: ${{ secrets.TELEGRAM_CHAT_ID_FLUID }}
+  TELEGRAM_CHAT_ID_INFINIFI: ${{ secrets.TELEGRAM_CHAT_ID_INFINIFI }}
   TELEGRAM_CHAT_ID_USDAI: ${{ secrets.TELEGRAM_CHAT_ID_USDAI }}
   TELEGRAM_CHAT_ID_YEARN: ${{ secrets.TELEGRAM_CHAT_ID_YEARN }}
   TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
@@ -126,6 +127,8 @@ jobs:
         run: uv run euler/markets.py
       - name: Run Resolv Monitoring script
         run: uv run resolv/resolv.py
+      - name: Run Infinifi Monitoring script
+        run: uv run infinifi/main.py
       - name: Run Silo Utilization script
         run: uv run silo/ur_sniff.py
       - name: Run USDai script
