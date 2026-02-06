@@ -1,9 +1,11 @@
 from utils.abi import load_abi
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "PEGS"
+PROTOCOL = "pegs"
+logger = get_logger("lrt-pegs.curve")
 
 # Load Balancer Vault ABI
 ABI_CURVE_POOL = load_abi("lrt-pegs/abi/CurvePool.json")
@@ -62,14 +64,14 @@ def process_pools(chain: Chain = Chain.MAINNET):
     # Process results
     for (pool_name, _, idx_lrt, idx_other_token, peg_threshold), balances in zip(POOL_CONFIGS, responses):
         percentage = (balances[idx_lrt] / (balances[idx_lrt] + balances[idx_other_token])) * 100
-        print(f"{pool_name} ratio is {percentage:.2f}%")
+        logger.info("%s ratio is %s%%", pool_name, f"{percentage:.2f}")
         if percentage > peg_threshold:
             message = f"🚨 Curve Alert! {pool_name} ratio is {percentage:.2f}%"
             send_telegram_message(message, PROTOCOL, True)
 
 
 def main():
-    print("Checking Curve pools...")
+    logger.info("Checking Curve pools...")
     process_pools()
 
 

@@ -12,10 +12,12 @@ from utils.cache import (
     write_last_value_to_file,
 )
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "RESOLV"
+PROTOCOL = "resolv"
+logger = get_logger(PROTOCOL)
 
 USR_PRICE_STORAGE = "0x7f45180d6fFd0435D8dD695fd01320E6999c261c"
 USR_REDEMPTION = "0x60A7B7915980ed34fDE6e239618fAdCf67897c37"
@@ -94,13 +96,17 @@ def should_alert_redemption(current_usage: int, redemption_limit: int) -> bool:
     time_since_reset = current_time - last_reset_time
     if current_usage > threshold and time_since_reset >= ONE_DAY_SECONDS:
         # Update reset time to prevent spam (alert once per 24h period)
-        print("Data over threshold for 24+ hours")
+        logger.info("Data over threshold for 24+ hours")
         write_redemption_cache(current_usage, current_time)
         return True
 
     # No significant change - don't save cache, just continue monitoring
-    print(
-        f"Cached usage: {cached_usage}, Last reset time: {last_reset_time}, Current usage: {current_usage}, Threshold: {threshold}"
+    logger.info(
+        "Cached usage: %s, Last reset time: %s, Current usage: %s, Threshold: %s",
+        cached_usage,
+        last_reset_time,
+        current_usage,
+        threshold,
     )
     return False
 
@@ -189,11 +195,11 @@ def fetch_resolv_reserves_html() -> str | None:
     try:
         resp = requests.get(RESOLV_RESERVES_URL, timeout=REQUEST_TIMEOUT)
         if resp.status_code != 200:
-            print(f"HTTP {resp.status_code} for {RESOLV_RESERVES_URL}")
+            logger.error("HTTP %s for %s", resp.status_code, RESOLV_RESERVES_URL)
             return None
         return resp.text
     except Exception as e:
-        print(f"Failed to fetch {RESOLV_RESERVES_URL}: {e}")
+        logger.error("Failed to fetch %s: %s", RESOLV_RESERVES_URL, e)
         return None
 
 
@@ -417,7 +423,7 @@ def main() -> None:
         usr_redemption = client.eth.contract(address=USR_REDEMPTION, abi=ABI_USR_REDEMPTION)
     except Exception as e:
         error_message = f"Error creating contract instances: {e}. Check ABI paths and contract addresses."
-        print(error_message)
+        logger.error("%s", error_message)
         return  # Cannot proceed without contracts
 
     # Combined blockchain calls
@@ -431,15 +437,16 @@ def main() -> None:
 
             if len(responses) != 3:
                 error_message = f"Batch Call: Expected 3 responses, got {len(responses)}"
-                print(error_message)
+                logger.error("%s", error_message)
                 send_telegram_message(error_message, PROTOCOL, True, True)
                 return
 
             redemption_limit, current_redemption_usage, usr_last_price = responses
-            print(
-                f"Raw Data - Redemption Limit: {redemption_limit}, "
-                f"Current Redemption Usage: {current_redemption_usage}, "
-                f"USR Last Price: {usr_last_price}"
+            logger.info(
+                "Raw Data - Redemption Limit: %s, Current Redemption Usage: %s, USR Last Price: %s",
+                redemption_limit,
+                current_redemption_usage,
+                usr_last_price,
             )
             usr_price, usr_supply, reserves, timestamp = usr_last_price
 

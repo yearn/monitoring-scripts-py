@@ -9,9 +9,11 @@ from utils.cache import (
     get_last_executed_nonce_from_file,
     write_last_executed_nonce_to_file,
 )
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
 load_dotenv()
+logger = get_logger("safe")
 
 SAFE_WEBSITE_URL = "https://app.safe.global/transactions/queue?safe="
 provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
@@ -168,7 +170,9 @@ ALL_SAFE_ADDRESSES = [
 ]
 
 
-def get_safe_transactions(safe_address, network_name, executed=None, limit=10, max_retries=3):
+def get_safe_transactions(
+    safe_address: str, network_name: str, executed: bool | None = None, limit: int = 10, max_retries: int = 3
+) -> list[dict]:
     """
     Docs: https://docs.safe.global/core-api/transaction-service-reference/mainnet#List-a-Safe's-Multisig-Transactions
     """
@@ -199,34 +203,38 @@ def get_safe_transactions(safe_address, network_name, executed=None, limit=10, m
         elif response.status_code == 429:
             # rate limit - wait and retry
             wait_time = 2**attempt
-            print(f"Rate limit hit, waiting {wait_time}s before retry...")
+            logger.warning("Rate limit hit, waiting %ss before retry...", wait_time)
             time.sleep(wait_time)
             continue
         elif response.status_code >= 500:
             # server error - wait and retry with exponential backoff
             wait_time = 2**attempt
-            print(
-                f"Server error {response.status_code}, waiting {wait_time}s before retry (attempt {attempt + 1}/{max_retries})..."
+            logger.warning(
+                "Server error %s, waiting %ss before retry (attempt %s/%s)...",
+                response.status_code,
+                wait_time,
+                attempt + 1,
+                max_retries,
             )
             time.sleep(wait_time)
             continue
         else:
-            print(f"Error: {response.status_code}")
-            print(f"Response text: {response.text}")
+            logger.error("Error: %s", response.status_code)
+            logger.error("Response text: %s", response.text)
             return []
 
-    print(f"Failed after {max_retries} retries for {safe_address} on {network_name}")
+    logger.error("Failed after %s retries for %s on %s", max_retries, safe_address, network_name)
     return []
 
 
-def get_last_executed_nonce(safe_address, network_name):
+def get_last_executed_nonce(safe_address: str, network_name: str) -> int:
     executed_txs = get_safe_transactions(safe_address, network_name, executed=True, limit=1)
     if executed_txs:
         return int(executed_txs[0]["nonce"])
     return -1  # Return -1 if no executed transactions found
 
 
-def get_pending_transactions_after_last_executed(safe_address, network_name):
+def get_pending_transactions_after_last_executed(safe_address: str, network_name: str) -> list[dict]:
     last_executed_nonce = get_last_executed_nonce(safe_address, network_name)
     pending_txs = get_safe_transactions(safe_address, network_name, executed=False)
 
@@ -235,11 +243,11 @@ def get_pending_transactions_after_last_executed(safe_address, network_name):
     return []
 
 
-def get_safe_url(safe_address, network_name):
+def get_safe_url(safe_address: str, network_name: str) -> str:
     return f"{SAFE_WEBSITE_URL}{safe_address_network_prefix[network_name]}:{safe_address}"
 
 
-def check_for_pending_transactions(safe_address, network_name, protocol):
+def check_for_pending_transactions(safe_address: str, network_name: str, protocol: str) -> None:
     pending_transactions = get_pending_transactions_after_last_executed(safe_address, network_name)
 
     if pending_transactions:
@@ -247,7 +255,7 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
             nonce = int(tx["nonce"])
             # skip tx if the nonce is already processed
             if nonce <= get_last_executed_nonce_from_file(safe_address):
-                print(f"Skipping tx with nonce {nonce} as it is already processed.")
+                logger.info("Skipping tx with nonce %s as it is already processed.", nonce)
                 continue
 
             target_contract = tx["to"]
@@ -282,7 +290,7 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
                 hex_data = tx["data"]
                 # if hex data doesnt contain any of the proxy upgrade signatures, skip
                 if not any(signature in hex_data for signature in PROXY_UPGRADE_SIGNATURES):
-                    print(f"Skipping tx with nonce {nonce} as it does not contain any proxy upgrade signatures.")
+                    logger.info("Skipping tx with nonce %s as it does not contain any proxy upgrade signatures.", nonce)
                     continue
 
                 try:
@@ -291,16 +299,16 @@ def check_for_pending_transactions(safe_address, network_name, protocol):
                     elif network_name == "arbitrum-main":
                         message += handle_pendle(provider_url_arb, hex_data)
                 except Exception as e:
-                    print(f"Cannot decode Pendle aggregate calls: {e}")
+                    logger.error("Cannot decode Pendle aggregate calls: %s", e)
 
             send_telegram_message(message, protocol, False)  # explicitly enable notification
             # write the last executed nonce to file
             write_last_executed_nonce_to_file(safe_address, nonce)
     else:
-        print("No pending transactions found with higher nonce than the last executed transaction.")
+        logger.info("No pending transactions found with higher nonce than the last executed transaction.")
 
 
-def check_api_limit(last_api_call_time, request_counter):
+def check_api_limit(last_api_call_time: float, request_counter: int) -> tuple[float, int]:
     current_time = time.time()
     if current_time - last_api_call_time > 1:
         last_api_call_time = current_time
@@ -313,7 +321,7 @@ def check_api_limit(last_api_call_time, request_counter):
     return last_api_call_time, request_counter
 
 
-def run_for_network(network_name, safe_address, protocol):
+def run_for_network(network_name: str, safe_address: str, protocol: str) -> None:
     check_for_pending_transactions(safe_address, network_name, protocol)
 
 
@@ -322,7 +330,7 @@ def main():
     request_counter = 0
     # loop all
     for safe in ALL_SAFE_ADDRESSES:
-        print(f"Running for {safe[0]} on {safe[1]}")
+        logger.info("Running for %s on %s", safe[0], safe[1])
         last_api_call_time, request_counter = check_api_limit(last_api_call_time, request_counter)
         run_for_network(safe[1], safe[2], safe[0])
         request_counter += 2

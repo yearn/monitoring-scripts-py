@@ -1,11 +1,13 @@
 from utils.abi import load_abi
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 THRESHOLD_UR = 0.98
 THRESHOLD_UR_NOTIFICATION = 0.99
-PROTOCOL = "SILO"
+PROTOCOL = "silo"
+logger = get_logger(PROTOCOL)
 
 # Define addresses by chain (following aave pattern)
 ADDRESSES_BY_CHAIN = {
@@ -53,7 +55,7 @@ def process_assets(chain: Chain):
 
 def main():
     for chain in [Chain.ARBITRUM]:
-        print(f"Processing {chain.name} Silos...")
+        logger.info("Processing %s Silos...", chain.name)
         process_assets(chain)
 
 

@@ -3,10 +3,12 @@ from dataclasses import dataclass
 from utils.abi import load_abi
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "RTOKEN"
+PROTOCOL = "rtoken"
+logger = get_logger(PROTOCOL)
 
 # Load ABIs once
 ABI_RTOKEN = load_abi("rtoken/abi/rtoken.json")
@@ -65,7 +67,7 @@ def monitor_rtoken_on_chain(chain: Chain):
     Args:
         chain: The blockchain to monitor
     """
-    print(f"Monitoring RToken on {chain.network_name}")
+    logger.info("Monitoring RToken on %s", chain.network_name)
 
     # NOTE: propagate errors to the caller
     config = get_rtoken_config(chain)
@@ -91,31 +93,43 @@ def monitor_rtoken_on_chain(chain: Chain):
 
         if len(responses) == 4:
             basket_needed, total_supply, redemption_available, current_rate = responses
-            print(
-                f"[{chain.network_name}] Raw Data - Basket Needed: {basket_needed}, Total Supply: {total_supply}, Redemption Available: {redemption_available}, StRSR Rate: {current_rate}"
+            logger.info(
+                "[%s] Raw Data - Basket Needed: %s, Total Supply: %s, Redemption Available: %s, StRSR Rate: %s",
+                chain.network_name,
+                basket_needed,
+                total_supply,
+                redemption_available,
+                current_rate,
             )
 
             # Validate response types
             if not isinstance(basket_needed, int) or not isinstance(total_supply, int):
-                print(
-                    f"[{chain.network_name}] Warning: Received non-integer values from RToken contract. Basket: {basket_needed}, Supply: {total_supply}"
+                logger.warning(
+                    "[%s] Received non-integer values from RToken contract. Basket: %s, Supply: %s",
+                    chain.network_name,
+                    basket_needed,
+                    total_supply,
                 )
                 basket_needed = None
                 total_supply = None
             if not isinstance(redemption_available, int):
-                print(
-                    f"[{chain.network_name}] Warning: Received non-integer value from RToken contract redemptionAvailable: {redemption_available}"
+                logger.warning(
+                    "[%s] Received non-integer value from RToken contract redemptionAvailable: %s",
+                    chain.network_name,
+                    redemption_available,
                 )
                 redemption_available = None
             if not isinstance(current_rate, int):
-                print(
-                    f"[{chain.network_name}] Warning: Received non-integer value from StRSR contract exchangeRate: {current_rate}"
+                logger.warning(
+                    "[%s] Received non-integer value from StRSR contract exchangeRate: %s",
+                    chain.network_name,
+                    current_rate,
                 )
                 current_rate = None
 
         else:
             error_message = f"[{chain.network_name}] Batch Call: Expected 4 responses, got {len(responses)}"
-            print(error_message)
+            logger.error("%s", error_message)
             send_telegram_message(error_message, PROTOCOL, True, True)
             return
 
@@ -125,7 +139,7 @@ def monitor_rtoken_on_chain(chain: Chain):
             send_telegram_message(f"⚠️ Warning: totalSupply is zero on {chain.network_name}.", PROTOCOL)
         else:
             coverage = basket_needed / total_supply
-            print(f"[{chain.network_name}] RToken Coverage: {coverage:.4f}")
+            logger.info("[%s] RToken Coverage: %s", chain.network_name, f"{coverage:.4f}")
             if coverage < config.coverage_threshold:
                 message = (
                     f"🚨 *{PROTOCOL} {chain.network_name.upper()} Alert* 🚨\\n"
@@ -144,10 +158,10 @@ def monitor_rtoken_on_chain(chain: Chain):
 
     # --- RToken Redemption Available Check ---
     if redemption_available is not None:
-        print(f"[{chain.network_name}] RToken Redemption Available: {redemption_available}")
+        logger.info("[%s] RToken Redemption Available: %s", chain.network_name, redemption_available)
         if redemption_available < config.redemption_threshold:
             threshold_eth = config.redemption_threshold / 1e18
-            print(f"[{chain.network_name}] ⚠️ Warning: redemptionAvailable is less than {threshold_eth:.0f} ETH.")
+            logger.warning("[%s] redemptionAvailable is less than %s ETH.", chain.network_name, f"{threshold_eth:.0f}")
             message = (
                 f"🚨 *{PROTOCOL} {chain.network_name.upper()} Alert* 🚨\\n"
                 f"RToken redemptionAvailable is less than {threshold_eth:.0f} ETH!\\n"
@@ -163,12 +177,12 @@ def monitor_rtoken_on_chain(chain: Chain):
 
     # --- StRSR Exchange Rate Check ---
     if current_rate is not None:
-        print(f"[{chain.network_name}] StRSR Current Exchange Rate: {current_rate}")
+        logger.info("[%s] StRSR Current Exchange Rate: %s", chain.network_name, current_rate)
         cache_key = config.get_cache_key(chain)
         initial_rate = get_last_queued_id_from_file(cache_key)
 
         if initial_rate == 0:
-            print(f"[{chain.network_name}] Saving initial StRSR exchange rate to cache: {current_rate}")
+            logger.info("[%s] Saving initial StRSR exchange rate to cache: %s", chain.network_name, current_rate)
         elif current_rate < initial_rate:
             message = (
                 f"🚨 *{PROTOCOL} {chain.network_name.upper()} Alert* 🚨\\n"
@@ -197,7 +211,7 @@ def main():
             monitor_rtoken_on_chain(chain)
         except Exception as e:
             error_message = f"Critical error monitoring on {chain.network_name}. Check the logs."
-            print(error_message + f"\n{e}")
+            logger.error("%s\n%s", error_message, e)
             send_telegram_message(error_message, PROTOCOL, True, True)
 
 

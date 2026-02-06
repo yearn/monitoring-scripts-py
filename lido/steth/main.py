@@ -3,7 +3,7 @@ from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "LIDO"
+PROTOCOL = "lido"
 PEG_THRESHOLD = 0.05  # 5% threshold
 
 # Load ABIs

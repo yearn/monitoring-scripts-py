@@ -1,9 +1,11 @@
 import requests
 
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
 PROTOCOL = "moonwell"
+logger = get_logger(PROTOCOL)
 
 
 def fetch_moonwell_proposals():
@@ -47,13 +49,13 @@ def fetch_moonwell_proposals():
             if "errors" in data and any(
                 'relation "Proposal" does not exist' in error.get("message", "") for error in data.get("errors", [])
             ):
-                print(f"Primary URL returned schema error, switching to backup URL: {url_retry}")
+                logger.info("Primary URL returned schema error, switching to backup URL: %s", url_retry)
                 use_retry_url = True
                 raise requests.exceptions.RequestException("Schema error detected")
 
         except requests.exceptions.RequestException as e:
             if not use_retry_url:
-                print(f"Primary URL failed with error: {str(e)}, trying backup URL: {url_retry}")
+                logger.info("Primary URL failed with error: %s, trying backup URL: %s", str(e), url_retry)
             response = requests.post(url_retry, json=payload)
             response.raise_for_status()
 
@@ -61,21 +63,15 @@ def fetch_moonwell_proposals():
 
         # Check if the expected structure exists in the response
         if "data" not in data:
-            print("Error: API returned no data. Response:", data)
+            logger.error("API returned no data. Response: %s", data)
             return None
 
         if data["data"] is None or "proposals" not in data["data"]:
-            print(
-                "Error: API structure has changed. No 'proposals' in data. Response:",
-                data,
-            )
+            logger.error("API structure has changed. No 'proposals' in data. Response: %s", data)
             return None
 
         if "items" not in data["data"]["proposals"]:
-            print(
-                "Error: API structure has changed. No 'items' in proposals. Response:",
-                data,
-            )
+            logger.error("API structure has changed. No 'items' in proposals. Response: %s", data)
             return None
 
         base_proposals = []
@@ -83,7 +79,7 @@ def fetch_moonwell_proposals():
 
         for proposal in data["data"]["proposals"]["items"]:
             if "stateChanges" not in proposal or "items" not in proposal["stateChanges"]:
-                print(f"Skipping proposal {proposal.get('proposalId')} - missing stateChanges structure")
+                logger.info("Skipping proposal %s - missing stateChanges structure", proposal.get("proposalId"))
                 continue
 
             state_changes = proposal["stateChanges"]["items"]
@@ -97,11 +93,11 @@ def fetch_moonwell_proposals():
                             if proposal_id > last_reported_id:
                                 base_proposals.append(proposal)
                             else:
-                                print("Proposal with id", proposal_id, "already sent")
+                                logger.info("Proposal with id %s already sent", proposal_id)
                             break
 
         if not base_proposals:
-            print("No new proposals found")
+            logger.info("No new proposals found")
             return None
 
         moonwell_proposal_url = "https://moonwell.fi/governance/proposal/moonbeam?id="
@@ -125,7 +121,7 @@ def fetch_moonwell_proposals():
     except requests.exceptions.RequestException as e:
         # skip sending telegram message because tenderly alert is also set up for proposals
         error_message = f"Failed to fetch moonwell proposals: {e}"
-        print(error_message)
+        logger.error("%s", error_message)
         return None
 
 

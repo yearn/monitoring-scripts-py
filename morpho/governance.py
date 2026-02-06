@@ -8,10 +8,12 @@ from utils.cache import (
     write_last_executed_morpho_to_file,
 )
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "MORPHO"
+PROTOCOL = "morpho"
+logger = get_logger("morpho.governance")
 MORPHO_URL = "https://app.morpho.org"
 COMPOUND_URL = "https://compound.blue"
 
@@ -171,8 +173,11 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 )
                 write_last_executed_morpho_to_file(vault_address, market, PENDING_CAP_TYPE, pending_cap_timestamp)
             else:
-                print(
-                    f"Skipping pending cap update for vault {name}({vault_url}) for market: {market_url} because it was already executed"
+                logger.info(
+                    "Skipping pending cap update for vault %s(%s) for market: %s because it was already executed",
+                    name,
+                    vault_url,
+                    market_url,
                 )
 
         # removable_at check
@@ -186,8 +191,11 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
                 )
                 write_last_executed_morpho_to_file(vault_address, market, REMOVABLE_AT_TYPE, removable_at)
             else:
-                print(
-                    f"Skipping removable_at update for vault {name}({vault_url}) for market: {market_url} because it was already executed"
+                logger.info(
+                    "Skipping removable_at update for vault %s(%s) for market: %s because it was already executed",
+                    name,
+                    vault_url,
+                    market_url,
                 )
 
 
@@ -221,8 +229,8 @@ def get_data_for_chain(chain: Chain):
     client = ChainManager.get_client(chain)
     vaults = VAULTS_BY_CHAIN[chain]
 
-    print(f"Processing Morpho Vaults on {chain.name} ...")
-    print(f"Vaults: {vaults}")
+    logger.info("Processing Morpho Vaults on %s ...", chain.name)
+    logger.info("Vaults: %s", vaults)
 
     for vault in vaults:
         morpho_contract = client.eth.contract(address=vault[1], abi=ABI_MORPHO)

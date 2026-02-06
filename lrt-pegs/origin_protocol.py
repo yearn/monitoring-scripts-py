@@ -1,11 +1,13 @@
 from utils.abi import load_abi
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 REDEEM_VAULE = 1e18
-PROTOCOL = "PEGS"
+PROTOCOL = "pegs"
+logger = get_logger("lrt-pegs.origin")
 
 # Load Origin Vault ABI
 ABI_ORIGIN_VAULT = load_abi("lrt-pegs/abi/OriginVault.json")
@@ -59,16 +61,18 @@ def process_origin(chain: Chain):
         redeem_value = responses[0]
         wrapped_oeth_redeem_value = responses[1]
 
-        print(f"🔍 Redeem value for wsuperOETH on {chain.name}: {redeem_value / 1e18:.2f}")
-        print(f"🔍 Wrapped OETH redeem value: {wrapped_oeth_redeem_value / 1e18:.2f}")
+        logger.info("Redeem value for wsuperOETH on %s: %s", chain.name, f"{redeem_value / 1e18:.2f}")
+        logger.info("Wrapped OETH redeem value: %s", f"{wrapped_oeth_redeem_value / 1e18:.2f}")
 
         # Caching for the redeem value, if the redeem value is lower, send telegram message
         cache_key = get_cache_key(chain)
         cached_redeem_value = get_last_queued_id_from_file(cache_key)
 
         if wrapped_oeth_redeem_value == 0:
-            print(
-                f"[{chain.network_name}] Saving initial redeem value to cache: {wrapped_oeth_redeem_value / 1e18:.2f}"
+            logger.info(
+                "[%s] Saving initial redeem value to cache: %s",
+                chain.network_name,
+                f"{wrapped_oeth_redeem_value / 1e18:.2f}",
             )
         elif wrapped_oeth_redeem_value < cached_redeem_value:
             message = (
@@ -88,9 +92,9 @@ def process_origin(chain: Chain):
 
 
 def main():
-    print("Checking Origin Protocol on Base...")
+    logger.info("Checking Origin Protocol on Base...")
     process_origin(Chain.BASE)
-    print("Checking Origin Protocol on Mainnet...")
+    logger.info("Checking Origin Protocol on Mainnet...")
     process_origin(Chain.MAINNET)
     # NOTE: no need to check liquidity on Base because pool is concentrated around 1 tick and by pool with the highest liquidity on Base
     # docs: https://docs.originprotocol.com/yield-bearing-tokens/core-concepts/amo

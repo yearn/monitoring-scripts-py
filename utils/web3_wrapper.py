@@ -11,9 +11,13 @@ from web3.exceptions import ProviderConnectionError
 from web3.providers.rpc import HTTPProvider
 from web3.types import RPCResponse
 
+from utils.logging import get_logger
+
 from .chains import Chain
 
 load_dotenv()
+
+logger = get_logger("utils.web3")
 
 T = TypeVar("T")  # Generic type for return values
 
@@ -28,7 +32,7 @@ def retry_with_provider_rotation(func):
             except Exception as e:
                 current_url = self.endpoint_uri
                 errors[current_url] = str(e)
-                print(f"Failed on {current_url}: {str(e)}")
+                logger.warning("Failed on %s: %s", current_url, e)
                 time.sleep(self.backoff_factor * (2**attempt))
                 self._rotate_provider()
 
@@ -53,7 +57,7 @@ class RetryProviders:
         current_index = self.provider_urls.index(self.endpoint_uri)
         next_index = (current_index + 1) % len(self.provider_urls)
         self.endpoint_uri = self.provider_urls[next_index]
-        print(f"Switching to provider: {self.endpoint_uri}")
+        logger.warning("Switching to provider: %s", self.endpoint_uri)
 
 
 class MultiHTTPProvider(HTTPProvider, RetryProviders):
@@ -79,11 +83,11 @@ class MultiHTTPProvider(HTTPProvider, RetryProviders):
             try:
                 parsed = urlparse(url)
                 if not parsed.scheme or not parsed.netloc:
-                    print(f"Invalid URL format: {url}")
+                    logger.warning("Invalid URL format: %s", url)
                     continue
                 valid_urls.append(url)
             except Exception as e:
-                print(f"Error validating URL {url}: {str(e)}")
+                logger.warning("Error validating URL %s: %s", url, e)
         return valid_urls
 
     @retry_with_provider_rotation

@@ -4,10 +4,12 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from utils.abi import load_abi
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import Chain, ChainManager
 
-PROTOCOL = "ETHENA"
+PROTOCOL = "ethena"
+logger = get_logger(PROTOCOL)
 
 # NOTE: ethena cannot be used because it blocked for Github Actions IP
 # Ethena transparency API endpoints
@@ -50,12 +52,12 @@ def fetch_json(url: str) -> dict | None:
     try:
         resp = requests.get(url, timeout=REQUEST_TIMEOUT)
         if resp.status_code != 200:
-            print(f"HTTP {resp.status_code} for {url}")
-            print(resp.text)
+            logger.error("HTTP %s for %s", resp.status_code, url)
+            logger.error("%s", resp.text)
             return None
         return resp.json()
     except Exception as e:
-        print(f"Failed to fetch {url}\n{e}")
+        logger.error("Failed to fetch %s: %s", url, e)
         return None
 
 
@@ -95,7 +97,7 @@ def get_usde_supply() -> float | None:
 
     timestamp = data.get("timestamp")  # May be missing
     if timestamp and is_stale_timestamp(timestamp):
-        print(f"⚠️ Data from ethena is old: {timestamp}")
+        logger.warning("Data from ethena is old: %s", timestamp)
         return None
 
     return float(data["supply"]) / 1e18
@@ -134,7 +136,7 @@ def get_llamarisk_data() -> LlamaRiskData | None:
 
     if is_stale_timestamp(timestamp_chain, hours_ago):
         # NOTE: don't send telegram message because there is a problem with the API
-        print(f"⚠️ Chain data is older than {hours_ago} hours. Timestamp: {timestamp_chain}")
+        logger.warning("Chain data is older than %s hours. Timestamp: %s", hours_ago, timestamp_chain)
 
     if is_stale_timestamp(timestamp_reserve, hours_ago):
         send_telegram_message(
@@ -182,7 +184,7 @@ def get_tokens_supply() -> tuple[float, float] | tuple[None, None]:
         susde = client.eth.contract(address=SUSDE_ADDRESS, abi=ABI_ERC20)
     except Exception as e:
         error_message = f"Error creating contract instances: {e}. Check ABI paths and contract addresses."
-        print(error_message)
+        logger.error("%s", error_message)
         return  # Cannot proceed without contracts
 
     usde_supply = None
@@ -197,7 +199,7 @@ def get_tokens_supply() -> tuple[float, float] | tuple[None, None]:
 
             if len(responses) == 2:
                 usde_supply, susde_supply = responses
-                print(f"Raw Data - USDe Supply: {usde_supply}, Susde Supply: {susde_supply}")
+                logger.info("Raw Data - USDe Supply: %s, Susde Supply: %s", usde_supply, susde_supply)
             else:
                 raise Exception(f"Batch Call: Expected 3 responses, got {len(responses)}")
 
@@ -242,7 +244,7 @@ def llama_risk_check():
 
     if llama_risk_is_old:
         # NOTE: skip validating old data, we already got telegram message
-        print(f"LlamaRisk data is old: {llama_risk.timestamp}")
+        logger.warning("LlamaRisk data is old: %s", llama_risk.timestamp)
         return
 
     ratio = total_backing_assets / supply
@@ -262,10 +264,14 @@ def llama_risk_check():
     # remove decimasl because llama risk values are without it
     usde_supply = usde_supply / 1e18
     susde_supply = susde_supply / 1e18
-    print(
-        f"[{llama_risk.timestamp}] Ethena – collateral: {collateral:,.2f} USD | "
-        f"supply: {supply:,.2f} | ratio: {ratio:.4f}\n"
-        f"onchain data: usde supply = {usde_supply / 1e18:,.2f} | susde supply = {susde_supply / 1e18:,.2f}"
+    logger.info(
+        "[%s] Ethena – collateral: %s USD | supply: %s | ratio: %s\nonchain data: usde supply = %s | susde supply = %s",
+        llama_risk.timestamp,
+        f"{collateral:,.2f}",
+        f"{supply:,.2f}",
+        f"{ratio:.4f}",
+        f"{usde_supply / 1e18:,.2f}",
+        f"{susde_supply / 1e18:,.2f}",
     )
 
     # NOTE: set higher value_diff_trigger because on-chain and off-chain values are not in sync
@@ -326,7 +332,7 @@ def chaos_labs_check():
 
     attestation_time = datetime.fromisoformat(attestation.timestamp.replace("Z", "+00:00"))
     if datetime.now(timezone.utc) - attestation_time > timedelta(days=1):
-        print(f"ETHENA: Attestation from Chaos Labs is older than 1 day: {attestation_time}. Skipping check.")
+        logger.warning("Attestation from Chaos Labs is older than 1 day: %s. Skipping check.", attestation_time)
         return
 
     error_messages = []
@@ -361,9 +367,9 @@ def chaos_labs_check():
     # Calculate and report backing metrics for transparency
     backing_ratio = attestation.backing_assets_usd_value / attestation.total_supply
     reserve_buffer = attestation.backing_assets_and_reserve_fund_usd_value - attestation.total_supply
-    print(f"ETHENA: Attestation from Chaos Labs: {attestation.timestamp}")
-    print(f"ETHENA: Backing Ratio: {backing_ratio:.4f} ({backing_ratio * 100:,.2f}%)")
-    print(f"ETHENA: Reserve Buffer: ${reserve_buffer:,.2f}")
+    logger.info("Attestation from Chaos Labs: %s", attestation.timestamp)
+    logger.info("Backing Ratio: %s (%s%%)", f"{backing_ratio:.4f}", f"{backing_ratio * 100:,.2f}")
+    logger.info("Reserve Buffer: $%s", f"{reserve_buffer:,.2f}")
 
     if error_messages:
         message = "🔴 ETHENA CHAOS LABS ALERTS:\n" + "\n".join(error_messages)

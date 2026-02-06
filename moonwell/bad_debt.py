@@ -2,9 +2,11 @@ from datetime import datetime, timedelta
 
 import requests
 
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
-PROTOCOL = "MOONWELL"
+PROTOCOL = "moonwell"
+logger = get_logger(PROTOCOL)
 
 BAD_DEBT_RATIO = 0.005  # 0.5%
 DEBT_SUPPLY_RATIO = 0.70  # 70%
@@ -53,7 +55,7 @@ def fetch_metrics():
     # Send combined error messages if any
     if error_messages:
         combined_message = "Errors occurred:" + "\n".join(error_messages)
-        print(combined_message)
+        logger.error("%s", combined_message)
         return {}
     return metrics
 
@@ -74,12 +76,12 @@ def check_thresholds(metrics):
     # Calculate ratios
     bad_debt_ratio = bad_debt / tvl if tvl > 0 else 0
     debt_supply_ratio = total_debt / total_supply if total_supply > 0 else 0
-    print(f"Total supply: {total_supply:,.2f}")
-    print(f"Total debt: {total_debt:,.2f}")
-    print(f"TVL: {tvl:,.2f}")
-    print(f"Bad debt: {bad_debt:,.2f}")
-    print(f"Bad debt ratio: {bad_debt_ratio:.2%}")
-    print(f"Debt supply ratio: {debt_supply_ratio:.2%}")
+    logger.info("Total supply: %s", f"{total_supply:,.2f}")
+    logger.info("Total debt: %s", f"{total_debt:,.2f}")
+    logger.info("TVL: %s", f"{tvl:,.2f}")
+    logger.info("Bad debt: %s", f"{bad_debt:,.2f}")
+    logger.info("Bad debt ratio: %s", f"{bad_debt_ratio:.2%}")
+    logger.info("Debt supply ratio: %s", f"{debt_supply_ratio:.2%}")
 
     alerts = []
 
