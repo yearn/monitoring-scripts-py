@@ -133,7 +133,6 @@ def main():
 
         # --- Loan Monitoring (GPU Loans) ---
 
-
         all_loans = get_loan_details(client, SUSDAI_ADDR)
 
         # --- Manual Adjustment for Legacy Loan ---
