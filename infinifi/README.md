@@ -5,6 +5,13 @@ This folder contains monitoring scripts for the Infinifi protocol.
 ## Structure
 
 - `main.py`: Monitors protocol reserves, backing, and liquid USDC reserves.
+  Run this script hourly using github actions.
+
+[Risk Score Report](https://github.com/yearn/risk-score/blob/master/reports/report/infinifi.md)
+
+## Alerts
+
+- **Liquid Reserves**: A Telegram alert is triggered if liquid reserves drop below $15M.
 
 ## Governance Monitoring
 

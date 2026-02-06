@@ -10,7 +10,7 @@ from utils.web3_wrapper import ChainManager
 # Constants
 PROTOCOL = "infinifi"
 IUSD_ADDRESS = Web3.to_checksum_address("0x48f9e38f3070AD8945DFEae3FA70987722E3D89c")
-LIQUID_RESERVES_THRESHOLD = 25_000_000
+LIQUID_RESERVES_THRESHOLD = 15_000_000
 
 # API Configuration
 API_BASE_URL = "https://api.infinifi.xyz"
@@ -51,8 +51,8 @@ def main():
         # Execute batch
         batch_results = client.execute_batch(batch)
 
-        iusd_decimals = batch_results[0]
-        iusd_supply_raw = batch_results[1]
+        iusd_decimals = int(batch_results[0])
+        iusd_supply_raw = int(batch_results[1])
 
         iusd_supply = iusd_supply_raw / (10**iusd_decimals)
 
@@ -61,21 +61,21 @@ def main():
         total_backing = 0
         api_data = fetch_api_data()
 
-        if api_data:
-            if api_data.get("code") == "OK" and "data" in api_data:
-                stats = api_data["data"]["stats"]
-
-                # Extract Liquid Reserves (using 'asset' key for USDC)
-                if "asset" in stats and "totalLiquidAssetNormalized" in stats["asset"]:
-                    liquid_reserves = float(stats["asset"]["totalLiquidAssetNormalized"])
-
-                # Extract Total Backing (TVL)
-                if "asset" in stats and "totalTVLAssetNormalized" in stats["asset"]:
-                    total_backing = float(stats["asset"]["totalTVLAssetNormalized"])
-            else:
-                print(f"API Data format unexpected. Code: {api_data.get('code')}")
-        else:
+        if not api_data:
             print("No API data received.")
+        elif api_data.get("code") != "OK" or "data" not in api_data:
+            print(f"API Data format unexpected. Code: {api_data.get('code')}")
+        else:
+            stats = api_data["data"]["stats"]
+            # Extract Liquid Reserves & TVL (using 'asset' key for USDC)
+            asset_stats = stats.get("asset")
+
+            if asset_stats:
+                if "totalLiquidAssetNormalized" in asset_stats:
+                    liquid_reserves = float(asset_stats["totalLiquidAssetNormalized"])
+
+                if "totalTVLAssetNormalized" in asset_stats:
+                    total_backing = float(asset_stats["totalTVLAssetNormalized"])
 
         print("\n--- Infinifi Stats ---")
         print(f"iUSD Supply:     ${iusd_supply:,.2f}")
