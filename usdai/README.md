@@ -25,6 +25,7 @@ We track the following key metrics to ensure solvency and stability:
 - **Buffer Drop**: A Telegram alert is triggered if the **Buffer** value drops below $1M.
   A significant drop could indicate loss of backing value.
 - **Loan Activity**: A Telegram alert is triggered if the **Total Verified Principal** changes (indicating a new loan origination or a repayment).
+- **Legacy Loan Expiry**: A Telegram alert is triggered when the legacy loan (NVIDIA H200s) reaches its maturity date (July 2028).
 
 - **Mint Ratio Change**: A Telegram alert is triggered if the protocol's Mint Ratio changes from its previous value. This is a critical parameter that determines backing requirements.
 - **Governance Events**: We monitor for queued governance actions on the USDai Admin Safe and sUSDai Admin Safe contracts.
@@ -93,9 +94,9 @@ uv run usdai/main.py
 
 The script calculates GPU loans by directly scanning the **Loan Router** contract for active loan NFTs held by the sUSDai Vault.
 
-1. **Direct Read**: It scans `tokenOfOwnerByIndex` on the Loan Router (`0x0C2E...`) for the sUSDai address.
+1. **Direct Read**: It scans `tokenOfOwnerByIndex` on the Loan Router for the sUSDai address.
 2. **Decoding**: It decodes the raw `loanState` storage to extract the exact **Principal Amount** and **Maturity Date**.
-3. **Legacy Loans**: It includes hardcoded values for known legacy loans (e.g. NVIDIA H200s, ~$560k) that originated before the current Loan Router deployment.
+3. **Legacy Loans**: It includes hardcoded values for known legacy loan (NVIDIA H200s, $560k) that originated before the current Loan Router deployment.
 4. **Total Principal**: Sums these up to track the exact face value of active loans.
 
 Governance Monitoring:
