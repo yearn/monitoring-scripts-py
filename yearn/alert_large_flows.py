@@ -132,7 +132,7 @@ def http_json(url: str, method: str = "GET", body: dict | None = None, headers: 
         return payload
 
 
-def gql_request(query: str, variables: dict):
+def gql_request(query: str, variables: dict) -> dict | None:
     if not ENVIO_GRAPHQL_URL:
         raise RuntimeError(
             "ENVIO_GRAPHQL_URL is not set. Set it to the Envio GraphQL endpoint, "
@@ -140,7 +140,16 @@ def gql_request(query: str, variables: dict):
         )
     _logger.info("gql_request")
     payload = {"query": query, "variables": variables}
-    return http_json(ENVIO_GRAPHQL_URL, method="POST", body=payload)
+
+    try:
+        return http_json(ENVIO_GRAPHQL_URL, method="POST", body=payload)
+    except urllib.error.HTTPError as exc:
+        send_telegram_message(
+            f"⚠️ {PROTOCOL} Large Flow Alert: Envio GraphQL error (HTTP {exc.code}). Skipping this run.",
+            PROTOCOL,
+        )
+        _logger.error("Envio request failed with HTTP %d", exc.code)
+        return None
 
 
 def format_units(value: str, decimals: int) -> Decimal:
@@ -408,10 +417,9 @@ def main():
     chain_ids = [int(x.strip()) for x in args.chain_ids.split(",") if x.strip()]
 
     response = load_events(args.limit, chain_ids, since_ts)
-    if "errors" in response:
-        _logger.error("gql errors: %s", response["errors"])
-        print(json.dumps({"error": response["errors"]}), file=sys.stderr)
-        sys.exit(1)
+    if response is None or "errors" in response:
+        _logger.warning("no response from load_events or gql errors: %s", response.get("errors"))
+        return
 
     data = response.get("data", {})
     deposits = data.get("deposits", [])
