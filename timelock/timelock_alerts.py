@@ -3,7 +3,6 @@
 
 import argparse
 import json
-import logging
 import os
 import sys
 import time
@@ -14,6 +13,7 @@ from dotenv import load_dotenv
 
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import EXPLORER_URLS, Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
 load_dotenv()
@@ -57,7 +57,7 @@ TIMELOCK_LIST: list[TimelockConfig] = [
 # Lookup by lowercase address
 TIMELOCKS: dict[str, TimelockConfig] = {t.address: t for t in TIMELOCK_LIST}
 
-_logger = logging.getLogger("timelock_alerts")
+_logger = get_logger("timelock_alerts")
 
 
 def http_json(url: str, method: str = "GET", body: dict | None = None, headers: dict | None = None) -> dict:
@@ -328,11 +328,7 @@ def main() -> None:
         help="Logging level (DEBUG, INFO, WARNING, ERROR).",
     )
     args = parser.parse_args()
-    logging.basicConfig(
-        level=args.log_level.upper(),
-        format="[%(name)s] %(levelname)s %(message)s",
-        stream=sys.stderr,
-    )
+    _logger.setLevel(args.log_level.upper())
 
     use_cache = not args.no_cache
 
@@ -354,7 +350,6 @@ def main() -> None:
     response = load_events(args.limit, since_ts)
     if "errors" in response:
         _logger.error("GraphQL errors: %s", response["errors"])
-        print(json.dumps({"error": response["errors"]}), file=sys.stderr)
         sys.exit(1)
 
     data = response.get("data", {})

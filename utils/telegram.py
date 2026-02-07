@@ -3,7 +3,11 @@ import os
 import requests
 from dotenv import load_dotenv
 
+from utils.logging import get_logger
+
 load_dotenv()
+
+logger = get_logger("utils.telegram")
 
 # Maximum message length allowed by Telegram API
 MAX_MESSAGE_LENGTH = 4096
@@ -32,7 +36,7 @@ def send_telegram_message(
     Raises:
         TelegramError: If the message fails to send
     """
-    print(f"Sending telegram message:\n{message}")
+    logger.info("Sending telegram message:\n%s", message)
 
     # Truncate long messages
     if len(message) > MAX_MESSAGE_LENGTH:
@@ -46,7 +50,7 @@ def send_telegram_message(
     chat_id = os.getenv(f"TELEGRAM_CHAT_ID_{protocol.upper()}")
 
     if not bot_token or not chat_id:
-        print(f"Warning: Missing Telegram credentials for {protocol}")
+        logger.warning("Missing Telegram credentials for %s", protocol)
         return
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"

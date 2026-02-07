@@ -13,7 +13,12 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+from utils.logging import get_logger
+
 load_dotenv()
+
+logger = get_logger("tenderly")
+
 TENDERLY_API_KEY = os.getenv("TENDERLY_API_KEY")
 TENDERLY_API_URL = "https://api.tenderly.co/api/v1/account/yearn/project/sam/alerts"
 
@@ -54,7 +59,7 @@ def save_alerts(data: dict) -> None:
     sorted_data = {"alerts": sorted_alerts}
     with open(ALERTS_FILE, "w") as f:
         json.dump(sorted_data, f, indent=2)
-    print(f"✓ Saved {len(sorted_alerts)} alerts to {ALERTS_FILE}")
+    logger.info("Saved %d alerts to %s", len(sorted_alerts), ALERTS_FILE)
 
 
 def verify_alerts() -> None:
@@ -80,7 +85,7 @@ def verify_alerts() -> None:
             f"   Run with --update to save new snapshot if changes are intentional."
         )
 
-    print(f"✓ Verified {current_count} alerts match stored snapshot (hash: {current_hash})")
+    logger.info("Verified %d alerts match stored snapshot (hash: %s)", current_count, current_hash)
 
 
 def main():
@@ -95,7 +100,7 @@ def main():
     if args.update:
         data = fetch_alerts()
         save_alerts(data)
-        print(f"✓ Hash: {get_response_hash(data)}")
+        logger.info("Hash: %s", get_response_hash(data))
     else:
         verify_alerts()
 

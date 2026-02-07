@@ -4,7 +4,7 @@ from utils.chains import Chain
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "USD0"
+PROTOCOL = "usd0"
 peg_threshold = 0.001  # 0.1% used
 
 # Load ABI

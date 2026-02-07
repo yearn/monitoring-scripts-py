@@ -1,9 +1,11 @@
 from utils.abi import load_abi
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "PEGS"
+PROTOCOL = "pegs"
+logger = get_logger("lrt-pegs.uniswap")
 PEG_THRESHOLD = 80  # Same threshold as other scripts
 
 # Load ABIs
@@ -69,7 +71,7 @@ def process_pools(chain: Chain = Chain.MAINNET):
         else:
             percentage = (balance1 / total) * 100
 
-        print(f"{pool_name} LRT ratio is {percentage:.2f}%")
+        logger.info("%s LRT ratio is %s%%", pool_name, f"{percentage:.2f}")
 
         if percentage > peg_threshold:
             message = f"🚨 Uniswap V3 Alert! {pool_name} LRT ratio is {percentage:.2f}%"
@@ -77,7 +79,7 @@ def process_pools(chain: Chain = Chain.MAINNET):
 
 
 def main():
-    print("Checking Uniswap V3 pools...")
+    logger.info("Checking Uniswap V3 pools...")
     process_pools()
 
 

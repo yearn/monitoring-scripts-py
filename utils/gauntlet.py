@@ -3,6 +3,11 @@ from datetime import datetime, timedelta
 
 import requests
 
+from utils.formatting import format_usd
+from utils.logging import get_logger
+
+logger = get_logger("utils.gauntlet")
+
 # Common supply assets and risk tiers used across protocols
 SUPPLY_ASSETS = [
     # Risk Tier 1
@@ -118,7 +123,7 @@ def get_gauntlet_build_id() -> str | None:
         if build_id:
             return build_id.group(1)
     except Exception as e:
-        print(f"🚨 Error fetching Gauntlet build ID: {str(e)}")
+        logger.error("Error fetching Gauntlet build ID: %s", e)
     return None
 
 
@@ -148,15 +153,15 @@ def get_markets_for_protocol(protocol, max_retries=3) -> list[dict]:
 
         except requests.RequestException as e:
             if attempt == max_retries - 1:  # Last attempt
-                print(f"🚨 Error fetching Gauntlet metrics after {max_retries} attempts: {str(e)}")
+                logger.error("Error fetching Gauntlet metrics after %s attempts: %s", max_retries, e)
                 return []
-            print(f"Attempt {attempt + 1} failed, retrying...")
+            logger.warning("Attempt %s failed, retrying...", attempt + 1)
             continue
         except ValueError as e:
-            print(f"🚨 Error parsing Gauntlet JSON response: {str(e)}")
+            logger.error("Error parsing Gauntlet JSON response: %s", e)
             return []
         except Exception as e:
-            print(f"🚨 Unexpected error: {str(e)}")
+            logger.error("Unexpected error: %s", e)
             return []
 
 
@@ -183,15 +188,15 @@ def get_charts_for_protocol_market(protocol, market, max_retries=3):
 
         except requests.RequestException as e:
             if attempt == max_retries - 1:  # Last attempt
-                print(f"🚨 Error fetching Gauntlet charts after {max_retries} attempts: {str(e)}")
+                logger.error("Error fetching Gauntlet charts after %s attempts: %s", max_retries, e)
                 return []
-            print(f"Attempt {attempt + 1} failed, retrying...")
+            logger.warning("Attempt %s failed, retrying...", attempt + 1)
             continue
         except ValueError as e:
-            print(f"🚨 Error parsing Gauntlet JSON response: {str(e)}")
+            logger.error("Error parsing Gauntlet JSON response: %s", e)
             return []
         except Exception as e:
-            print(f"🚨 Unexpected error: {str(e)}")
+            logger.error("Unexpected error: %s", e)
             return []
 
 
@@ -200,17 +205,6 @@ def get_timestamp_before(hours: int):
     now = datetime.utcnow()
     one_hour_ago = now - timedelta(hours=hours)
     return one_hour_ago.strftime("%Y-%m-%dT%H:00:00.000Z")
-
-
-def format_usd(number: float) -> str:
-    """Format number to readable USD string with K, M, B suffixes"""
-    if number >= 1_000_000_000:
-        return f"${number / 1_000_000_000:.2f}B"
-    if number >= 1_000_000:
-        return f"${number / 1_000_000:.2f}M"
-    if number >= 1_000:
-        return f"${number / 1_000:.2f}K"
-    return f"${number:.2f}"
 
 
 def get_market_allocation_threshold(market_risk_level, vault_risk_level) -> float:
@@ -239,7 +233,7 @@ def fetch_borrow_metrics_from_gauntlet(protocol, market_key, vault_risk_level) -
     total_supply = cards[0]["value"]["amount"]
     total_borrow = cards[1]["value"]["amount"]
     last_updated = cards[0]["lastUpdated"]
-    print(f"Last updated: {last_updated}")
+    logger.info("Last updated: %s", last_updated)
 
     old_data_threshold = 36  # hours is the max time for a market to be updated
     if last_updated < get_timestamp_before(hours=old_data_threshold):
@@ -250,12 +244,12 @@ def fetch_borrow_metrics_from_gauntlet(protocol, market_key, vault_risk_level) -
 
     charts = charts["charts"]
     total_risk_level = 0.0
-    print(f"Market: {market_key}")
-    print(f"Assigned Risk Level: {vault_risk_level}")
-    print(f"Total supply: {format_usd(total_supply)}")
-    print(f"Total borrow: {format_usd(total_borrow)}")
-    print("--------------------------------")
-    print("Asset | Supply | Allocation")
+    logger.info("Market: %s", market_key)
+    logger.info("Assigned Risk Level: %s", vault_risk_level)
+    logger.info("Total supply: %s", format_usd(total_supply))
+    logger.info("Total borrow: %s", format_usd(total_borrow))
+    logger.info("--------------------------------")
+    logger.info("Asset | Supply | Allocation")
 
     for chart in charts:
         if chart["key"] == "market_health_timeseries_asset_supply":
@@ -285,7 +279,7 @@ def fetch_borrow_metrics_from_gauntlet(protocol, market_key, vault_risk_level) -
                 # Calculate risk contribution
                 risk_multiplier = asset_risk_tier
                 total_risk_level += risk_multiplier * allocation_ratio
-                print(f"{asset} | {format_usd(supply)} | {allocation_ratio:.1%}")
+                logger.info("%s | %s | %s", asset, format_usd(supply), f"{allocation_ratio:.1%}")
 
     # Check total risk level against threshold for vault risk level
     if total_risk_level > MAX_RISK_THRESHOLDS[vault_risk_level]:
@@ -304,8 +298,8 @@ def fetch_borrow_metrics_from_gauntlet(protocol, market_key, vault_risk_level) -
             f"💸 Total borrow: {format_usd(total_borrow)}\n"
         )
 
-    print("--------------------------------")
-    print(f"Total risk level: {total_risk_level:.1%}")
-    print("\n================================\n")
+    logger.info("--------------------------------")
+    logger.info("Total risk level: %s", f"{total_risk_level:.1%}")
+    logger.info("================================")
 
     return alerts

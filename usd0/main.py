@@ -7,7 +7,7 @@ from utils.telegram import send_telegram_message
 
 load_dotenv()
 dune = DuneClient(os.getenv("DUNE_API_KEY"))
-PROTOCOL = "USD0"
+PROTOCOL = "usd0"
 COLLATERAL_FACTOR_MINIMUM = 100.6
 
 

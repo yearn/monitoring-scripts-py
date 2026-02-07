@@ -7,10 +7,12 @@ when thresholds are exceeded.
 
 from utils.abi import load_abi
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "aave"
+logger = get_logger(PROTOCOL)
 
 ABI_ATOKEN = load_abi("aave/abi/AToken.json")
 
@@ -93,11 +95,11 @@ def process_assets(chain: Chain) -> None:
 
 def main() -> None:
     for chain in [Chain.MAINNET]:
-        print(f"Processing {chain.name} assets...")
+        logger.info("Processing %s assets...", chain.name)
         try:
             process_assets(chain)
         except Exception as e:
-            print(f"Error processing {chain.name}: {str(e)}")
+            logger.error("Error processing %s: %s", chain.name, e)
 
 
 if __name__ == "__main__":

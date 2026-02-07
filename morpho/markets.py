@@ -12,12 +12,14 @@ from typing import Any, Dict, List
 import requests
 
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
 # Configuration constants
 API_URL = "https://api.morpho.org/graphql"
 MORPHO_URL = "https://app.morpho.org"
-PROTOCOL = "MORPHO"
+PROTOCOL = "morpho"
+logger = get_logger(PROTOCOL)
 BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
 LIQUIDITY_THRESHOLD = 0.01  # 1% of total assets
 LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.095  # 9.5% of total assets
@@ -491,7 +493,7 @@ def check_high_allocation(vault_data):
         unique_key = market["uniqueKey"]
         market_supply = allocation.get("supplyAssetsUsd", 0) or 0
         if market_supply == 0:
-            print(f"🔄 Skipping market {unique_key} with no supply assets")
+            logger.info("Skipping market %s with no supply assets", unique_key)
             continue
         allocation_ratio = min(market_supply / total_assets, 1.0)  # prevent allocation ratio from exceeding 100%
 
@@ -527,7 +529,7 @@ def check_high_allocation(vault_data):
         total_risk_level += risk_multiplier * allocation_ratio
 
     # print total risk level and vault name
-    print(f"Total risk level: {total_risk_level:.1%}, vault: {vault_name} on {chain.name}")
+    logger.info("Total risk level: %s, vault: %s on %s", f"{total_risk_level:.1%}", vault_name, chain.name)
     # round total_risk_level to 2 decimal places
     total_risk_level = round(total_risk_level, 2)
     if total_risk_level > MAX_RISK_THRESHOLDS[risk_level]:
@@ -643,17 +645,22 @@ def check_combined_liquidity_threshold(
 ) -> None:
     """Check if combined liquidity meets threshold and send alert if needed."""
     if combined_total_assets < 10_000:
-        print(
-            f"Skipping {asset_symbol} combined liquidity check: total assets ${combined_total_assets:,.2f} below threshold"
+        logger.info(
+            "Skipping %s combined liquidity check: total assets $%s below threshold",
+            asset_symbol,
+            f"{combined_total_assets:,.2f}",
         )
         return
 
     combined_liquidity_ratio = combined_liquidity / combined_total_assets
 
-    print(
-        f"Combined {asset_symbol} liquidity check: {vault_count} vaults on {chain.name}, "
-        f"${combined_total_assets:,.2f} total assets, "
-        f"{combined_liquidity_ratio:.1%} liquidity ratio"
+    logger.info(
+        "Combined %s liquidity check: %s vaults on %s, $%s total assets, %s liquidity ratio",
+        asset_symbol,
+        vault_count,
+        chain.name,
+        f"{combined_total_assets:,.2f}",
+        f"{combined_liquidity_ratio:.1%}",
     )
 
     if combined_liquidity_ratio < LIQUIDITY_THRESHOLD_YV_COLLATERAL:
@@ -762,7 +769,7 @@ def main() -> None:
     Check markets for low liquidity, high allocation and bad debt.
     Send telegram message if data cannot be fetched.
     """
-    print("Checking Morpho markets...")
+    logger.info("Checking Morpho markets...")
 
     # Collect all vault addresses from all chains
     vault_addresses = []

@@ -1,10 +1,12 @@
 from utils.abi import load_abi
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 CUSD = "0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC"
 PROTOCOL = "cap"
+logger = get_logger(PROTOCOL)
 ALERT_THRESHOLD = 100_000_000  # 100M
 
 
@@ -45,7 +47,7 @@ def main():
         divisor = 10 ** int(decimals)
         normalized = total_units / divisor if divisor else 0
         line = f"{symbol}: {normalized:,.6f}"
-        print(line)
+        logger.info("%s", line)
         total_normalized += normalized
         lines.append(line)
 
@@ -55,5 +57,5 @@ def main():
 
 
 if __name__ == "__main__":
-    print("Running liquidity checks for CAP protocol")
+    logger.info("Running liquidity checks for CAP protocol")
     main()

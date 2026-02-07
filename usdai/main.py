@@ -7,11 +7,13 @@ from utils.abi import load_abi
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.config import Config
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 # Constants
 PROTOCOL = "usdai"
+logger = get_logger(PROTOCOL)
 VAULT_ADDR = Web3.to_checksum_address("0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF")
 WM_TOKEN = Web3.to_checksum_address("0x437cc33344a0b27a429f795ff6b469c72698b291")
 SUSDAI_ADDR = Web3.to_checksum_address("0x0B2b2B2076d95dda7817e785989fE353fe955ef9")
@@ -56,7 +58,7 @@ def get_loan_details(client, owner_addr):
                     loans.append({"id": token_id, "principal": principal / 1e18, "maturity": maturity})
 
     except Exception as e:
-        print(f"Loan scan error: {e}")
+        logger.error("Loan scan error: %s", e)
         send_telegram_message(f"⚠️ Loan scan error: {e}", PROTOCOL, False, True)
 
     return loans
@@ -108,7 +110,7 @@ def main():
                     mint_ratio = mint_ratio_raw
 
         except Exception as e:
-            print(f"API Error: {e}")
+            logger.error("API Error: %s", e)
 
         # Derived Collateral from Mint Ratio
         # Scaling: mint_ratio is in bps (1e4).
@@ -120,16 +122,16 @@ def main():
         if mint_ratio_fmt > 0:
             required_collateral = usdai_supply_fmt / mint_ratio_fmt
 
-        print("\n--- USDai Stats ---")
-        print(f"USDai Supply:    ${usdai_supply_fmt:,.2f}")
-        print(f"Mint Ratio:      {mint_ratio_fmt:.4f}")
+        logger.info("--- USDai Stats ---")
+        logger.info("USDai Supply:    $%s", f"{usdai_supply_fmt:,.2f}")
+        logger.info("Mint Ratio:      %s", f"{mint_ratio_fmt:.4f}")
 
         collateral_metric = required_collateral
         # Buffer = Collateral - Supply
         buffer = collateral_metric - usdai_supply_fmt
 
-        print(f"Collateral:      ${collateral_metric:,.2f}")
-        print(f"Buffer:          ${buffer:,.2f}")
+        logger.info("Collateral:      $%s", f"{collateral_metric:,.2f}")
+        logger.info("Buffer:          $%s", f"{buffer:,.2f}")
 
         # --- Loan Monitoring (GPU Loans) ---
 
@@ -151,23 +153,23 @@ def main():
                 )
 
         if all_loans or legacy_loan_principal > 0:
-            print("\n--- Active Loan NFTs (Direct Read) ---")
+            logger.info("--- Active Loan NFTs (Direct Read) ---")
             total_verified_principal = 0
 
             # Add Legacy Loan
-            print(f"Legacy Loan (H200s): ${legacy_loan_principal:,.2f} (Hardcoded)")
+            logger.info("Legacy Loan (H200s): $%s (Hardcoded)", f"{legacy_loan_principal:,.2f}")
             total_verified_principal += legacy_loan_principal
 
             for loan in all_loans:
                 mat_date = datetime.datetime.fromtimestamp(loan["maturity"]).strftime("%Y-%m-%d")
-                print(f"Loan #{loan['id'] % 10000:04d}...: ${loan['principal']:,.2f} (Mat: {mat_date})")
+                logger.info("Loan #%04d...: $%s (Mat: %s)", loan["id"] % 10000, f"{loan['principal']:,.2f}", mat_date)
                 total_verified_principal += loan["principal"]
 
-            print(f"Total Verified Principal: ${total_verified_principal:,.2f}")
+            logger.info("Total Verified Principal: $%s", f"{total_verified_principal:,.2f}")
 
             # Calculate Ratio to Total Supply
             verified_ratio = (total_verified_principal / usdai_supply_fmt * 100) if usdai_supply_fmt > 0 else 0
-            print(f"Verified Loan Ratio: {verified_ratio:.2f}% of Total Supply")
+            logger.info("Verified Loan Ratio: %s%% of Total Supply", f"{verified_ratio:.2f}")
 
             # --- Alerting on Principal Change ---
             cache_key_principal = f"{PROTOCOL}_verified_principal"
@@ -226,7 +228,7 @@ def main():
             write_last_value_to_file(cache_filename, cache_key_buffer, buffer)
 
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error("Error: %s", e)
         send_telegram_message(f"⚠️ USDai monitoring failed: {e}", PROTOCOL, False, True)
 
 
