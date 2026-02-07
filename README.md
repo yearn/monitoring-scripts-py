@@ -23,6 +23,12 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 - [Spark](./spark/README.md)
 - [Stargate](./stargate/README.md)
 - [USD0 - Usual Money](./usd0/README.md)
+- [Yearn](./yearn/README.md)
+
+## Cross-Protocol Monitoring
+
+- [Timelock Alerts](./timelock/README.md) — monitors OpenZeppelin `TimelockController` contracts for `CallScheduled` events across multiple protocols and sends Telegram alerts to protocol-specific channels.
+- [Safe Multisigs](./safe/main.py) — monitors Safe multisig wallets for queued transactions across multiple protocols.
 
 ## Telegram Alerts
 
