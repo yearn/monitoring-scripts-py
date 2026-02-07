@@ -93,7 +93,7 @@ packages = [
     "aave", "bad-debt", "cap", "compound", "ethena", "euler",
     "fluid", "infinifi", "lido", "lrt-pegs", "maker", "moonwell",
     "morpho", "pendle", "resolv", "rtoken",
-    "safe", "silo", "spark", "stargate", "usd0", "usdai",
+    "safe", "silo", "spark", "stargate", "timelock", "usd0", "usdai",
     "utils", "yearn",
 ]
 
