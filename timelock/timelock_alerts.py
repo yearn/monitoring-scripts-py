@@ -232,7 +232,7 @@ def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> st
             lines.append(f"✅ Votes For: {votes_for}")
         if votes_against is not None:
             lines.append(f"❌ Votes Against: {votes_against}")
-        lines.append(f"🆔 Proposal: {first.get('operationId', '')}")
+        lines.append(f"🆔 Proposal: {first.get('operationId') or ''}")
 
     elif timelock_type == "Lido":
         creator = first.get("creator")
@@ -241,7 +241,7 @@ def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> st
         metadata = first.get("metadata")
         if metadata:
             lines.append(f"📄 Metadata: {metadata}")
-        lines.append(f"🆔 Vote: {first.get('operationId', '')}")
+        lines.append(f"🆔 Vote: {first.get('operationId') or ''}")
 
     elif timelock_type in ("TimelockController", "Compound", "Puffer"):
         for event in events:
@@ -249,7 +249,7 @@ def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> st
 
     else:
         # Unknown type - show operationId at minimum
-        lines.append(f"🆔 Operation: {first.get('operationId', '')}")
+        lines.append(f"🆔 Operation: {first.get('operationId') or ''}")
 
     # Footer
     if explorer:
@@ -266,23 +266,27 @@ def process_events(events: list[dict], use_cache: bool) -> None:
         _logger.info("No new events to process")
         return
 
-    # Group events by operationId (batch operations share the same operationId)
+    # Group events: only TimelockController has batch operations (multiple
+    # CallScheduled events sharing the same operationId). All other types
+    # emit one event per operation, so each is its own group.
     operations: dict[str, list[dict]] = {}
     for event in events:
-        op_id = event["operationId"]
-        if op_id not in operations:
-            operations[op_id] = []
-        operations[op_id].append(event)
+        if event.get("timelockType") == "TimelockController":
+            key = event["operationId"]
+        else:
+            key = event["id"]
+        if key not in operations:
+            operations[key] = []
+        operations[key].append(event)
 
     _logger.info("Processing %s operations from %s events", len(operations), len(events))
 
-    messages: list[str] = []
-    first_protocol: str | None = None
+    messages_by_protocol: dict[str, list[str]] = {}
     max_timestamp = 0
 
     for op_id, op_events in operations.items():
-        # Sort by index within the operation (if index exists)
-        op_events.sort(key=lambda e: int(e.get("index", 0)))
+        # Events are already ordered by logIndex from the GraphQL query
+        # so call order within batch operations is preserved
 
         timelock_addr = op_events[0]["timelockAddress"].lower()
         timelock_info = TIMELOCKS.get(timelock_addr)
@@ -290,10 +294,10 @@ def process_events(events: list[dict], use_cache: bool) -> None:
             _logger.warning("Unknown timelock address: %s", timelock_addr)
             continue
 
-        if first_protocol is None:
-            first_protocol = timelock_info.protocol
-
-        messages.append(build_alert_message(op_events, timelock_info))
+        protocol = timelock_info.protocol
+        if protocol not in messages_by_protocol:
+            messages_by_protocol[protocol] = []
+        messages_by_protocol[protocol].append(build_alert_message(op_events, timelock_info))
 
         # Track max timestamp
         for event in op_events:
@@ -301,10 +305,10 @@ def process_events(events: list[dict], use_cache: bool) -> None:
             if ts > max_timestamp:
                 max_timestamp = ts
 
-    # Send all alerts in one message to the first protocol's channel
-    if messages and first_protocol:
+    # Send alerts grouped by protocol to respective Telegram channels
+    for protocol, messages in messages_by_protocol.items():
         combined = "\n\n---\n\n".join(messages)
-        send_telegram_message(combined, first_protocol)
+        send_telegram_message(combined, protocol)
 
     if use_cache and max_timestamp > 0:
         write_last_value_to_file(cache_filename, CACHE_KEY, str(max_timestamp))
@@ -317,8 +321,8 @@ def main() -> None:
     parser.add_argument(
         "--since-seconds",
         type=int,
-        default=7200,
-        help="Fallback lookback window in seconds when no cache exists (default: 2h)",
+        default=43200,
+        help="Fallback lookback window in seconds when no cache exists (default: 12h)",
     )
     parser.add_argument("--no-cache", action="store_true", help="Disable caching of last processed timestamp")
     parser.add_argument(
