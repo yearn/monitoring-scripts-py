@@ -468,13 +468,26 @@ def main() -> None:
 
     if usr_supply > 0:
         over_collateralization_pct = (reserves / usr_supply) * 100
+
+        # Cache key for over-collateralization
+        cache_key_collateral = f"{PROTOCOL}_usr_over_collateralization"
+        last_collateral = _get_cached_float(cache_key_collateral)
+
         if over_collateralization_pct < USR_OVER_COLLATERALIZATION_MIN_PCT:
-            error_messages.append(
-                "USR over-collateralization below threshold!\n"
-                f"Over-collateralization: {over_collateralization_pct:.2f}%\n"
-                f"USR Supply: {usr_supply / WEI_PER_ETHER:.4f}\n"
-                f"Reserves: {reserves / WEI_PER_ETHER:.4f}"
-            )
+            # Alert if no previous cache (first drop) or if value has fallen further
+            if last_collateral is None or over_collateralization_pct < last_collateral:
+                error_messages.append(
+                    "USR over-collateralization below threshold!\n"
+                    f"Over-collateralization: {over_collateralization_pct:.2f}%\n"
+                    f"USR Supply: {usr_supply / WEI_PER_ETHER:.4f}\n"
+                    f"Reserves: {reserves / WEI_PER_ETHER:.4f}"
+                )
+                # Update cache with new low
+                _set_cached_float(cache_key_collateral, over_collateralization_pct)
+        else:
+            # Reset cache if healthy
+            if last_collateral is not None:
+                _set_cached_float(cache_key_collateral, 0)
     else:
         error_messages.append(
             "USR supply is zero or invalid, cannot compute over-collateralization.\n"
