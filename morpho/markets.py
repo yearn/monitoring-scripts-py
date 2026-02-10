@@ -255,6 +255,7 @@ MARKETS_RISK_2 = {
         "0x802ec6e878dc9fe6905b8a0a18962dcca10440a87fa2242fbf4a0461c7b0c789",  # PT-cUSD-29JAN2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to SY) with quote oracle set to RedStone Price Feed for cUSD_FUNDAMENTAL. USDC = USD.
         "0x2fb3713487c7812e7309935b034f40228841666f6b048faf31fd2110ae674f20",  # PT-stcUSD-23JUL2026/USDC -> lltv 91.5%, oracle: OjoPTFeed oracle for stcUSD. RedStone Price Feed for cUSD_FUNDAMENTAL and Redstone USDC/USD v2.
         "0x702b7ec7628de2622e51e1bb34a7e6ad9e95f3a25a2ed361e4ce621f23f5e642",  # PT-cUSD-23JUL2026/USDC -> lltv 91.5%, oracle: OjoPTFeed oracle for cUSD. RedStone Price Feed for cUSD_FUNDAMENTAL and Redstone USDC/USD v2.
+        "0xbbf7ce1b40d32d3e3048f5cf27eeaa6de8cb27b80194690aab191a63381d8c99",  # siUSD/USDC -> lltv 91.5%, oracle: infinity accouting contract provides the price iUSD, vault rate siUSD to iUSD. usdc = 1 using dummy oracle.
     ],
     Chain.BASE: [
         "0x6aa81f51dfc955df598e18006deae56ce907ac02b0b5358705f1a28fcea23cc0",  # wstETH/WETH -> lltv 96.5%, oracle: Chainlink wstETH-stETH Exchange Rate
@@ -307,7 +308,7 @@ MARKETS_RISK_3 = {
         "0xce68c7aa336675e42bbc8eaa8b5ecc7ebd816bf8625b5316330c6ac2dabc4cf2",  # SolvBTC/BTC -> lltv 94.5%, oracle: upgradeable MetaOracleDeviationTimelock with prime oracle morpho oracle with 1:1 hardcoded rate
         "0x7a7018e22a8bb2d08112eae9391e09f065a8ae7ae502c1c23dc96c21411a6efd",  # EIGEN/USDC -> lltv 77%, oracle: Redstone EIGEN/USD. USD = USDC.
         "0xb8afc953c3cc8077b4a4bf459bede8d3f80be45ca1f244e4bca13b7b1030eed5",  # PT-syrupUSDC-30OCT2025/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) syrupUSDC. syrupUSDC = USDC.
-        "0xbbf7ce1b40d32d3e3048f5cf27eeaa6de8cb27b80194690aab191a63381d8c99",  # siUSD/USDC -> lltv 91.5%, oracle: infinity accouting contract provides the price iUSD, vault rate siUSD to iUSD. usdc = 1 using dummy oracle.
+        "0xaac3ffcdf8a75919657e789fa72ab742a7bbfdf5bb0b87e4bbeb3c29bbbbb05c",  # PT-siUSD-26MAR2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) siUSD. USDC = 1 using dummy oracle.
     ],
     Chain.BASE: [
         "0x9a697eb760dd12aaea23699c96ea2ebbfe48b7af64138d92c4d232b9ed380024",  # PT-LBTC-29MAY2025/cbBTC -> lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle. Higher lltv than PT-LBTC-27MAR2025 / WBTC.
