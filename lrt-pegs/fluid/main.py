@@ -15,6 +15,7 @@ ABI_FLUID_POOL = load_abi("lrt-pegs/abi/Fluid_DexResolver.json")
 # Collateral Reserves Index
 COLLATERAL_RESERVES_INDEX = 5
 MIN_ASSET_BALANCE = 1e18
+THRESHOLD_RATIO = 90.0
 
 
 # Pool configurations
@@ -25,21 +26,21 @@ POOL_CONFIGS = [
         "0x276084527B801e00Db8E4410504F9BaF93f72C67",
         0,
         1,
-        60.0,
+        THRESHOLD_RATIO,
     ),
     (
         "ezETH/ETH FLUID Pool",
         "0xDD72157A021804141817d46D9852A97addfB9F59",
         0,
         1,
-        60.0,
+        THRESHOLD_RATIO,
     ),
     (
         "weETH / ETH FLUID Pool",
         "0x86f874212335Af27C41cDb855C2255543d1499cE",
         0,
         1,
-        60.0,
+        THRESHOLD_RATIO,
     ),
 ]
 

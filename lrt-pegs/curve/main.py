@@ -9,6 +9,7 @@ logger = get_logger("lrt-pegs.curve")
 
 # Load Balancer Vault ABI
 ABI_CURVE_POOL = load_abi("lrt-pegs/abi/CurvePool.json")
+THRESHOLD_RATIO = 90.0
 
 # Pool configurations
 POOL_CONFIGS = [
@@ -18,21 +19,21 @@ POOL_CONFIGS = [
         "0xEEda34A377dD0ca676b9511EE1324974fA8d980D",
         0,
         1,
-        86.0,
+        THRESHOLD_RATIO,
     ),
     (
         "ETH+/WETH Curve Pool",
         "0x2c683fAd51da2cd17793219CC86439C1875c353e",
         0,
         1,
-        80.0,
+        THRESHOLD_RATIO,
     ),
     (
         "OETH/ETH Curve Pool",
         "0xcc7d5785AD5755B6164e21495E07aDb0Ff11C2A8",
         0,
         1,
-        83.0,
+        THRESHOLD_RATIO,
     ),
     # NOTE: bool is unbalanced, whole liquidity is moved to univ3: https://app.uniswap.org/explore/pools/ethereum/0x202a6012894ae5c288ea824cbc8a9bfb26a49b93
     (
@@ -40,7 +41,7 @@ POOL_CONFIGS = [
         "0xDB74dfDD3BB46bE8Ce6C33dC9D82777BCFc3dEd5",
         1,
         0,
-        80.0,
+        THRESHOLD_RATIO,
     ),
 ]
 
