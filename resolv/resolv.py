@@ -257,8 +257,8 @@ def _check_metric_change_ratio(
     cache_key = _reserves_cache_key(metric_key)
     cached = cache.get(cache_key)
     if cached is not None and cached > 0:
-        change_ratio = abs(current - cached) / cached
-        if change_ratio >= ratio_trigger:
+        change_ratio = (current - cached) / cached
+        if abs(change_ratio) >= ratio_trigger:
             error_messages.append(
                 f"⚠️ Resolv reserves {label} changed by {change_ratio * 100:.2f}% "
                 f"({_format_usd(cached)} → {_format_usd(current)})"
@@ -362,7 +362,14 @@ def process_resolv_reserves_metrics(error_messages: list[str]) -> None:
     else:
         max_age = timedelta(hours=RESERVES_DATA_MAX_AGE_HOURS)
         if datetime.utcnow() - timestamp > max_age:
-            error_messages.append(f"⚠️ Resolv reserves data is stale: {timestamp} UTC")
+            # Check if we already alerted for this specific timestamp
+            stale_cache_key = f"{PROTOCOL}_last_stale_timestamp"
+            last_stale_ts = _get_cached_float(stale_cache_key)
+            current_ts_val = timestamp.timestamp()
+
+            if last_stale_ts != current_ts_val:
+                error_messages.append(f"⚠️ Resolv reserves data is stale: {timestamp} UTC")
+                _set_cached_float(stale_cache_key, current_ts_val)
 
     if "usr_over_collateralization_pct" in metrics:
         if metrics["usr_over_collateralization_pct"] < USR_OVER_COLLATERALIZATION_MIN_PCT:
