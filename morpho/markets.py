@@ -429,15 +429,28 @@ def get_vault_url(vault_data: Dict[str, Any]) -> str:
     return f"{MORPHO_URL}/{get_chain_name(chain)}/vault/{vault_data['address']}"
 
 
-def bad_debt_alert(markets: List[Dict[str, Any]], vault_name: str = "") -> None:
+def bad_debt_alert(
+    markets: List[Dict[str, Any]],
+    vault_name: str,
+    vault_url: str,
+    chain: Chain,
+    alerted_markets: set[str],
+) -> None:
     """
     Send telegram message if bad debt is detected in any market.
 
     Args:
         markets: List of market data
         vault_name: Name of the vault (for alert message)
+        vault_url: URL of the vault
+        chain: Chain the vault is on
+        alerted_markets: Set of market unique keys already alerted (prevents duplicates across vaults)
     """
     for market in markets:
+        unique_key = market["uniqueKey"]
+        if unique_key in alerted_markets:
+            continue
+
         bad_debt = market["badDebt"]["usd"]
         borrowed_tvl = market["state"]["borrowAssetsUsd"]
 
@@ -447,23 +460,24 @@ def bad_debt_alert(markets: List[Dict[str, Any]], vault_name: str = "") -> None:
 
         # Alert if bad debt ratio exceeds threshold
         if bad_debt / borrowed_tvl > BAD_DEBT_RATIO:
+            alerted_markets.add(unique_key)
             market_url = get_market_url(market)
             market_name = f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
 
             message = (
-                f"🚨 Bad debt detected for Morpho {vault_name}\n"
+                f"🚨 Bad debt detected in [{vault_name}]({vault_url}) on {chain.name}\n"
                 f"💹 Market: [{market_name}]({market_url})\n"
-                f"💸 Bad debt: ${bad_debt:,.2f} USD\n"
-                f"📊 Bad debt ratio: {(bad_debt / borrowed_tvl):.2%}\n"
+                f"💸 Bad debt: ${bad_debt:,.2f} ({(bad_debt / borrowed_tvl):.2%} of borrowed)\n"
             )
 
             send_telegram_message(message, PROTOCOL)
 
 
-def check_high_allocation(vault_data):
+def check_allocation_and_risk(vault_data):
     """
-    Send telegram message if high allocation is detected in any market.
-    Send another message if total risk level is too high.
+    Check per-market allocation and total vault risk level.
+    Sends a consolidated alert if any markets exceed allocation thresholds.
+    Sends a separate alert if total risk level exceeds the vault's maximum.
     """
     total_assets = vault_data.get("state", {}).get("totalAssetsUsd", 0) or 0
     if total_assets == 0:
@@ -485,6 +499,7 @@ def check_high_allocation(vault_data):
         raise ValueError(f"Vault {vault_address} not found in VAULTS_BY_CHAIN config")
 
     total_risk_level = 0.0
+    allocation_violations: list[str] = []
 
     for allocation in vault_data["state"]["allocation"]:
         # market without collateral asset is idle asset
@@ -517,12 +532,10 @@ def check_high_allocation(vault_data):
         if allocation_ratio > allocation_threshold:
             market_url = get_market_url(market)
             market_name = f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
-            message = (
-                f"🔺 High allocation detected in [{vault_name}]({vault_url}) on {chain.name}\n"
-                f"💹 Market [{market_name}]({market_url})\n"
-                f"🔢 Allocation: {allocation_ratio:.1%} but max acceptable allocation is {allocation_threshold:.1%}\n"
+            allocation_violations.append(
+                f"- [{market_name}]({market_url}) (risk {market_risk_level}): "
+                f"{allocation_ratio:.1%} (max: {allocation_threshold:.1%})"
             )
-            send_telegram_message(message, PROTOCOL)
 
         # Calculate weighted risk score for each market allocation
         # risk_multiplier: market risk tier (1-5, higher = riskier)
@@ -530,14 +543,23 @@ def check_high_allocation(vault_data):
         # total_risk_level: sum of (risk_tier * allocation) across all markets
         total_risk_level += risk_multiplier * allocation_ratio
 
+    # Send consolidated allocation alert if any markets exceed thresholds
+    if allocation_violations:
+        violations_text = "\n".join(allocation_violations)
+        message = (
+            f"🔺 High allocation in [{vault_name}]({vault_url}) (risk {risk_level}) on {chain.name}\n"
+            f"{violations_text}\n"
+        )
+        send_telegram_message(message, PROTOCOL)
+
     # print total risk level and vault name
-    logger.info("Total risk level: %s, vault: %s on %s", f"{total_risk_level:.1%}", vault_name, chain.name)
+    logger.info("Total risk level: %s, vault: %s on %s", f"{total_risk_level:.2f}", vault_name, chain.name)
     # round total_risk_level to 2 decimal places
     total_risk_level = round(total_risk_level, 2)
     if total_risk_level > MAX_RISK_THRESHOLDS[risk_level]:
         message = (
-            f"🔺 High allocation detected in [{vault_name}]({vault_url}) on {chain.name}\n"
-            f"🔢 Total risk level: {total_risk_level:.1%} but max acceptable is {MAX_RISK_THRESHOLDS[risk_level]}\n"
+            f"⚠️ High risk level in [{vault_name}]({vault_url}) (risk {risk_level}) on {chain.name}\n"
+            f"🔢 Risk level: {total_risk_level:.2f} (max: {MAX_RISK_THRESHOLDS[risk_level]:.2f})\n"
             f"🔢 Total assets: ${total_assets:,.2f}\n"
         )
         send_telegram_message(message, PROTOCOL)
@@ -668,12 +690,10 @@ def check_combined_liquidity_threshold(
     if combined_liquidity_ratio < LIQUIDITY_THRESHOLD_YV_COLLATERAL:
         vault_list = ", ".join(vault_names)
         message = (
-            f"⚠️ Low combined liquidity detected for {asset_symbol} YV collateral vaults on {chain.name}\n"
-            f"🚨 Combined vaults: {vault_list}\n"
-            f"🚨 Min liquidity is {LIQUIDITY_THRESHOLD_YV_COLLATERAL:.1%} of total assets.\n"
-            f"💰 Combined liquidity: {combined_liquidity_ratio:.1%} of total assets\n"
-            f"💵 Combined liquidity: ${combined_liquidity:,.2f}\n"
-            f"📊 Combined total assets: ${combined_total_assets:,.2f}"
+            f"⚠️ Low combined liquidity for {asset_symbol} YV collateral vaults on {chain.name}\n"
+            f"🏦 Vaults: {vault_list}\n"
+            f"💰 Liquidity: ${combined_liquidity:,.2f} ({combined_liquidity_ratio:.1%} of ${combined_total_assets:,.2f})\n"
+            f"📊 Min threshold: {LIQUIDITY_THRESHOLD_YV_COLLATERAL:.1%}\n"
         )
         send_telegram_message(message, PROTOCOL)
 
@@ -758,10 +778,9 @@ def check_low_liquidity(vault_data):
     # standard liquidity check (YV collateral vaults are handled separately)
     if liquidity_ratio < LIQUIDITY_THRESHOLD:
         message = (
-            f"⚠️ Low liquidity detected in [{vault_name}]({vault_url}) on {chain.name}\n"
-            f"💰 Liquidity: {liquidity_ratio:.1%} of total assets\n"
-            f"💵 Liquidity: ${liquidity:,.2f}\n"
-            f"📊 Total Assets: ${total_assets:,.2f}"
+            f"⚠️ Low liquidity in [{vault_name}]({vault_url}) on {chain.name}\n"
+            f"💰 Liquidity: ${liquidity:,.2f} ({liquidity_ratio:.1%} of ${total_assets:,.2f})\n"
+            f"📊 Min threshold: {LIQUIDITY_THRESHOLD:.1%}\n"
         )
         send_telegram_message(message, PROTOCOL)
 
@@ -865,9 +884,11 @@ def main() -> None:
     # Check combined liquidity for all vaults (handles YV collateral grouping)
     check_low_liquidity_combined(vaults_data)
 
+    alerted_markets: set[str] = set()
+
     for vault_data in vaults_data:
-        # Check high allocation for each vault
-        check_high_allocation(vault_data)
+        # Check per-market allocation and total risk level
+        check_allocation_and_risk(vault_data)
 
         # Check bad debt for each market in the vault
         vault_markets = []
@@ -879,7 +900,10 @@ def main() -> None:
                     # market without collateral asset is idle asset
                     vault_markets.append(market)
 
-        bad_debt_alert(vault_markets, vault_data["name"])
+        vault_name = vault_data["name"]
+        vault_url = get_vault_url(vault_data)
+        chain = Chain.from_chain_id(vault_data["chain"]["id"])
+        bad_debt_alert(vault_markets, vault_name, vault_url, chain, alerted_markets)
 
 
 if __name__ == "__main__":
