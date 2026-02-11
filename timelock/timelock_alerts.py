@@ -45,10 +45,10 @@ TIMELOCK_LIST: list[TimelockConfig] = [
     TimelockConfig("0x49bd9989e31ad35b0a62c20be86335196a3135b1", 1, "LRT", "KelpDAO(rsETH) Timelock"),
     TimelockConfig("0x3d18480cc32b6ab3b833dcabd80e76cfd41c48a9", 1, "INFINIFI", "Infinifi Longtimelock"),
     TimelockConfig("0x4b174afbed7b98ba01f50e36109eee5e6d327c32", 1, "INFINIFI", "Infinifi Shorttimelock"),
-    TimelockConfig("0x404d18b35063275882c568495992440124055207", 1, "AAVE", "Aave Timelock"),
-    TimelockConfig("0x6d903f6003cca6255d85cca4d3b5e5146dc33925", 1, "COMPOUND", "Compound Timelock"),
+    TimelockConfig("0x9aee0b04504cef83a65ac3f0e838d0593bcb2bc7", 1, "AAVE", "Aave Governance V3"),
+    TimelockConfig("0x6d903f6003cca6255d85cca4d3b5e5146dc33925", 1, "COMP", "Compound Timelock"),
     TimelockConfig("0x2386dc45added673317ef068992f19421b481f4c", 1, "FLUID", "Fluid Timelock"),
-    TimelockConfig("0x3c28b7c7ba1a1f55c9ce66b263b33b204f2126ea", 1, "PUFFER", "Puffer Timelock"),
+    TimelockConfig("0x3c28b7c7ba1a1f55c9ce66b263b33b204f2126ea", 1, "LRT", "Puffer Timelock"),
     TimelockConfig("0x2e59a20f205bb85a89c53f1936454680651e618e", 1, "LIDO", "Lido Timelock"),
     # Chain 8453 - Base
     TimelockConfig("0xf817cb3092179083c48c014688d98b72fb61464f", 8453, "LRT", "superOETH Timelock"),
