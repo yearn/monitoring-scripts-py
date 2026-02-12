@@ -5,148 +5,35 @@ on:
     - cron: "26 * * * *"
   workflow_dispatch:
 
-# Add concurrency control
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  PROVIDER_URL_POLYGON: ${{ secrets.PROVIDER_URL }}
-  PROVIDER_URL_POLYGON_1: ${{ secrets.PROVIDER_URL_POLYGON_1 }}
-  PROVIDER_URL_POLYGON_2: ${{ secrets.PROVIDER_URL_POLYGON_2 }}
-  PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
-  PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
-  PROVIDER_URL_MAINNET_1: ${{ secrets.PROVIDER_URL_MAINNET_1 }}
-  PROVIDER_URL_MAINNET_2: ${{ secrets.PROVIDER_URL_MAINNET_2 }}
-  PROVIDER_URL_MAINNET_3: ${{ secrets.PROVIDER_URL_MAINNET_3 }}
-  PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
-  PROVIDER_URL_BASE: ${{ secrets.PROVIDER_URL_BASE }}
-  PROVIDER_URL_BASE_1: ${{ secrets.PROVIDER_URL_BASE_1 }}
-  PROVIDER_URL_BASE_2: ${{ secrets.PROVIDER_URL_BASE_2 }}
-  PROVIDER_URL_KATANA: ${{ secrets.PROVIDER_URL_KATANA }}
-  PROVIDER_URL_KATANA_1: ${{ secrets.PROVIDER_URL_KATANA_1 }}
-  TELEGRAM_BOT_TOKEN_AAVE: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
-  TELEGRAM_CHAT_ID_AAVE: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
-  TELEGRAM_BOT_TOKEN_COMP: ${{ secrets.TELEGRAM_BOT_TOKEN_COMP }}
-  TELEGRAM_CHAT_ID_COMP: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
-  TELEGRAM_BOT_TOKEN_LIDO: ${{ secrets.TELEGRAM_BOT_TOKEN_LIDO }}
-  TELEGRAM_CHAT_ID_LIDO: ${{ secrets.TELEGRAM_CHAT_ID_LIDO }}
-  TELEGRAM_BOT_TOKEN_SILO: ${{ secrets.TELEGRAM_BOT_TOKEN_SILO }}
-  TELEGRAM_CHAT_ID_SILO: ${{ secrets.TELEGRAM_CHAT_ID_SILO }}
-  TELEGRAM_BOT_TOKEN_STARGATE: ${{ secrets.TELEGRAM_BOT_TOKEN_STARGATE }}
-  TELEGRAM_CHAT_ID_STARGATE: ${{ secrets.TELEGRAM_CHAT_ID_STARGATE }}
-  TELEGRAM_BOT_TOKEN_SPARK: ${{ secrets.TELEGRAM_BOT_TOKEN_SPARK }}
-  TELEGRAM_CHAT_ID_SPARK: ${{ secrets.TELEGRAM_CHAT_ID_SPARK }}
-  TELEGRAM_BOT_TOKEN_PENDLE: ${{ secrets.TELEGRAM_BOT_TOKEN_PENDLE }}
-  TELEGRAM_CHAT_ID_PENDLE: ${{ secrets.TELEGRAM_CHAT_ID_PENDLE }}
-  TELEGRAM_BOT_TOKEN_PEGS: ${{ secrets.TELEGRAM_BOT_TOKEN_PEGS }}
-  TELEGRAM_CHAT_ID_PEGS: ${{ secrets.TELEGRAM_CHAT_ID_PEGS }}
-  TELEGRAM_CHAT_ID_MORPHO: ${{ secrets.TELEGRAM_CHAT_ID_MORPHO }}
-  TELEGRAM_CHAT_ID_USD0: ${{ secrets.TELEGRAM_CHAT_ID_USD0 }}
-  TELEGRAM_CHAT_ID_MOONWELL: ${{ secrets.TELEGRAM_CHAT_ID_MOONWELL }}
-  TELEGRAM_CHAT_ID_RTOKEN: ${{ secrets.TELEGRAM_CHAT_ID_RTOKEN }}
-  TELEGRAM_CHAT_ID_RESOLV: ${{ secrets.TELEGRAM_CHAT_ID_RESOLV }}
-  TELEGRAM_CHAT_ID_ETHENA: ${{ secrets.TELEGRAM_CHAT_ID_ETHENA }}
-  TELEGRAM_CHAT_ID_EULER: ${{ secrets.TELEGRAM_CHAT_ID_EULER }}
-  TELEGRAM_CHAT_ID_FLUID: ${{ secrets.TELEGRAM_CHAT_ID_FLUID }}
-  TELEGRAM_CHAT_ID_INFINIFI: ${{ secrets.TELEGRAM_CHAT_ID_INFINIFI }}
-  TELEGRAM_CHAT_ID_USDAI: ${{ secrets.TELEGRAM_CHAT_ID_USDAI }}
-  TELEGRAM_CHAT_ID_YEARN: ${{ secrets.TELEGRAM_CHAT_ID_YEARN }}
-  TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
-  GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
-  TALLY_API_KEY: ${{ secrets.TALLY_API_KEY }}
-  ETHERSCAN_TOKEN: ${{ secrets.ETHERSCAN_TOKEN }}
-  POLYGONSCAN_TOKEN: ${{ secrets.POLYGONSCAN_TOKEN }}
-  OPTIMISMSCAN_TOKEN: ${{ secrets.OPTIMISMSCAN_TOKEN }}
-  ARBISCAN_TOKEN: ${{ secrets.ARBISCAN_TOKEN }}
-  ENVIO_GRAPHQL_URL: ${{ secrets.ENVIO_GRAPHQL_URL }}
-  COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
-
 jobs:
-  my_job:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-          cache: "pip" # caching pip dependencies
-      - name: Install uv
-        run: |
-          python -m pip install --upgrade pip
-          pip install uv
-      - name: Install dependencies
-        run: |
-          uv pip install --system .
-
-      # restore file from cache
-      - name: Get cache file
-        id: cache-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: cache-id.txt
-          key: cache-id-v4-${{ hashFiles('cache-id.txt') }}
-          restore-keys: |
-            cache-id-v4-
-
-      # Get initial hash
-      - name: Get initial hash
-        id: initial-hash
-        run: echo "hash=${{ hashFiles('cache-id.txt') }}" >> $GITHUB_OUTPUT
-
-      - name: Run Morpho Bad Debt script
-        run: uv run morpho/markets.py
-      - name: Run Aave script
-        run: uv run aave/main.py
-      - name: Run Aave Proposals script
-        run: uv run aave/proposals.py
-      - name: Run Compound script
-        run: uv run compound/main.py
-      - name: Run Compound Proposals script
-        run: uv run compound/proposals.py
-      - name: Run Fluid Proposals script
-        run: uv run fluid/proposals.py
-      - name: Run Lido Ethereum script
-        run: uv run lido/steth/main.py
-      # - name: Run LRT Peg Checker Uniswap V3
-      #   run: uv run lrt-pegs/uniswap_v3.py
-      - name: Run LRT Peg Checker Curve
-        run: uv run lrt-pegs/curve/main.py
-      - name: Run LRT Peg Checker Fluid
-        run: uv run lrt-pegs/fluid/main.py
-      - name: Run Moonwell Bad Debt script
-        run: uv run moonwell/bad_debt.py
-      - name: Run Moonwell Proposals script
-        run: uv run moonwell/proposals.py
-      - name: Run RToken Monitoring script
-        run: uv run rtoken/monitor_rtoken.py
-      - name: Run Origin Protocol script
-        run: uv run lrt-pegs/origin_protocol.py
-      - name: Run Euler Markets script
-        run: uv run euler/markets.py
-      - name: Run Resolv Monitoring script
-        run: uv run resolv/resolv.py
-      - name: Run Infinifi Monitoring script
-        run: uv run infinifi/main.py
-      - name: Run Silo Utilization script
-        run: uv run silo/ur_sniff.py
-      - name: Run USDai script
-        run: uv run usdai/main.py
-      - name: Run Yearn Large Flows script
-        run: uv run yearn/alert_large_flows.py
-      - name: Run Timelock Alerts script
-        run: uv run timelock/timelock_alerts.py
-
-      # Check final hash
-      - name: Check final hash
-        id: final-hash
-        run: echo "hash=${{ hashFiles('cache-id.txt') }}" >> $GITHUB_OUTPUT
-
-      - name: Cache cache-id.txt
-        if: always() && steps.initial-hash.outputs.hash != steps.final-hash.outputs.hash
-        id: cache-save
-        uses: actions/cache/save@v4
-        with:
-          path: cache-id.txt
-          key: cache-id-v4-${{ hashFiles('cache-id.txt') }}
+  hourly:
+    uses: ./.github/workflows/_run-monitoring.yml
+    secrets: inherit
+    with:
+      cache_file: cache-id.txt
+      cache_key_prefix: cache-id-v4
+      scripts: |
+        morpho/markets.py
+        aave/main.py
+        aave/proposals.py
+        compound/main.py
+        compound/proposals.py
+        fluid/proposals.py
+        lido/steth/main.py
+        lrt-pegs/curve/main.py
+        lrt-pegs/fluid/main.py
+        moonwell/bad_debt.py
+        moonwell/proposals.py
+        rtoken/monitor_rtoken.py
+        lrt-pegs/origin_protocol.py
+        euler/markets.py
+        resolv/resolv.py
+        infinifi/main.py
+        silo/ur_sniff.py
+        usdai/main.py
+        yearn/alert_large_flows.py
+        timelock/timelock_alerts.py

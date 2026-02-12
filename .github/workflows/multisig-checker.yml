@@ -5,92 +5,16 @@ on:
     - cron: "0/10 * * * *"
   workflow_dispatch:
 
-# Add concurrency control
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  TELEGRAM_BOT_TOKEN_AAVE: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
-  TELEGRAM_CHAT_ID_AAVE: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
-  TELEGRAM_BOT_TOKEN_COMP: ${{ secrets.TELEGRAM_BOT_TOKEN_COMP }}
-  TELEGRAM_CHAT_ID_COMP: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
-  TELEGRAM_BOT_TOKEN_LIDO: ${{ secrets.TELEGRAM_BOT_TOKEN_LIDO }}
-  TELEGRAM_CHAT_ID_LIDO: ${{ secrets.TELEGRAM_CHAT_ID_LIDO }}
-  TELEGRAM_BOT_TOKEN_SILO: ${{ secrets.TELEGRAM_BOT_TOKEN_SILO }}
-  TELEGRAM_CHAT_ID_SILO: ${{ secrets.TELEGRAM_CHAT_ID_SILO }}
-  TELEGRAM_BOT_TOKEN_STARGATE: ${{ secrets.TELEGRAM_BOT_TOKEN_STARGATE }}
-  TELEGRAM_CHAT_ID_STARGATE: ${{ secrets.TELEGRAM_CHAT_ID_STARGATE }}
-  TELEGRAM_BOT_TOKEN_SPARK: ${{ secrets.TELEGRAM_BOT_TOKEN_SPARK }}
-  TELEGRAM_CHAT_ID_SPARK: ${{ secrets.TELEGRAM_CHAT_ID_SPARK }}
-  TELEGRAM_BOT_TOKEN_PENDLE: ${{ secrets.TELEGRAM_BOT_TOKEN_PENDLE }}
-  TELEGRAM_CHAT_ID_PENDLE: ${{ secrets.TELEGRAM_CHAT_ID_PENDLE }}
-  TELEGRAM_BOT_TOKEN_EULER: ${{ secrets.TELEGRAM_BOT_TOKEN_EULER }}
-  TELEGRAM_CHAT_ID_EULER: ${{ secrets.TELEGRAM_CHAT_ID_EULER }}
-  TELEGRAM_CHAT_ID_USDAI: ${{ secrets.TELEGRAM_CHAT_ID_USDAI }}
-  TELEGRAM_CHAT_ID_USD0: ${{ secrets.TELEGRAM_CHAT_ID_USD0 }}
-  TELEGRAM_CHAT_ID_MOONWELL: ${{ secrets.TELEGRAM_CHAT_ID_MOONWELL }}
-  TELEGRAM_CHAT_ID_LRT: ${{ secrets.TELEGRAM_CHAT_ID_LRT }}
-  PROVIDER_URL_MAINNET: ${{ secrets.PROVIDER_URL_MAINNET }}
-  PROVIDER_URL_MAINNET_1: ${{ secrets.PROVIDER_URL_MAINNET_1 }}
-  PROVIDER_URL_MAINNET_2: ${{ secrets.PROVIDER_URL_MAINNET_2 }}
-  PROVIDER_URL_MAINNET_3: ${{ secrets.PROVIDER_URL_MAINNET_3 }}
-  PROVIDER_URL_POLYGON: ${{ secrets.PROVIDER_URL_POLYGON }}
-  PROVIDER_URL_POLYGON_1: ${{ secrets.PROVIDER_URL_POLYGON_1 }}
-  PROVIDER_URL_OPTIMISM: ${{ secrets.PROVIDER_URL_OPTIMISM }}
-  PROVIDER_URL_ARBITRUM: ${{ secrets.PROVIDER_URL_ARBITRUM }}
-  PROVIDER_URL_BASE: ${{ secrets.PROVIDER_URL_BASE }}
-  PROVIDER_URL_KATANA: ${{ secrets.PROVIDER_URL_KATANA }}
-  PROVIDER_URL_KATANA_1: ${{ secrets.PROVIDER_URL_KATANA_1 }}
-  TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
-  SAFE_API_KEY: ${{ secrets.SAFE_API_KEY }}
-
 jobs:
-  multisig_checker:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-          cache: "pip" # caching pip dependencies
-      - name: Install uv
-        run: |
-          python -m pip install --upgrade pip
-          pip install uv
-      - name: Install dependencies
-        run: |
-          uv pip install --system .
-
-      # restore file from cache
-      - name: Get nonces.txt from cache
-        id: cache-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: nonces.txt
-          key: nonces-v3-${{ hashFiles('nonces.txt') }}
-          restore-keys: |
-            nonces-v3-${{ runner.os }}-
-
-      # Get initial hash
-      - name: Get initial hash
-        id: initial-hash
-        run: echo "hash=${{ hashFiles('nonces.txt') }}" >> $GITHUB_OUTPUT
-
-      - name: Run Safe script
-        run: uv run safe/main.py
-
-      # Check final hash
-      - name: Check final hash
-        id: final-hash
-        run: echo "hash=${{ hashFiles('nonces.txt') }}" >> $GITHUB_OUTPUT
-
-      # save file to cache only if hash changed
-      - name: Cache nonces.txt
-        if: always() && steps.initial-hash.outputs.hash != steps.final-hash.outputs.hash
-        id: cache-save
-        uses: actions/cache/save@v4
-        with:
-          path: nonces.txt
-          key: nonces-v3-${{ hashFiles('nonces.txt') }}
+  multisig:
+    uses: ./.github/workflows/_run-monitoring.yml
+    secrets: inherit
+    with:
+      cache_file: nonces.txt
+      cache_key_prefix: nonces-v3
+      scripts: |
+        safe/main.py
