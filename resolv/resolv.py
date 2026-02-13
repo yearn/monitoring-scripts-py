@@ -361,21 +361,9 @@ def process_resolv_reserves_metrics(error_messages: list[str]) -> None:
         error_messages.append("⚠️ Resolv reserves: timestamp missing or unparseable.")
     else:
         max_age = timedelta(hours=RESERVES_DATA_MAX_AGE_HOURS)
-        stale_cache_key = f"{PROTOCOL}_last_stale_timestamp"
 
         if datetime.utcnow() - timestamp > max_age:
-            # Check if we already know it's stale (cached)
-            last_stale_ts = _get_cached_float(stale_cache_key)
-
-            # Alert only if this is the first time we detect staleness (no cache)
-            if last_stale_ts is None:
-                error_messages.append(f"⚠️ Resolv reserves data is stale: {timestamp} UTC")
-
-            # Update cache to mark as stale (tracking the current timestamp)
-            _set_cached_float(stale_cache_key, timestamp.timestamp())
-        else:
-            # Data is healthy, clear the stale cache so we alert next time it goes stale
-            _set_cached_float(stale_cache_key, 0)
+            error_messages.append(f"⚠️ Resolv reserves data is stale: {timestamp} UTC")
 
     if "usr_over_collateralization_pct" in metrics:
         if metrics["usr_over_collateralization_pct"] < USR_OVER_COLLATERALIZATION_MIN_PCT:
