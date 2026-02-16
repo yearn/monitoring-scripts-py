@@ -35,7 +35,7 @@ The script [resolv/resolv.py](resolv.py) monitors several critical metrics:
    - Alerts if reserves data timestamp is missing or unparseable
    - Alerts if reserves data is older than 6 hours
    - Alerts if USR over-collateralization is below 130%
-   - Alerts if market delta absolute value exceeds 3%
+   - Alerts if market delta absolute value exceeds 6%
    - Alerts if strategy net exposure exceeds 3% of TVL
    - Alerts on percentage changes:
      - TVL change ≥ 10%
