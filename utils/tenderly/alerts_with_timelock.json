@@ -776,6 +776,68 @@
       ]
     },
     {
+      "id": "eae36bdd-b44c-45d5-acf7-b013238e32c0",
+      "project_id": "6932cbec-2970-425a-a734-cb8374d95744",
+      "name": "Function queueProposal called in AAVE Timelock",
+      "description": "",
+      "enabled": true,
+      "color": "#eeeeee",
+      "severity": "default",
+      "created_at": "2024-08-23T17:04:08.122822Z",
+      "delivery_channels": [
+        {
+          "delivery_channel_id": "6fbcff60-bda5-492b-9a6d-658fbeb6f261",
+          "delivery_channel": {
+            "id": "6fbcff60-bda5-492b-9a6d-658fbeb6f261",
+            "type": "telegram",
+            "owner_id": "1f750734-c720-4fde-9d60-d7edd0c04d91",
+            "project_id": null,
+            "label": "AAVE Alerts SAM",
+            "reference_id": "65d97d0c-deda-430f-b5b5-65ee6270ea52",
+            "enabled": true,
+            "created_at": "2024-08-07T12:16:41.831658Z",
+            "information": {
+              "chat_id": -1002192964685
+            }
+          },
+          "enabled": true,
+          "created_at": "2024-09-02T12:15:07.465951Z"
+        }
+      ],
+      "is_editable": true,
+      "updated_at": "2024-09-02T12:15:07.475331Z",
+      "expressions": [
+        {
+          "type": "contract_address",
+          "expression": {
+            "address": "0x9aee0b04504cef83a65ac3f0e838d0593bcb2bc7",
+            "transaction_type": null
+          }
+        },
+        {
+          "type": "network",
+          "expression": {
+            "network_id": "1"
+          }
+        },
+        {
+          "type": "method_call",
+          "expression": {
+            "address": "0x9aee0b04504cef83a65ac3f0e838d0593bcb2bc7",
+            "function_name": "queueProposal",
+            "signature": {
+              "function_name": "queueProposal",
+              "input_types": [
+                "uint256",
+                "uint128",
+                "uint128"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
       "id": "eca272ef-979a-47b3-a7f0-2e67172889bb",
       "project_id": "6932cbec-2970-425a-a734-cb8374d95744",
       "name": "LBTC depeg alert",
@@ -891,6 +953,70 @@
               "function_name": "queueTransaction",
               "input_types": [
                 "address",
+                "bytes",
+                "uint256"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "fba03d32-4920-41c0-9e4c-8c007e8b000e",
+      "project_id": "6932cbec-2970-425a-a734-cb8374d95744",
+      "name": "Function queueTransaction called in InstaTimelock",
+      "description": "",
+      "enabled": true,
+      "color": "#eeeeee",
+      "severity": "default",
+      "created_at": "2025-08-22T12:50:48.783567Z",
+      "delivery_channels": [
+        {
+          "delivery_channel_id": "b46df378-9ec3-4239-962c-44c0d40c0ce3",
+          "delivery_channel": {
+            "id": "b46df378-9ec3-4239-962c-44c0d40c0ce3",
+            "type": "telegram",
+            "owner_id": "1f750734-c720-4fde-9d60-d7edd0c04d91",
+            "project_id": null,
+            "label": "Fluid Alerts SAM",
+            "reference_id": "6945b0b1-1b26-42c0-885b-fb015aa52b6d",
+            "enabled": true,
+            "created_at": "2025-08-22T12:50:11.414738Z",
+            "information": {
+              "chat_id": -1002941086824
+            }
+          },
+          "enabled": true,
+          "created_at": "2025-08-22T12:50:48.805868Z"
+        }
+      ],
+      "is_editable": true,
+      "updated_at": "2025-08-22T12:50:48.783568Z",
+      "expressions": [
+        {
+          "type": "contract_address",
+          "expression": {
+            "address": "0x2386dc45added673317ef068992f19421b481f4c",
+            "transaction_type": null
+          }
+        },
+        {
+          "type": "network",
+          "expression": {
+            "network_id": "1"
+          }
+        },
+        {
+          "type": "method_call",
+          "expression": {
+            "address": "0x2386dc45added673317ef068992f19421b481f4c",
+            "function_name": "queueTransaction",
+            "signature": {
+              "function_name": "queueTransaction",
+              "input_types": [
+                "address",
+                "uint256",
+                "string",
                 "bytes",
                 "uint256"
               ]
