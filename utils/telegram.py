@@ -38,9 +38,10 @@ def send_telegram_message(
     """
     logger.info("Sending telegram message:\n%s", message)
 
-    # Truncate long messages
+    # Truncate long messages; disable Markdown to avoid broken entities
     if len(message) > MAX_MESSAGE_LENGTH:
         message = message[: MAX_MESSAGE_LENGTH - 3] + "..."
+        plain_text = True
 
     # Get bot token and chat ID from environment variables
     bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_{protocol.upper()}")
@@ -54,7 +55,7 @@ def send_telegram_message(
         return
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    params = {
+    payload = {
         "chat_id": chat_id,
         "text": message,
         "parse_mode": "Markdown" if not plain_text else None,
@@ -62,7 +63,7 @@ def send_telegram_message(
     }
 
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.post(url, json=payload, timeout=10)
         response.raise_for_status()
     except requests.RequestException as e:
         raise TelegramError(f"Failed to send telegram message: {e}")

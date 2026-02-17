@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import EXPLORER_URLS, Chain
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
+from utils.telegram import MAX_MESSAGE_LENGTH, send_telegram_message
 
 load_dotenv()
 
@@ -305,10 +305,31 @@ def process_events(events: list[dict], use_cache: bool) -> None:
             if ts > max_timestamp:
                 max_timestamp = ts
 
-    # Send alerts grouped by protocol to respective Telegram channels
+    # Send alerts grouped by protocol, splitting into chunks that fit Telegram's limit
+    separator = "\n\n---\n\n"
     for protocol, messages in messages_by_protocol.items():
-        combined = "\n\n---\n\n".join(messages)
-        send_telegram_message(combined, protocol)
+        chunks: list[str] = []
+        current_parts: list[str] = []
+        current_len = 0
+
+        for msg in messages:
+            added_len = len(msg) + (len(separator) if current_parts else 0)
+            if current_parts and current_len + added_len > MAX_MESSAGE_LENGTH:
+                chunks.append(separator.join(current_parts))
+                current_parts = [msg]
+                current_len = len(msg)
+            else:
+                current_parts.append(msg)
+                current_len += added_len
+
+        if current_parts:
+            chunks.append(separator.join(current_parts))
+
+        for chunk in chunks:
+            try:
+                send_telegram_message(chunk, protocol)
+            except Exception:
+                _logger.exception("Failed to send Telegram alert for protocol %s", protocol)
 
     if use_cache and max_timestamp > 0:
         write_last_value_to_file(cache_filename, CACHE_KEY, str(max_timestamp))
