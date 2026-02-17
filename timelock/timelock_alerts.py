@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
+from timelock.calldata_decoder import format_call_lines
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import EXPLORER_URLS, Chain
 from utils.logging import get_logger
@@ -188,7 +189,7 @@ def _build_call_info(event: dict, explorer: str | None, show_index: bool) -> lis
     if signature:
         lines.append(f"📝 Function: `{signature}`")
     elif len(data_hex) >= 10:
-        lines.append(f"📝 Function: `{data_hex[:10]}`")
+        lines.extend(format_call_lines(data_hex))
 
     # Value only for types that have it (not Puffer)
     value = event.get("value")
