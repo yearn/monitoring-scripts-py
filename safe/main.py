@@ -110,12 +110,6 @@ ALL_SAFE_ADDRESSES = [
     ],  # LBTC boring vault big boss
     [
         "LRT",
-        "mainnet",
-        "0xA52Fd396891E7A74b641a2Cb1A6999Fcf56B077e",
-        "Dinnero apxETH owner. Token used as collateral in yETH",
-    ],  # apxETH owner: https://etherscan.io/address/0x9Ba021B0a9b958B5E75cE9f6dff97C7eE52cb3E6#readContract#F18
-    [
-        "LRT",
         "base-main",
         "0x92A19381444A001d62cE67BaFF066fA1111d7202",
         "Origin admin multisig. Markets used on Base",
