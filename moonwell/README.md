@@ -1,4 +1,4 @@
-# Moonwell
+# Moonwell - ⚠️ DISABLED MONITORING ⚠️
 
 [Moonwell](https://moonwell.fi/) is Compound V2 fork.
 

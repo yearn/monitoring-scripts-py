@@ -19,15 +19,10 @@ jobs:
       scripts: |
         morpho/markets.py
         aave/main.py
-        aave/proposals.py
         compound/main.py
-        compound/proposals.py
-        fluid/proposals.py
         lido/steth/main.py
         lrt-pegs/curve/main.py
         lrt-pegs/fluid/main.py
-        moonwell/bad_debt.py
-        moonwell/proposals.py
         rtoken/monitor_rtoken.py
         lrt-pegs/origin_protocol.py
         euler/markets.py
@@ -37,3 +32,7 @@ jobs:
         usdai/main.py
         yearn/alert_large_flows.py
         timelock/timelock_alerts.py
+        # always run proposals after timelock alerts
+        aave/proposals.py
+        compound/proposals.py
+        fluid/proposals.py
