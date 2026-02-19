@@ -86,8 +86,8 @@ def main():
         pending_redemptions = 0
         reserve_ratio = 0
         illiquid_ratio = 0
-        target_reserve_ratio = 0
-        target_illiquid_ratio = 0
+        # target_reserve_ratio = 0
+        # target_illiquid_ratio = 0
         api_data = fetch_api_data()
 
         if not api_data:
@@ -113,9 +113,9 @@ def main():
                 reserve_ratio = liquid_reserves / total_backing
                 illiquid_ratio = 1 - reserve_ratio
 
-            params = api_data["data"].get("params", {})
-            target_reserve_ratio = to_float(params.get("reserveRatio"))
-            target_illiquid_ratio = to_float(params.get("illiquidTargetRatio"))
+            # params = api_data["data"].get("params", {})
+            # target_reserve_ratio = to_float(params.get("reserveRatio"))
+            # target_illiquid_ratio = to_float(params.get("illiquidTargetRatio"))
 
         logger.info("--- Infinifi Stats ---")
         logger.info("iUSD Supply:     $%s", f"{iusd_supply:,.2f}")
