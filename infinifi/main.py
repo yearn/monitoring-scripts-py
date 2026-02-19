@@ -46,14 +46,18 @@ def to_float(value, default=0.0):
         return default
 
 
-def send_breach_alert_once(cache_key, is_breached, alert_message):
+def send_breach_alert_once(cache_key, alert_message):
     last_state = int(get_last_value_for_key_from_file(cache_filename, cache_key))
-    current_state = 1 if is_breached else 0
 
-    if current_state == 1 and last_state == 0:
+    if last_state == 0:
         send_telegram_message(alert_message, PROTOCOL)
+        write_last_value_to_file(cache_filename, cache_key, 1)
 
-    write_last_value_to_file(cache_filename, cache_key, current_state)
+
+def clear_breach_state(cache_key):
+    last_state = int(get_last_value_for_key_from_file(cache_filename, cache_key))
+    if last_state == 1:
+        write_last_value_to_file(cache_filename, cache_key, 0)
 
 
 def main():
@@ -168,7 +172,6 @@ def main():
         # if target_reserve_ratio > 0 and total_backing > 0:
         #     send_breach_alert_once(
         #         cache_key=f"{PROTOCOL}_reserve_ratio_breach",
-        #         is_breached=reserve_ratio < target_reserve_ratio,
         #         alert_message=(
         #             "⚠️ *Infinifi Reserve Ratio Breach*\n\n"
         #             f"Liquid ratio is {reserve_ratio:.2%}, below target {target_reserve_ratio:.2%}.\n"
@@ -180,7 +183,6 @@ def main():
         # if target_illiquid_ratio > 0 and total_backing > 0:
         #     send_breach_alert_once(
         #         cache_key=f"{PROTOCOL}_illiquid_ratio_breach",
-        #         is_breached=illiquid_ratio > target_illiquid_ratio,
         #         alert_message=(
         #             "⚠️ *Infinifi Illiquid Allocation Breach*\n\n"
         #             f"Illiquid ratio is {illiquid_ratio:.2%}, above target {target_illiquid_ratio:.2%}.\n"
@@ -190,28 +192,34 @@ def main():
 
         # Alert 4: Backing per iUSD below expected level (loss signal)
         if backing_per_iusd > 0:
-            send_breach_alert_once(
-                cache_key=f"{PROTOCOL}_backing_per_iusd_breach",
-                is_breached=backing_per_iusd < BACKING_PER_IUSD_MIN,
-                alert_message=(
-                    "🚨 *Infinifi Backing Alert*\n\n"
-                    f"Backing per iUSD is {backing_per_iusd:.6f}, below {BACKING_PER_IUSD_MIN:.3f}.\n"
-                    f"TVL: ${total_backing:,.2f}\nSupply: ${iusd_supply:,.2f}"
-                ),
-            )
+            cache_key_backing = f"{PROTOCOL}_backing_per_iusd_breach"
+            if backing_per_iusd < BACKING_PER_IUSD_MIN:
+                send_breach_alert_once(
+                    cache_key=cache_key_backing,
+                    alert_message=(
+                        "🚨 *Infinifi Backing Alert*\n\n"
+                        f"Backing per iUSD is {backing_per_iusd:.6f}, below {BACKING_PER_IUSD_MIN:.3f}.\n"
+                        f"TVL: ${total_backing:,.2f}\nSupply: ${iusd_supply:,.2f}"
+                    ),
+                )
+            else:
+                clear_breach_state(cache_key_backing)
 
         # Alert 5: Pending redemptions too high relative to liquid reserves
         if liquid_reserves > 0 and pending_redemptions >= 0:
+            cache_key_redemption = f"{PROTOCOL}_redemption_pressure_breach"
             redemption_to_liquid = pending_redemptions / liquid_reserves
-            send_breach_alert_once(
-                cache_key=f"{PROTOCOL}_redemption_pressure_breach",
-                is_breached=redemption_to_liquid > REDEMPTION_TO_LIQUID_RATIO_MAX,
-                alert_message=(
-                    "⚠️ *Infinifi Redemption Pressure Alert*\n\n"
-                    f"Pending/Liquid ratio is {redemption_to_liquid:.2%}, above {REDEMPTION_TO_LIQUID_RATIO_MAX:.0%}.\n"
-                    f"Pending redemptions: ${pending_redemptions:,.2f}\nLiquid reserves: ${liquid_reserves:,.2f}"
-                ),
-            )
+            if redemption_to_liquid > REDEMPTION_TO_LIQUID_RATIO_MAX:
+                send_breach_alert_once(
+                    cache_key=cache_key_redemption,
+                    alert_message=(
+                        "⚠️ *Infinifi Redemption Pressure Alert*\n\n"
+                        f"Pending/Liquid ratio is {redemption_to_liquid:.2%}, above {REDEMPTION_TO_LIQUID_RATIO_MAX:.0%}.\n"
+                        f"Pending redemptions: ${pending_redemptions:,.2f}\nLiquid reserves: ${liquid_reserves:,.2f}"
+                    ),
+                )
+            else:
+                clear_breach_state(cache_key_redemption)
 
     except Exception as e:
         logger.error("Error: %s", e)
