@@ -10,7 +10,7 @@ Github actions run hourly and send telegram message if there is a market with ut
 
 ## Governance
 
-Tenderly alert for [queueing proposal to Aave Governance contract](https://dashboard.tenderly.co/yearn/sam/alerts/rules/eae36bdd-b44c-45d5-acf7-b013238e32c0).
+[Internal timelock monitoring](../timelock/README.md) for queueing proposal to Aave Governance contract.
 Proposal can be executed immediately because the cooldown period is [set to 0](https://etherscan.io/address/0x9aee0b04504cef83a65ac3f0e838d0593bcb2bc7#readProxyContract#F3). After the proposal is executed, the payload is queued to Payload Controller which has min execution delay [set to 1 day](https://etherscan.io/address/0xdabad81af85554e9ae636395611c58f7ec1aaec5#readProxyContract#F6).
 Every payload that is executed on any network is the first queue to proposal on the mainnet. Monitoring just the proposal queue on the mainnet enables to get notification for future updates on all networks.
 

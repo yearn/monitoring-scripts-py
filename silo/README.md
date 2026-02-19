@@ -7,7 +7,7 @@ Github actions run hourly and send telegram message if there are positions with 
 
 ## Governance
 
-- [Tenderly alert](https://dashboard.tenderly.co/yearn/sam/alerts/rules/363c626b-2249-4d51-bad8-40cc92b58f24) to send Telegram message for scheduled transactions in Timelock controller. Min delay is set to [2 days](https://etherscan.io/address/0xe1F03b7B0eBf84e9B9f62a1dB40f1Efb8FaA7d22#readContract#F5).
+- [Internal timelock monitoring](../timelock/README.md) to send Telegram message for scheduled transactions in Timelock controller. Min delay is set to [2 days](https://etherscan.io/address/0xe1F03b7B0eBf84e9B9f62a1dB40f1Efb8FaA7d22#readContract#F5).
 - Github actions run hourly and send telegram message when there are queued transactions in Safe Multisig (3/6).
 
 Important contracts such as SiloRepository and SiloRouter are owned by the Safe Multisigs listed below, and we monitor the pending transactions of these multisigs every hour. In the future, SILO will transition to on-chain voting with the Timelock contract and veSILO. Details can be found [here](https://gov.silo.finance/t/silo-finance-2024-roadmap/451).
