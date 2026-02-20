@@ -174,8 +174,8 @@ def check_strategy_allocations(client) -> None:
     sky_strategy = client.eth.contract(address=SKY_STRATEGY, abi=ABI_STRATEGY)
 
     with client.batch_requests() as batch:
-        batch.add(aave_strategy.functions.totalAssets())
-        batch.add(sky_strategy.functions.totalAssets())
+        batch.add(aave_strategy.functions.assetsUnderManagement())
+        batch.add(sky_strategy.functions.assetsUnderManagement())
 
         responses = client.execute_batch(batch)
         if len(responses) != 2:
