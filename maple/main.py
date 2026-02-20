@@ -6,7 +6,6 @@ Monitors:
 - TVL (Total Value Locked) via totalAssets() — alerts on >5% change in 24h
 - Unrealized losses on loan managers — alerts on any non-zero value
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
-- Withdrawal queue — alerts on pending withdrawal shares
 """
 
 from utils.abi import load_abi
@@ -24,13 +23,11 @@ CACHE_FILENAME = "cache-id.txt"
 
 # --- ABIs ---
 ABI_POOL = load_abi("maple/abi/SyrupUSDCPool.json")
-ABI_WITHDRAWAL_MANAGER = load_abi("maple/abi/WithdrawalManagerQueue.json")
 ABI_LOAN_MANAGER = load_abi("maple/abi/LoanManager.json")
 ABI_STRATEGY = load_abi("maple/abi/Strategy.json")
 
 # --- Contract Addresses ---
 SYRUP_USDC_POOL = "0x80ac24aA929eaF5013f6436cdA2a7ba190f5Cc0b"
-WITHDRAWAL_MANAGER = "0x1bc47a0Dd0FdaB96E9eF982fdf1F34DC6207cfE3"
 FIXED_TERM_LOAN_MANAGER = "0x4A1c3F0D9aD0b3f9dA085bEBfc22dEA54263371b"
 OPEN_TERM_LOAN_MANAGER = "0x6ACEb4cAbA81Fa6a8065059f3A944fb066A10fAc"
 AAVE_STRATEGY = "0x560B3A85Af1cEF113BB60105d0Cf21e1d05F91d4"
@@ -152,23 +149,6 @@ def check_unrealized_losses(client) -> None:
         send_telegram_message(message, PROTOCOL)
 
 
-def check_withdrawal_queue(client) -> None:
-    """Check withdrawal queue for pending shares."""
-    wm = client.eth.contract(address=WITHDRAWAL_MANAGER, abi=ABI_WITHDRAWAL_MANAGER)
-
-    total_shares = client.execute(wm.functions.totalShares().call)
-    total_shares_human = total_shares / ONE_SHARE
-
-    logger.info("Withdrawal queue total pending shares: %s", format_usd(total_shares_human))
-
-    if total_shares > 0:
-        message = (
-            f"ℹ️ *Maple syrupUSDC Withdrawal Queue*\n"
-            f"📊 Pending shares: {format_usd(total_shares_human)}\n"
-            f"🔗 [WithdrawalManager](https://etherscan.io/address/{WITHDRAWAL_MANAGER})"
-        )
-        send_telegram_message(message, PROTOCOL, disable_notification=True)
-
 
 def check_strategy_allocations(client) -> None:
     """Check Aave and Sky strategy allocations."""
@@ -203,7 +183,6 @@ def main() -> None:
         pps = check_pps(client, pool)
         tvl = check_tvl(client, pool)
         check_unrealized_losses(client)
-        check_withdrawal_queue(client)
         check_strategy_allocations(client)
 
         logger.info(

@@ -5,15 +5,13 @@
 - **PPS (Price Per Share):** Tracks `convertToAssets(1e6)` on the syrupUSDC pool. Should be monotonically increasing. Alerts on any decrease, which would indicate loan impairment or loss.
 - **TVL (Total Value Locked):** Monitors `totalAssets()`. Alerts on changes exceeding 5% between runs.
 - **Unrealized Losses:** Checks both FixedTermLoanManager and OpenTermLoanManager for non-zero `unrealizedLosses()`. Any non-zero value indicates an active loan impairment.
-- **Withdrawal Queue:** Monitors `totalShares()` on the WithdrawalManagerQueue. Reports pending withdrawal shares.
-- **Strategy Allocations:** Tracks `totalAssets()` on Aave and Sky strategy contracts for DeFi allocation visibility.
+- **Strategy Allocations:** Tracks `assetsUnderManagement()` on Aave and Sky strategy contracts for DeFi allocation visibility.
 
 ## Key Contracts
 
 | Contract | Address | Purpose |
 |----------|---------|---------|
 | syrupUSDC Pool | [`0x80ac24aA929eaF5013f6436cdA2a7ba190f5Cc0b`](https://etherscan.io/address/0x80ac24aA929eaF5013f6436cdA2a7ba190f5Cc0b) | ERC-4626 vault |
-| WithdrawalManagerQueue | [`0x1bc47a0Dd0FdaB96E9eF982fdf1F34DC6207cfE3`](https://etherscan.io/address/0x1bc47a0Dd0FdaB96E9eF982fdf1F34DC6207cfE3) | Withdrawal processing |
 | FixedTermLoanManager | [`0x4A1c3F0D9aD0b3f9dA085bEBfc22dEA54263371b`](https://etherscan.io/address/0x4A1c3F0D9aD0b3f9dA085bEBfc22dEA54263371b) | Loan health |
 | OpenTermLoanManager | [`0x6ACEb4cAbA81Fa6a8065059f3A944fb066A10fAc`](https://etherscan.io/address/0x6ACEb4cAbA81Fa6a8065059f3A944fb066A10fAc) | Loan health |
 | AaveStrategy | [`0x560B3A85Af1cEF113BB60105d0Cf21e1d05F91d4`](https://etherscan.io/address/0x560B3A85Af1cEF113BB60105d0Cf21e1d05F91d4) | DeFi allocation |
@@ -26,7 +24,6 @@
 | PPS decrease | Any decrease | Critical |
 | TVL change | >5% between runs | Warning |
 | Unrealized losses | Any non-zero | Critical |
-| Withdrawal queue | Any pending shares | Info |
 
 ## Governance Monitoring
 
