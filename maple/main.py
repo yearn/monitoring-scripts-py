@@ -81,7 +81,8 @@ def check_pps(client, pool) -> float:
         )
         send_telegram_message(message, PROTOCOL)
 
-    set_cache_value(CACHE_KEY_PPS, pps_float)
+    if pps_float != previous_pps:
+        set_cache_value(CACHE_KEY_PPS, pps_float)
     return pps_float
 
 
@@ -105,7 +106,8 @@ def check_tvl(client, pool) -> float:
             )
             send_telegram_message(message, PROTOCOL)
 
-    set_cache_value(CACHE_KEY_TVL, tvl_usd)
+    if tvl_usd != previous_tvl:
+        set_cache_value(CACHE_KEY_TVL, tvl_usd)
     return tvl_usd
 
 
