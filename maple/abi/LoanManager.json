@@ -1,0 +1,61 @@
+[
+  {
+    "type": "event",
+    "name": "IssuanceParamsUpdated",
+    "inputs": [
+      { "name": "domainEnd", "type": "uint48", "indexed": false },
+      { "name": "issuanceRate", "type": "uint256", "indexed": false },
+      { "name": "accountedInterest", "type": "uint112", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "UnrealizedLossesUpdated",
+    "inputs": [
+      { "name": "unrealizedLosses", "type": "uint128", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "LoanImpaired",
+    "inputs": [
+      { "name": "loan", "type": "address", "indexed": false },
+      { "name": "newPaymentDueDate", "type": "uint40", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "ImpairmentRemoved",
+    "inputs": [
+      { "name": "loan", "type": "address", "indexed": false },
+      { "name": "originalPaymentDueDate", "type": "uint40", "indexed": false }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "unrealizedLosses",
+    "inputs": [],
+    "outputs": [
+      { "name": "", "type": "uint128" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "assetsUnderManagement",
+    "inputs": [],
+    "outputs": [
+      { "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "accountedInterest",
+    "inputs": [],
+    "outputs": [
+      { "name": "", "type": "uint112" }
+    ],
+    "stateMutability": "view"
+  }
+]
