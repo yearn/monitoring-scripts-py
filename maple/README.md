@@ -41,7 +41,7 @@ uv run maple/main.py
 
 ## Frequency
 
-Recommended: hourly (PPS and loan health), daily (governance and queue metrics).
+Runs hourly via [GitHub Actions](../.github/workflows/hourly.yml).
 
 ## Risk Report
 

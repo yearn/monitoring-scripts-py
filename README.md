@@ -16,6 +16,7 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 - [Infinifi](./infinifi/README.md)
 - [Lido](./lido/README.md)
 - [LRTs](./lrt-pegs/README.md)
+- [Maple](./maple/README.md)
 - [Maker DAO](./maker/README.md)
 - [Moonwell](./moonwell/README.md)
 - [Morpho](./morpho/README.md)
