@@ -6,6 +6,7 @@ Monitors:
 - TVL (Total Value Locked) via totalAssets() — alerts on >5% change in 24h
 - Unrealized losses on loan managers — alerts on any non-zero value
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
+- Withdrawal queue vs liquid funds — alerts when pending withdrawals >= 20% of liquid funds (Aave + Sky)
 """
 
 from utils.abi import load_abi
@@ -23,11 +24,13 @@ CACHE_FILENAME = "cache-id.txt"
 
 # --- ABIs ---
 ABI_POOL = load_abi("maple/abi/SyrupUSDCPool.json")
+ABI_WITHDRAWAL_MANAGER = load_abi("maple/abi/WithdrawalManagerQueue.json")
 ABI_LOAN_MANAGER = load_abi("maple/abi/LoanManager.json")
 ABI_STRATEGY = load_abi("maple/abi/Strategy.json")
 
 # --- Contract Addresses ---
 SYRUP_USDC_POOL = "0x80ac24aA929eaF5013f6436cdA2a7ba190f5Cc0b"
+WITHDRAWAL_MANAGER = "0x1bc47a0Dd0FdaB96E9eF982fdf1F34DC6207cfE3"
 FIXED_TERM_LOAN_MANAGER = "0x4A1c3F0D9aD0b3f9dA085bEBfc22dEA54263371b"
 OPEN_TERM_LOAN_MANAGER = "0x6ACEb4cAbA81Fa6a8065059f3A944fb066A10fAc"
 AAVE_STRATEGY = "0x560B3A85Af1cEF113BB60105d0Cf21e1d05F91d4"
@@ -43,6 +46,7 @@ CACHE_KEY_TVL = "MAPLE_TVL"
 
 # --- Thresholds ---
 TVL_CHANGE_THRESHOLD = 0.05  # 5% TVL change alert
+WITHDRAWAL_QUEUE_THRESHOLD = 0.20  # 20% of liquid funds
 
 
 def get_cache_value(key: str) -> float:
@@ -150,27 +154,50 @@ def check_unrealized_losses(client) -> None:
 
 
 
-def check_strategy_allocations(client) -> None:
-    """Check Aave and Sky strategy allocations."""
+def check_strategy_and_withdrawal_queue(client, pool) -> None:
+    """Check strategy allocations and alert if pending withdrawals >= 20% of liquid funds."""
     aave_strategy = client.eth.contract(address=AAVE_STRATEGY, abi=ABI_STRATEGY)
     sky_strategy = client.eth.contract(address=SKY_STRATEGY, abi=ABI_STRATEGY)
+    wm = client.eth.contract(address=WITHDRAWAL_MANAGER, abi=ABI_WITHDRAWAL_MANAGER)
 
     with client.batch_requests() as batch:
         batch.add(aave_strategy.functions.assetsUnderManagement())
         batch.add(sky_strategy.functions.assetsUnderManagement())
+        batch.add(wm.functions.totalShares())
 
         responses = client.execute_batch(batch)
-        if len(responses) != 2:
-            raise ValueError(f"Expected 2 responses, got {len(responses)}")
+        if len(responses) != 3:
+            raise ValueError(f"Expected 3 responses, got {len(responses)}")
 
     aave_assets = responses[0] / ONE_SHARE
     sky_assets = responses[1] / ONE_SHARE
+    pending_shares = responses[2]
+
+    # Convert pending shares to asset value
+    pending_assets = 0.0
+    if pending_shares > 0:
+        pending_assets_raw = client.execute(pool.functions.convertToAssets(pending_shares).call)
+        pending_assets = pending_assets_raw / ONE_SHARE
+
+    liquid_funds = aave_assets + sky_assets
 
     logger.info(
-        "Strategy allocations — Aave: %s, Sky: %s",
+        "Strategy allocations — Aave: %s, Sky: %s | Withdrawal queue: %s (liquid: %s)",
         format_usd(aave_assets),
         format_usd(sky_assets),
+        format_usd(pending_assets),
+        format_usd(liquid_funds),
     )
+
+    if liquid_funds > 0 and pending_assets / liquid_funds >= WITHDRAWAL_QUEUE_THRESHOLD:
+        ratio = pending_assets / liquid_funds
+        message = (
+            f"🚨 *Maple syrupUSDC Withdrawal Queue Alert*\n"
+            f"📊 Pending withdrawals: {format_usd(pending_assets)} ({ratio:.1%} of liquid funds)\n"
+            f"💧 Liquid funds: {format_usd(liquid_funds)} (Aave: {format_usd(aave_assets)}, Sky: {format_usd(sky_assets)})\n"
+            f"🔗 [WithdrawalManager](https://etherscan.io/address/{WITHDRAWAL_MANAGER})"
+        )
+        send_telegram_message(message, PROTOCOL)
 
 
 def main() -> None:
@@ -183,7 +210,7 @@ def main() -> None:
         pps = check_pps(client, pool)
         tvl = check_tvl(client, pool)
         check_unrealized_losses(client)
-        check_strategy_allocations(client)
+        check_strategy_and_withdrawal_queue(client, pool)
 
         logger.info(
             "Monitoring complete — PPS: %.8f, TVL: %s",
