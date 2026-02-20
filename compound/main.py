@@ -35,6 +35,7 @@ COMPOUND_VAULTS_KEYS = [
 
 
 def print_stuff(chain_name: str, token_name: str, ur: float) -> None:
+    logger.debug(f"Chain: {chain_name}, Token: {token_name}, UR: {ur}")
     if ur > THRESHOLD_UR:
         message = (
             f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
@@ -74,8 +75,8 @@ def main():
         logger.info("Processing %s assets...", chain.name)
         process_assets(chain)
 
-    # for market_key, vault_risk_level in COMPOUND_VAULTS_KEYS:
-    #     analyze_compound_market_allocation(market_key, vault_risk_level)
+    for market_key, vault_risk_level in COMPOUND_VAULTS_KEYS:
+        analyze_compound_market_allocation(market_key, vault_risk_level)
 
 
 if __name__ == "__main__":
