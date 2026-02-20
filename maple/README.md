@@ -30,7 +30,8 @@
 
 ## Governance Monitoring
 
-Governor Timelock ([`0x2eFFf88747EB5a3FF00d4d8d0f0800E306C0426b`](https://etherscan.io/address/0x2eFFf88747EB5a3FF00d4d8d0f0800E306C0426b)) and DAO Multisig ([`0xd6d4Bcde6c816F17889f1Dd3000aF0261B03a196`](https://etherscan.io/address/0xd6d4Bcde6c816F17889f1Dd3000aF0261B03a196)) should be added to the [cross-protocol timelock monitoring](../timelock/README.md) and [safe monitoring](../safe/README.md).
+- **DAO Multisig** ([`0xd6d4Bcde6c816F17889f1Dd3000aF0261B03a196`](https://etherscan.io/address/0xd6d4Bcde6c816F17889f1Dd3000aF0261B03a196)): Added to [safe monitoring](../safe/README.md). Alerts on queued multisig transactions.
+- **Governor Timelock** ([`0x2eFFf88747EB5a3FF00d4d8d0f0800E306C0426b`](https://etherscan.io/address/0x2eFFf88747EB5a3FF00d4d8d0f0800E306C0426b)): Should be added to [cross-protocol timelock monitoring](../timelock/README.md).
 
 ## Running
 
