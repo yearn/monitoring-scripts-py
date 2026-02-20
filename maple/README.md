@@ -3,7 +3,7 @@
 ## What it monitors
 
 - **PPS (Price Per Share):** Tracks `convertToAssets(1e6)` on the syrupUSDC pool. Should be monotonically increasing. Alerts on any decrease, which would indicate loan impairment or loss.
-- **TVL (Total Value Locked):** Monitors `totalAssets()`. Alerts on changes exceeding 5% between runs.
+- **TVL (Total Value Locked):** Monitors `totalAssets()`. Alerts on changes exceeding 15% between runs.
 - **Unrealized Losses:** Checks both FixedTermLoanManager and OpenTermLoanManager for non-zero `unrealizedLosses()`. Any non-zero value indicates an active loan impairment.
 - **Strategy Allocations:** Tracks `assetsUnderManagement()` on Aave and Sky strategy contracts for DeFi allocation visibility.
 - **Withdrawal Queue vs Liquid Funds:** Alerts when pending withdrawal shares reach 20% of liquid funds (Aave + Sky strategy AUM).
@@ -24,7 +24,7 @@
 | Metric | Threshold | Severity |
 |--------|-----------|----------|
 | PPS decrease | Any decrease | Critical |
-| TVL change | >5% between runs | Warning |
+| TVL change | >15% between runs | Warning |
 | Unrealized losses | Any non-zero | Critical |
 | Withdrawal queue | >=20% of liquid funds | Warning |
 

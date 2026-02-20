@@ -45,7 +45,7 @@ CACHE_KEY_PPS = "MAPLE_PPS"
 CACHE_KEY_TVL = "MAPLE_TVL"
 
 # --- Thresholds ---
-TVL_CHANGE_THRESHOLD = 0.05  # 5% TVL change alert
+TVL_CHANGE_THRESHOLD = 0.15  # 15% TVL change alert
 WITHDRAWAL_QUEUE_THRESHOLD = 0.20  # 20% of liquid funds
 
 
@@ -151,7 +151,6 @@ def check_unrealized_losses(client) -> None:
             f"🔗 [OpenTermLM](https://etherscan.io/address/{OPEN_TERM_LOAN_MANAGER})"
         )
         send_telegram_message(message, PROTOCOL)
-
 
 
 def check_strategy_and_withdrawal_queue(client, pool) -> None:
