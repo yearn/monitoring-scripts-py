@@ -3,7 +3,7 @@ Maple Finance syrupUSDC monitoring script.
 
 Monitors:
 - PPS (Price Per Share) via convertToAssets(1e6) — alerts on any decrease
-- TVL (Total Value Locked) via totalAssets() — alerts on >5% change in 24h
+- TVL (Total Value Locked) via totalAssets() — alerts on >15% change
 - Unrealized losses on loan managers — alerts on any non-zero value
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
 - Withdrawal queue vs liquid funds — alerts when pending withdrawals >= 20% of liquid funds (Aave + Sky)
