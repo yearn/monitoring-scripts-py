@@ -1,0 +1,38 @@
+[
+  {
+    "type": "function",
+    "name": "assetsUnderManagement",
+    "inputs": [],
+    "outputs": [
+      { "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "unrealizedLosses",
+    "inputs": [],
+    "outputs": [
+      { "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "strategyState",
+    "inputs": [],
+    "outputs": [
+      { "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "fundsAsset",
+    "inputs": [],
+    "outputs": [
+      { "name": "", "type": "address" }
+    ],
+    "stateMutability": "view"
+  }
+]

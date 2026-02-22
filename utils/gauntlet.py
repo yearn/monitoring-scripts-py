@@ -248,8 +248,8 @@ def fetch_borrow_metrics_from_gauntlet(protocol, market_key, vault_risk_level) -
     logger.info("Assigned Risk Level: %s", vault_risk_level)
     logger.info("Total supply: %s", format_usd(total_supply))
     logger.info("Total borrow: %s", format_usd(total_borrow))
-    logger.info("--------------------------------")
-    logger.info("Asset | Supply | Allocation")
+    logger.debug("--------------------------------")
+    logger.debug("Asset | Supply | Allocation")
 
     for chart in charts:
         if chart["key"] == "market_health_timeseries_asset_supply":
@@ -279,7 +279,7 @@ def fetch_borrow_metrics_from_gauntlet(protocol, market_key, vault_risk_level) -
                 # Calculate risk contribution
                 risk_multiplier = asset_risk_tier
                 total_risk_level += risk_multiplier * allocation_ratio
-                logger.info("%s | %s | %s", asset, format_usd(supply), f"{allocation_ratio:.1%}")
+                logger.debug("%s | %s | %s", asset, format_usd(supply), f"{allocation_ratio:.1%}")
 
     # Check total risk level against threshold for vault risk level
     if total_risk_level > MAX_RISK_THRESHOLDS[vault_risk_level]:

@@ -18,6 +18,12 @@ This folder contains monitoring scripts for the Infinifi protocol.
 - **Redemption Pressure**: Alert if `pending redemptions / liquid reserves` exceeds `80%`.
 - **Farm Allocation Shift**: Alert if any farm allocation ratio (`farm assets / total TVL`) changes by more than `FARM_RATIO_CHANGE_ALERT_THRESHOLD` versus cached ratio.
 - **Farm Activation**: Alert if a farm previously at `0` cached ratio moves above `FARM_RATIO_ACTIVATION_ALERT_THRESHOLD` of total TVL.
+- **Backing Per iUSD**: Alert if `totalTVL / iUSD supply` drops below `0.999`.
+- **Redemption Pressure**: Alert if `pending redemptions / liquid reserves` exceeds `80%`.
+
+### Alerts disabled ⚠️
+- **Reserve Ratio Breach**: Alert if liquid ratio falls below protocol `reserveRatio` target.
+- **Illiquid Ratio Breach**: Alert if illiquid ratio rises above protocol `illiquidTargetRatio`.
 
 ## Governance Monitoring
 

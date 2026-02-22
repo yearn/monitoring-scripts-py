@@ -9,7 +9,7 @@ from utils.telegram import send_telegram_message
 PROTOCOL = "fluid"
 logger = get_logger(PROTOCOL)
 FLUID_API_URL = "https://atlas.api.instadapp.io/proposals"
-FLUID_PROPOSAL_URL = "https://fluid.io/gov/proposal/"
+FLUID_PROPOSAL_URL = "https://fluid.io/gov/proposals/"
 
 max_length_summary = 450
 

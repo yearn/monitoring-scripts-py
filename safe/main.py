@@ -150,6 +150,12 @@ ALL_SAFE_ADDRESSES = [
         "0xb8FC49402dF3ee4f8587268FB89fda4d621a8793",
         "Cap Money Multisig",
     ],
+    [
+        "MAPLE",
+        "mainnet",
+        "0xd6d4Bcde6c816F17889f1Dd3000aF0261B03a196",
+        "Maple DAO Multisig (syrupUSDC)",
+    ],
     # [
     #     "USD0",
     #     "mainnet",
