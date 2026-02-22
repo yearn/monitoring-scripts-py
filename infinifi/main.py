@@ -15,6 +15,8 @@ IUSD_ADDRESS = Web3.to_checksum_address("0x48f9e38f3070AD8945DFEae3FA70987722E3D
 LIQUID_RESERVES_THRESHOLD = 15_000_000
 BACKING_PER_IUSD_MIN = 0.999
 REDEMPTION_TO_LIQUID_RATIO_MAX = 0.8
+FARM_RATIO_CHANGE_ALERT_THRESHOLD = 0.10
+FARM_RATIO_ACTIVATION_ALERT_THRESHOLD = 0.03
 
 # API Configuration
 API_BASE_URL = "https://api.infinifi.xyz"
@@ -86,6 +88,7 @@ def main():
         pending_redemptions = 0
         reserve_ratio = 0
         illiquid_ratio = 0
+        farms = []
         # target_reserve_ratio = 0
         # target_illiquid_ratio = 0
         api_data = fetch_api_data()
@@ -112,6 +115,8 @@ def main():
             if total_backing > 0:
                 reserve_ratio = liquid_reserves / total_backing
                 illiquid_ratio = 1 - reserve_ratio
+
+            farms = api_data["data"].get("farms", [])
 
             # params = api_data["data"].get("params", {})
             # target_reserve_ratio = to_float(params.get("reserveRatio"))
@@ -220,6 +225,72 @@ def main():
                 )
             else:
                 clear_breach_state(cache_key_redemption)
+
+        # Alert 6: Farm allocation ratio changed by more than 10% since last run.
+        # ratio = farm assets / total TVL
+        if total_backing > 0 and farms:
+            moved_farms = []
+            activated_farms = []
+
+            for farm in farms:
+                farm_assets = to_float(farm.get("assetsNormalized"))
+                farm_ratio = farm_assets / total_backing if total_backing > 0 else 0
+                farm_address = farm.get("address", "unknown")
+                farm_label = farm.get("label", farm.get("name", farm_address))
+                cache_key_farm_ratio = f"{PROTOCOL}_farm_ratio_{farm_address.lower()}"
+
+                last_ratio = to_float(get_last_value_for_key_from_file(cache_filename, cache_key_farm_ratio))
+                if last_ratio > 0:
+                    ratio_change_pct = abs(farm_ratio - last_ratio) / last_ratio
+                    if ratio_change_pct > FARM_RATIO_CHANGE_ALERT_THRESHOLD:
+                        moved_farms.append(
+                            {
+                                "label": farm_label,
+                                "last_ratio": last_ratio,
+                                "new_ratio": farm_ratio,
+                                "change_pct": ratio_change_pct,
+                            }
+                        )
+                        write_last_value_to_file(cache_filename, cache_key_farm_ratio, farm_ratio)
+                else:
+                    # Farm had no previous ratio (or previously zero). Alert if now materially active.
+                    if farm_ratio > FARM_RATIO_ACTIVATION_ALERT_THRESHOLD:
+                        activated_farms.append(
+                            {
+                                "label": farm_label,
+                                "new_ratio": farm_ratio,
+                            }
+                        )
+                        write_last_value_to_file(cache_filename, cache_key_farm_ratio, farm_ratio)
+
+            if moved_farms:
+                moved_farms.sort(key=lambda x: x["change_pct"], reverse=True)
+                moved_lines = [
+                    (f"- {f['label']}: {f['last_ratio']:.2%} -> {f['new_ratio']:.2%} ({f['change_pct']:.2%} change)")
+                    for f in moved_farms[:10]
+                ]
+                more_count = len(moved_farms) - 10
+                if more_count > 0:
+                    moved_lines.append(f"- ...and {more_count} more farms")
+
+                send_telegram_message(
+                    "⚠️ *Infinifi Farm Allocation Shift Alert*\n\n"
+                    "Farm allocation ratio changed by more than 10% vs previous run:\n" + "\n".join(moved_lines),
+                    PROTOCOL,
+                )
+
+            if activated_farms:
+                activated_farms.sort(key=lambda x: x["new_ratio"], reverse=True)
+                activated_lines = [f"- {f['label']}: {f['new_ratio']:.2%}" for f in activated_farms[:10]]
+                more_count = len(activated_farms) - 10
+                if more_count > 0:
+                    activated_lines.append(f"- ...and {more_count} more farms")
+
+                send_telegram_message(
+                    "ℹ️ *Infinifi Farm Activation Alert*\n\n"
+                    "Farms previously at 0 ratio are now above 5% of TVL:\n" + "\n".join(activated_lines),
+                    PROTOCOL,
+                )
 
     except Exception as e:
         logger.error("Error: %s", e)
