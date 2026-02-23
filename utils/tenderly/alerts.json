@@ -1,64 +1,6 @@
 {
   "alerts": [
     {
-      "id": "14fde22a-110d-43ff-be49-6f4b77ed3ecb",
-      "project_id": "6932cbec-2970-425a-a734-cb8374d95744",
-      "name": "Event CallScheduled emitted from ETH+",
-      "description": "",
-      "enabled": true,
-      "color": "#eeeeee",
-      "severity": "default",
-      "created_at": "2025-07-02T16:46:01.594393Z",
-      "delivery_channels": [
-        {
-          "delivery_channel_id": "7d4d7962-6af0-4bab-9cf3-5526df755283",
-          "delivery_channel": {
-            "id": "7d4d7962-6af0-4bab-9cf3-5526df755283",
-            "type": "telegram",
-            "owner_id": "1f750734-c720-4fde-9d60-d7edd0c04d91",
-            "project_id": null,
-            "label": "ETH+ Alerts SAM",
-            "reference_id": "5690897e-e918-445f-958f-dd646ee448da",
-            "enabled": true,
-            "created_at": "2025-04-25T19:41:06.669325Z",
-            "information": {
-              "chat_id": -4745822324
-            }
-          },
-          "enabled": true,
-          "created_at": "2025-07-02T16:47:02.464452Z"
-        }
-      ],
-      "is_editable": true,
-      "updated_at": "2025-07-02T16:47:02.466331Z",
-      "expressions": [
-        {
-          "type": "contract_address",
-          "expression": {
-            "address": "0x5d8a7dc9405f08f14541ba918c1bf7eb2dace556",
-            "transaction_type": null
-          }
-        },
-        {
-          "type": "network",
-          "expression": {
-            "network_id": "1"
-          }
-        },
-        {
-          "type": "emitted_log",
-          "expression": {
-            "address": "0x5d8a7dc9405f08f14541ba918c1bf7eb2dace556",
-            "match_any": false,
-            "match_non_project_contracts": false,
-            "event_name": "CallScheduled",
-            "event_id": "0x4cf4410cc57040e44862ef0f45f3dd5a5e02db8eb8add648d4b0e236f1d07dca",
-            "decode_events": false
-          }
-        }
-      ]
-    },
-    {
       "id": "271040e6-85bc-4103-bf05-094a9912961a",
       "project_id": "6932cbec-2970-425a-a734-cb8374d95744",
       "name": "Event CallScheduled emitted in LombardTimeLock",
