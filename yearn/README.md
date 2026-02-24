@@ -33,3 +33,27 @@ Optional flags:
 - `--since-seconds` (default: `7200`)
 - `--chain-ids` (default: `1`)
 - `--no-cache` (disable caching)
+
+---
+
+## Endorsed Vault Check
+
+The script `yearn/check_endorsed.py` verifies that all Yearn v3 vaults listed in the yDaemon API are actually endorsed on-chain in the registry contract. It runs [weekly via GitHub Actions](../.github/workflows/weekly.yml).
+
+### How It Works
+
+For each supported chain (Mainnet, Polygon, Base, Arbitrum, Katana):
+
+1. Fetches all v3 vault addresses from the [yDaemon API](https://ydaemon.yearn.fi).
+2. Calls `isEndorsed(address)` on the registry contract (`0xd40ecF29e001c76Dcc4cC0D9cd50520CE845B038`).
+3. Collects any vault that is listed in yDaemon but **not** endorsed on-chain.
+
+### Alerts
+
+If any unendorsed vaults are found, a Telegram alert is sent to the Yearn group listing each address grouped by chain. If the message exceeds the Telegram character limit, a short summary with a link to the GitHub Actions logs is sent instead.
+
+### Usage
+
+```bash
+uv run yearn/check_endorsed.py
+```

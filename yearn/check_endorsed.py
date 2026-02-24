@@ -1,28 +1,34 @@
 #!/usr/bin/env python3
-# Summary:
-# - Verifies Yearn v3 yDaemon vaults against on-chain isEndorsed for each chain_id.
-# - Fetches yDaemon vault metadata per chain and checks each address via the registry contract.
-# - Writes any failures to errors.txt as "Chain <chain_id>: <address>".
-# Prereqs: Python 3.9+ with requests and web3, plus RPC access to configured endpoints.
+"""Verify Yearn v3 yDaemon vaults are endorsed on-chain in the registry.
+
+Fetches vault metadata from yDaemon per chain and checks each address via
+the registry contract's isEndorsed function. Sends a Telegram alert if any
+vaults are not endorsed.
+"""
+
+import os
+from typing import Dict, List
+
 import requests
+from dotenv import load_dotenv
 from web3 import Web3
 
-# ChainIDs to test
-chain_ids = [1, 137, 8453, 42161, 747474]
+from utils.chains import Chain
+from utils.logging import get_logger
+from utils.telegram import send_telegram_message
+from utils.web3_wrapper import ChainManager
 
-# RPC URLs for each chain
-rpc_urls = {
-    1: "https://eth-mainnet.public.blastapi.io",
-    137: "https://polygon.lava.build",
-    8453: "https://base.gateway.tenderly.co",
-    42161: "https://arbitrum.gateway.tenderly.co",
-    747474: "https://katana.drpc.org",
-}
+load_dotenv()
 
-# Contract address to check against
-registry_address = "0xd40ecF29e001c76Dcc4cC0D9cd50520CE845B038"
-registry_checksum = Web3.to_checksum_address(registry_address)
-registry_abi = [
+logger = get_logger("yearn.check_endorsed")
+
+PROTOCOL = "yearn"
+
+YDAEMON_BASE_URL = "https://ydaemon.yearn.fi/vaults/v3"
+YDAEMON_PARAMS = "hideAlways=true&strategiesDetails=withDetails&strategiesCondition=inQueue"
+
+REGISTRY_ADDRESS = Web3.to_checksum_address("0xd40ecF29e001c76Dcc4cC0D9cd50520CE845B038")
+REGISTRY_ABI = [
     {
         "inputs": [{"internalType": "address", "name": "", "type": "address"}],
         "name": "isEndorsed",
@@ -32,89 +38,133 @@ registry_abi = [
     }
 ]
 
-# Store all errors with chain information
-all_errors = []
-total_checked = 0
+CHAINS = [Chain.MAINNET, Chain.POLYGON, Chain.BASE, Chain.ARBITRUM, Chain.KATANA]
 
 
-print("Verify all yDaemon vaults are isEndorsed in Registry...")
+def fetch_ydaemon_vaults(chain: Chain) -> List[str]:
+    """Fetch vault addresses from yDaemon API for a given chain.
 
-for chain_id in chain_ids:
-    print(f"\n{'='*60}")
-    print(f"Testing Chain ID: {chain_id}")
-    print(f"{'='*60}")
+    Args:
+        chain: The chain to fetch vaults for.
 
-    # Check if RPC URL is configured for this chain
-    if chain_id not in rpc_urls:
-        print(f"⚠️  No RPC URL configured for chain {chain_id}, skipping...")
-        continue
+    Returns:
+        List of vault addresses.
+    """
+    url = f"{YDAEMON_BASE_URL}?{YDAEMON_PARAMS}&chainIDs={chain.chain_id}"
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    vaults = response.json()
+    return [vault["address"] for vault in vaults if "address" in vault]
 
-    rpc_url = rpc_urls[chain_id]
-    print(f"Using RPC: {rpc_url}")
-    w3 = Web3(Web3.HTTPProvider(rpc_url))
-    registry_contract = w3.eth.contract(address=registry_checksum, abi=registry_abi)
 
-    # Fetch JSON from URL for this chainID
-    url = f"https://ydaemon.yearn.fi/vaults/v3?hideAlways=true&strategiesDetails=withDetails&strategiesCondition=inQueue&chainIDs={chain_id}"
-    print(f"Fetching data from API...")
+def check_endorsed_for_chain(chain: Chain, addresses: List[str]) -> List[str]:
+    """Check which yDaemon vaults are not endorsed on-chain for a given chain.
 
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        vaults = response.json()
+    Args:
+        chain: The chain to check.
+        addresses: List of vault addresses from yDaemon.
 
-        # Extract addresses from the yDaemon JSON response
-        ydaemon_addresses = [vault['address'] for vault in vaults if 'address' in vault]
-        print(f"Found {len(ydaemon_addresses)} addresses for chain {chain_id}")
+    Returns:
+        List of unendorsed vault addresses.
+    """
+    client = ChainManager.get_client(chain)
+    registry = client.get_contract(REGISTRY_ADDRESS, REGISTRY_ABI)
 
-        if len(ydaemon_addresses) == 0:
-            print(f"No addresses found for chain {chain_id}, skipping...")
+    unendorsed = []
+    for address in addresses:
+        try:
+            checksum = Web3.to_checksum_address(address)
+            endorsed = registry.functions.isEndorsed(checksum).call()
+            if not endorsed:
+                logger.warning("Not endorsed on %s: %s", chain.name, address)
+                unendorsed.append(address)
+        except Exception as e:
+            logger.error("Error checking %s on %s: %s", address, chain.name, e)
+            unendorsed.append(address)
+
+    logger.info("Chain %s: %d/%d unendorsed", chain.name, len(unendorsed), len(addresses))
+    return unendorsed
+
+
+def build_alert_message(errors: Dict[Chain, List[str]], total_checked: int) -> str:
+    """Build a Telegram alert message from the errors dict.
+
+    Args:
+        errors: Mapping of chain to list of unendorsed addresses.
+        total_checked: Total number of vaults checked.
+
+    Returns:
+        Formatted alert message string.
+    """
+    total_errors = sum(len(addrs) for addrs in errors.values())
+    lines = [
+        "*yDaemon Endorsed Check*",
+        f"Checked {total_checked} vaults, found {total_errors} unendorsed:\n",
+    ]
+    for chain, addresses in errors.items():
+        lines.append(f"*{chain.name}* ({len(addresses)}):")
+        for addr in addresses:
+            lines.append(f"  `{addr}`")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def main() -> None:
+    """Run the endorsed vault check across all configured chains."""
+    logger.info("Starting yDaemon endorsed vault check")
+
+    all_errors: Dict[Chain, List[str]] = {}
+    total_checked = 0
+
+    for chain in CHAINS:
+        logger.info("Checking chain %s (id=%d)", chain.name, chain.chain_id)
+        try:
+            addresses = fetch_ydaemon_vaults(chain)
+        except requests.RequestException as e:
+            logger.error("Failed to fetch yDaemon data for %s: %s", chain.name, e)
             continue
 
-    except requests.RequestException as e:
-        print(f"Error fetching data from URL: {e}")
-        continue
-    except (KeyError, ValueError) as e:
-        print(f"Error parsing JSON: {e}")
-        continue
+        if not addresses:
+            logger.info("No vaults found for %s, skipping", chain.name)
+            continue
 
-    # Check each address
-    chain_errors = []
-    print()
-    print("Checking yDaemon vaults against isEndorsed...")
-    print(f"Checking {len(ydaemon_addresses)} addresses...")
+        logger.info("Found %d vaults for %s", len(addresses), chain.name)
+        total_checked += len(addresses)
 
-    for i, address in enumerate(ydaemon_addresses, 1):
-        print(f"  [{i}/{len(ydaemon_addresses)}] Checking: {address}", end=" ")
+        unendorsed = check_endorsed_for_chain(chain, addresses)
+        if unendorsed:
+            all_errors[chain] = unendorsed
 
-        try:
-            endorsed = registry_contract.functions.isEndorsed(
-                Web3.to_checksum_address(address)
-            ).call()
+    total_errors = sum(len(addrs) for addrs in all_errors.values())
+    logger.info("Done. %d/%d vaults unendorsed", total_errors, total_checked)
 
-            if not endorsed:
-                print("❌ Not endorsed")
-                chain_errors.append(address)
-                all_errors.append(f"Chain {chain_id}: {address}")
-            else:
-                print("✓")
+    if not all_errors:
+        logger.info("All vaults endorsed, no alert needed")
+        return
 
-        except (ValueError, TypeError) as e:
-            print(f"❌ Error: {e}")
-            chain_errors.append(address)
-            all_errors.append(f"Chain {chain_id}: {address}")
+    message = build_alert_message(all_errors, total_checked)
 
-    total_checked += len(ydaemon_addresses)
-    print(f"\nChain {chain_id} summary: {len(chain_errors)} errors out of {len(ydaemon_addresses)} addresses")
+    # If the message is too long for Telegram, send a short summary with a link to the logs
+    max_length = 2000
+    if len(message) > max_length:
+        run_url = os.getenv("GITHUB_RUN_URL", "")
+        if not run_url:
+            server = os.getenv("GITHUB_SERVER_URL", "https://github.com")
+            repo = os.getenv("GITHUB_REPOSITORY", "")
+            run_id = os.getenv("GITHUB_RUN_ID", "")
+            if repo and run_id:
+                run_url = f"{server}/{repo}/actions/runs/{run_id}"
 
-# Write all errors to errors.txt
-print(f"\n{'='*60}")
-print(f"FINAL SUMMARY")
-print(f"{'='*60}")
-print(f"Total addresses checked: {total_checked}")
-print(f"Total errors found: {len(all_errors)}")
-with open('errors.txt', 'w') as f:
-    for error in all_errors:
-        f.write(f"{error}\n")
+        message = (
+            f"*yDaemon Endorsed Check*\n"
+            f"Found {total_errors} unendorsed vaults across {len(all_errors)} chains.\n"
+            f"Too many to list here."
+        )
+        if run_url:
+            message += f"\n[Check the full logs]({run_url})"
 
-print(f"Errors written to errors.txt")
+    send_telegram_message(message, PROTOCOL)
+
+
+if __name__ == "__main__":
+    main()
