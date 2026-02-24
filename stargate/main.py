@@ -1,9 +1,11 @@
 from utils.abi import load_abi
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "STARGATE"
+PROTOCOL = "stargate"
+logger = get_logger(PROTOCOL)
 
 ABI_STRATEGY = load_abi("common-abi/Strategy.json")
 
@@ -22,13 +24,13 @@ BUFFER = 0.1
 
 
 def print_stuff(
-    total_debt,
-    net_room,
-    total_idle,
-    strategy_name,
-    underlying_token_decimals,
-    chain_name,
-):
+    total_debt: int,
+    net_room: int,
+    total_idle: int,
+    strategy_name: str,
+    underlying_token_decimals: int,
+    chain_name: str,
+) -> None:
     total_debt /= 10**underlying_token_decimals
     net_room /= 10**underlying_token_decimals
     total_idle /= 10**underlying_token_decimals
@@ -89,7 +91,7 @@ def process_assets(chain: Chain):
 def main():
     for chain in [Chain.POLYGON]:
         if STRATEGIES_BY_CHAIN[chain]:  # Only process chains with defined strategies
-            print(f"Processing {chain.name} assets...")
+            logger.info("Processing %s assets...", chain.name)
             process_assets(chain)
 
 

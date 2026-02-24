@@ -2,13 +2,15 @@ import datetime
 
 from utils.abi import load_abi
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 # Constants
 DURATION = 1800  # 30 minutes
 THRESHOLD_RATIO = 0.95
-PROTOCOL = "PENDLE"
+PROTOCOL = "pendle"
+logger = get_logger(PROTOCOL)
 
 # Oracle address
 ORACLE_ADDRESS = "0x14418800E0B4C971905423aa873e83355922428c"
@@ -112,7 +114,7 @@ def process_assets(chain: Chain):
 
 def main():
     for chain in [Chain.MAINNET, Chain.ARBITRUM]:
-        print(f"Processing {chain.name} assets...")
+        logger.info("Processing %s assets...", chain.name)
         process_assets(chain)
 
 

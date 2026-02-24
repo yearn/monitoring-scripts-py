@@ -14,13 +14,15 @@ import requests
 from dotenv import load_dotenv
 
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Configuration constants
-PROTOCOL = "MORPHO"
+PROTOCOL = "morpho"
+logger = get_logger("morpho.graph")
 BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
 LIQUIDITY_THRESHOLD = 0.01  # 1% of total assets
 MARKET_URL = "https://compound.blue"
@@ -155,7 +157,7 @@ def check_high_allocation(vault_data, chain: Chain):
         total_risk_level += risk_multiplier * allocation_ratio
 
     # print total risk level and vault name
-    print(f"Total risk level: {total_risk_level:.1%}, vault: {vault_name} on {chain.name}")
+    logger.info("Total risk level: %s, vault: %s on %s", f"{total_risk_level:.1%}", vault_name, chain.name)
     if total_risk_level > MAX_RISK_THRESHOLDS[risk_level]:
         message = (
             f"🔺 High allocation detected in [{vault_name}]({vault_url}) on {chain.name}\n"
@@ -230,7 +232,7 @@ def check_graph_data_for_chain(chain: Chain):
     Check markets on specific chain for low liquidity, high allocation and bad debt.
     Send telegram message if data cannot be fetched.
     """
-    print(f"Checking Morpho markets with Graph API on {chain.name}...")
+    logger.info("Checking Morpho markets with Graph API on %s...", chain.name)
 
     # Collect all vault addresses from all chains
     vault_addresses = []
@@ -318,7 +320,7 @@ def check_graph_data_for_chain(chain: Chain):
     if "errors" in data:
         error_msg = data["errors"][0]["message"] if data["errors"] else "Unknown GraphQL error"
         if "indexing_error" in error_msg:
-            print(f"🚨 GraphQL indexing error when fetching Morpho data: {error_msg} 🚨")
+            logger.error("GraphQL indexing error when fetching Morpho data: %s", error_msg)
         else:
             send_telegram_message(
                 f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨",
@@ -343,4 +345,4 @@ def check_graph_data_for_chain(chain: Chain):
 if __name__ == "__main__":
     # TODO: define chain to check and add ci trigger
     # check_graph_data_for_chain(Chain.POLYGON)
-    print("No chain defined")
+    logger.info("No chain defined")

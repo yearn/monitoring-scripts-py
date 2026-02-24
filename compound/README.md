@@ -6,7 +6,7 @@ Github actions run hourly and send telegram message if there is a market with ut
 
 ## Governance
 
-Tenderly alert for queueing tx to [Timelock contract on Mainnet](https://dashboard.tenderly.co/yearn/sam/alerts/rules/e978ddbe-5631-424d-bead-54079286e5e5).
+[Internal timelock monitoring](../timelock/README.md) for queueing tx to [Timelock contract on Mainnet](https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925#code).
 
 This Timelock contract covers **Mainnet and all other chains**. Each protocol contract is controlled by the [Timelock contract](https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925#code). For more info see the [governance docs](https://docs.compound.finance/governance/). Delay is [2 days](https://etherscan.io/address/0x6d903f6003cca6255D85CcA4D3B5E5146dC33925#readContract).
 

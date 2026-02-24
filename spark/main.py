@@ -1,10 +1,12 @@
 import json
 
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "SPARK"
+PROTOCOL = "spark"
+logger = get_logger(PROTOCOL)
 
 with open("aave/abi/AToken.json") as f:
     abi_data = json.load(f)
@@ -62,7 +64,7 @@ THRESHOLD_UR_NOTIFICATION = 0.99
 
 
 def print_stuff(chain_name, token_name, ur):
-    print(f"Chain: {chain_name}, Token: {token_name}, UR: {ur}")
+    logger.info("Chain: %s, Token: %s, UR: %s", chain_name, token_name, ur)
     if ur > THRESHOLD_UR:
         message = (
             f"🚨 **BEEP BOP** 🚨\n💎 Market asset: {token_name}\n📊 Utilization rate: {ur:.2%}\n🌐 Chain: {chain_name}"
@@ -117,7 +119,7 @@ def process_assets(chain, addresses):
 
 # Main function
 def main():
-    print("Processing Mainnet assets...")
+    logger.info("Processing Mainnet assets...")
     process_assets(Chain.MAINNET, mainnet_addresses)
 
 

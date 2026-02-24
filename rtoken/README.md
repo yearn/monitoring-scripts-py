@@ -6,7 +6,7 @@ For more information on RToken, see the [Reserve Protocol risk overview](https:/
 
 ### Governance
 
-[Tenderly alert](https://dashboard.tenderly.co/yearn/sam/alerts/rules/62804c0b-830c-433a-89fc-264bff3005e4) when event `CallScheduled` is emitted from [Timelock contract](https://etherscan.io/address/0x5d8A7DC9405F08F14541BA918c1Bf7eb2dACE556#code).
+[Tenderly alert](https://dashboard.tenderly.co/yearn/sam/alerts/rules/14fde22a-110d-43ff-be49-6f4b77ed3ecb) and [internal timelock monitoring](../timelock/README.md) when event `CallScheduled` is emitted from [Timelock contract](https://etherscan.io/address/0x5d8A7DC9405F08F14541BA918c1Bf7eb2dACE556#code).
 
 ### Data Monitoring
 

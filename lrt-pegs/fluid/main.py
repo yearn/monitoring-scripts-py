@@ -1,9 +1,11 @@
 from utils.abi import load_abi
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "PEGS"
+PROTOCOL = "pegs"
+logger = get_logger("lrt-pegs.fluid")
 
 # Fluid DEX Resolver
 # https://github.com/Instadapp/fluid-contracts-public/blob/main/deployments/deployments.md
@@ -12,7 +14,8 @@ FLUID_DEX_RESOLVER = "0x05Bd8269A20C472b148246De20E6852091BF16Ff"
 ABI_FLUID_POOL = load_abi("lrt-pegs/abi/Fluid_DexResolver.json")
 # Collateral Reserves Index
 COLLATERAL_RESERVES_INDEX = 5
-MIN_ASSET_BALANCE = 100e18
+MIN_ASSET_BALANCE = 1e18
+THRESHOLD_RATIO = 90.0
 
 
 # Pool configurations
@@ -23,21 +26,21 @@ POOL_CONFIGS = [
         "0x276084527B801e00Db8E4410504F9BaF93f72C67",
         0,
         1,
-        60.0,
+        THRESHOLD_RATIO,
     ),
     (
         "ezETH/ETH FLUID Pool",
         "0xDD72157A021804141817d46D9852A97addfB9F59",
         0,
         1,
-        60.0,
+        THRESHOLD_RATIO,
     ),
     (
         "weETH / ETH FLUID Pool",
         "0x86f874212335Af27C41cDb855C2255543d1499cE",
         0,
         1,
-        60.0,
+        THRESHOLD_RATIO,
     ),
 ]
 
@@ -74,14 +77,14 @@ def process_pools(chain: Chain = Chain.MAINNET):
             )
 
         percentage = (lrt_balance / (lrt_balance + other_token_balance)) * 100
-        print(f"{pool_name} ratio is {percentage:.2f}%")
+        logger.info("%s ratio is %s%%", pool_name, f"{percentage:.2f}")
         if percentage > peg_threshold:
             message = f"🚨 Fluid Alert! {pool_name} ratio is {percentage:.2f}%"
             send_telegram_message(message, PROTOCOL)
 
 
 def main():
-    print("Checking Fluid pools...")
+    logger.info("Checking Fluid pools...")
     process_pools()
 
 

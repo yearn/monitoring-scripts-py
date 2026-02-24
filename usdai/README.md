@@ -18,13 +18,15 @@ We track the following key metrics to ensure solvency and stability:
 - **Mint Ratio**: The collateralization ratio retrieved from the protocol API (0.995).
 - **Collateral**: Calculated as `USDai Supply / Mint Ratio`.
 - **Buffer**: `Implied Collateral` - `USDai Supply`. A positive buffer indicates the system is functioning within the expected Mint Ratio parameters.
+- **Loans**: Directly fetched from the Loan Router contract. Then calculated `Active loan amounts / total USDai supply`. to calculate the ratio.
 
 ## Alerts
 
-- **Buffer Drop**: A Telegram alert is triggered if the **Buffer** value decreases by more than **$10,000** from the last cached value. Since the buffer represents accumulated yield, it is expected to grow or remain stable. A significant drop could indicate:
-  - A loss of backing value (depegging of underlying asset).
-  - An issue with the yield accrual mechanism.
-  - An unexpected withdrawal or rebalancing event.
+- **Buffer Drop**: A Telegram alert is triggered if the **Buffer** value drops below $1M.
+  A significant drop could indicate loss of backing value.
+- **Loan Activity**: A Telegram alert is triggered if the **Total Verified Principal** changes (indicating a new loan origination or a repayment).
+- **Legacy Loan Expiry**: A Telegram alert is triggered when the legacy loan (NVIDIA H200s) reaches its maturity date (July 2028).
+
 - **Mint Ratio Change**: A Telegram alert is triggered if the protocol's Mint Ratio changes from its previous value. This is a critical parameter that determines backing requirements.
 - **Governance Events**: We monitor for queued governance actions on the USDai Admin Safe and sUSDai Admin Safe contracts.
 
@@ -33,6 +35,15 @@ We track the following key metrics to ensure solvency and stability:
 - **USDai Token (Vault)**: `0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF`
 - **wM Token**: `0x437cc33344a0b27a429f795ff6b469c72698b291`
 - **sUSDai**: `0x0B2b2B2076d95dda7817e785989fE353fe955ef9`
+- **Loan Router**: `0x0C2ED170F2bB1DF1a44292Ad621B577b3C9597D1`
+
+## Tenderly Monitoring
+
+The following addresses and events should be watched via Tenderly alerts:
+
+1.  **Loan Router** (`0x0C2ED170F2bB1DF1a44292Ad621B577b3C9597D1`):
+    - **Transfer**: Monitor for minting/burning of Loan NFTs.
+    - **LoanOriginated** (or similar): Monitor for new GPU loan creation.
 
 ## Governance & Security
 
@@ -73,11 +84,20 @@ The contract calculates PPS on-chain (see `redemptionSharePrice`), but the under
 
 ## Usage
 
-Collateral/Supply Monitoring:
+Collateral/Supply/Loan Monitoring:
 
 ```bash
 uv run usdai/main.py
 ```
+
+### Loan Calculation Methodology
+
+The script calculates GPU loans by directly scanning the **Loan Router** contract for active loan NFTs held by the sUSDai Vault.
+
+1. **Direct Read**: It scans `tokenOfOwnerByIndex` on the Loan Router for the sUSDai address.
+2. **Decoding**: It decodes the raw `loanState` storage to extract the exact **Principal Amount** and **Maturity Date**.
+3. **Legacy Loans**: It includes hardcoded values for known legacy loan (NVIDIA H200s, $560k) that originated before the current Loan Router deployment.
+4. **Total Principal**: Sums these up to track the exact face value of active loans.
 
 Governance Monitoring:
 

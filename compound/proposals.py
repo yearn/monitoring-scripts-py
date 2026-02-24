@@ -4,6 +4,7 @@ import requests
 from dotenv import load_dotenv
 
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
 load_dotenv()
@@ -14,6 +15,7 @@ TALLY_API_URL = "https://api.tally.xyz/query"
 COMPOUND_TALLY_URL = "https://www.tally.xyz/gov/compound/proposal/"
 
 PROTOCOL = "comp"  # must be lower case
+logger = get_logger(PROTOCOL)
 max_length_summary = 450
 
 
@@ -81,18 +83,18 @@ def get_proposals():
         proposals = data["data"]["proposals"]["nodes"]
         queued_proposals = [p for p in proposals if p["status"] == "queued"]
         if not queued_proposals:
-            print("No queued proposals found")
+            logger.info("No queued proposals found")
             return
 
-        print(f"Found {len(queued_proposals)} queued proposals")
+        logger.info("Found %s queued proposals", len(queued_proposals))
 
         # Sort queued proposals by onchainId from lowest to highest
         queued_proposals.sort(key=lambda x: int(x["onchainId"]))
         last_reported_id = get_last_queued_id_from_file(PROTOCOL)
         newest_queued_proposal_id = int(queued_proposals[-1]["onchainId"])
-        print(f"Newest queued proposal id: {newest_queued_proposal_id}")
+        logger.info("Newest queued proposal id: %s", newest_queued_proposal_id)
         if newest_queued_proposal_id <= last_reported_id:
-            print(f"No new proposals, last reported id: {last_reported_id}")
+            logger.info("No new proposals, last reported id: %s", last_reported_id)
             return
 
         message = "🖋️ Compound Governance Proposals 🖋️\n"

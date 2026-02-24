@@ -4,9 +4,11 @@ from datetime import datetime
 import requests
 
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
 PROTOCOL = "aave"
+logger = get_logger(PROTOCOL)
 
 
 def run_query(query, variables):
@@ -46,7 +48,7 @@ def fetch_queued_proposals(last_reported_id: int):
     response = run_query(query, variables)
     if "errors" in response:
         # NOTE: not raising error because the graph is not reliable. We have Tenderly alerts for this also
-        print(f"Error fetching proposals: {response['errors']}")
+        logger.error("Error fetching proposals: %s", response["errors"])
         return []
 
     proposals = response["data"]["proposals"]
@@ -57,7 +59,7 @@ def handle_governance_proposals():
     last_sent_id = get_last_queued_id_from_file(PROTOCOL)
     proposals = fetch_queued_proposals(last_sent_id)
     if not proposals:
-        print("No proposals found")
+        logger.info("No proposals found")
         return
 
     aave_url = "https://app.aave.com/governance/v3/proposal/?proposalId="
@@ -66,7 +68,7 @@ def handle_governance_proposals():
         timestamp = int(proposal["transactions"]["executed"]["timestamp"])
         proposal_id = int(proposal["proposalId"])
         if proposal_id <= last_sent_id:
-            print(f"Proposal: {proposal['proposalId']} already reported")
+            logger.info("Proposal: %s already reported", proposal["proposalId"])
             continue
 
         date_time = datetime.fromtimestamp(timestamp)
@@ -79,7 +81,7 @@ def handle_governance_proposals():
         )
 
     if not message:
-        print("No proposals found in the last hour")
+        logger.info("No proposals found in the last hour")
         return
 
     message = "🖋️ Queued Aave Governance Proposals 🖋️\n" + message

@@ -1,13 +1,13 @@
+from utils.formatting import format_usd
 from utils.gauntlet import (
     DEBT_SUPPLY_RATIO,
     fetch_borrow_metrics_from_gauntlet,
-    format_usd,
     get_markets_for_protocol,
     get_timestamp_before,
 )
 from utils.telegram import send_telegram_message
 
-PROTOCOL = "EULER"
+PROTOCOL = "euler"
 # available markets: https://dashboards.gauntlet.xyz/protocols/euler
 EULER_VAULTS_KEYS = [
     # Gauntlet tag, Risk level

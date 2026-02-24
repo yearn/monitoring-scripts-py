@@ -3,11 +3,13 @@ from datetime import datetime
 import requests
 
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
 PROTOCOL = "fluid"
+logger = get_logger(PROTOCOL)
 FLUID_API_URL = "https://atlas.api.instadapp.io/proposals"
-FLUID_PROPOSAL_URL = "https://fluid.io/gov/proposal/"
+FLUID_PROPOSAL_URL = "https://fluid.io/gov/proposals/"
 
 max_length_summary = 450
 
@@ -64,20 +66,20 @@ def get_proposals():
         data = response.json()
 
         if "data" not in data or not data["data"]:
-            print("No queued proposals found")
+            logger.info("No queued proposals found")
             return
 
         proposals = data["data"]
-        print(f"Found {len(proposals)} queued proposals")
+        logger.info("Found %s queued proposals", len(proposals))
 
         # Sort proposals by id from lowest to highest
         proposals.sort(key=lambda x: int(x["id"]))
         last_reported_id = get_last_queued_id_from_file(PROTOCOL)
         newest_proposal_id = int(proposals[-1]["id"])
 
-        print(f"Newest proposal id: {newest_proposal_id}")
+        logger.info("Newest proposal id: %s", newest_proposal_id)
         if newest_proposal_id <= last_reported_id:
-            print(f"No new proposals, last reported id: {last_reported_id}")
+            logger.info("No new proposals, last reported id: %s", last_reported_id)
             return
 
         message = "🏛️ Fluid Protocol Governance Proposals 🏛️\n"
@@ -119,15 +121,15 @@ def get_proposals():
             send_telegram_message(message, PROTOCOL)
             write_last_queued_id_to_file(PROTOCOL, newest_proposal_id)
         else:
-            print("No new proposals to report")
+            logger.info("No new proposals to report")
 
     except requests.RequestException as e:
         error_message = f"Failed to fetch Fluid proposals: {e}"
-        print(error_message)
+        logger.error("%s", error_message)
         send_telegram_message(error_message, PROTOCOL, True)
     except Exception as e:
         error_message = f"Error processing Fluid proposals: {e}"
-        print(error_message)
+        logger.error("%s", error_message)
         send_telegram_message(error_message, PROTOCOL, True)
 
 

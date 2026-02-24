@@ -12,15 +12,17 @@ from typing import Any, Dict, List
 import requests
 
 from utils.chains import Chain
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
 # Configuration constants
 API_URL = "https://api.morpho.org/graphql"
 MORPHO_URL = "https://app.morpho.org"
-PROTOCOL = "MORPHO"
+PROTOCOL = "morpho"
+logger = get_logger(PROTOCOL)
 BAD_DEBT_RATIO = 0.005  # 0.5% of total borrowed tvl
 LIQUIDITY_THRESHOLD = 0.01  # 1% of total assets
-LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.095  # 9.5% of total assets
+LIQUIDITY_THRESHOLD_YV_COLLATERAL = 0.06  # 6% of total assets
 
 # Map vaults by chain
 VAULTS_BY_CHAIN = {
@@ -78,8 +80,8 @@ VAULTS_BY_CHAIN = {
     ],
     Chain.POLYGON: [
         ["Compound WETH", "0xF5C81d25ee174d83f1FD202cA94AE6070d073cCF", 1],
-        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 2],
-        ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8", 1],
+        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 1],
+        # ["Compound USDT", "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8", 1],  # NOTE: disable because we don't have funds there currently
     ],
 }
 
@@ -251,6 +253,9 @@ MARKETS_RISK_2 = {
         "0xeb17955ea422baeddbfb0b8d8c9086c5be7a9cfdefb292119a102e981a30062e",  # stcUSD/USDC -> lltv 91.5%, oracle: Ojo Yield Risk Engine stcUSD/cUSD Exchange Rate, RedStone Price Feed for cUSD_FUNDAMENTAL and Chainlink USDC/USD.
         "0x03f715ef1ae508ab3e1faf4dffdbf2a077d1f0ad10c5aad42cf4438d5e3328af",  # PT-stcUSD-29JAN2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to SY) stcUSD. RedStone Price Feed for cUSD_FUNDAMENTAL and Chainlink USDC/USD.
         "0x802ec6e878dc9fe6905b8a0a18962dcca10440a87fa2242fbf4a0461c7b0c789",  # PT-cUSD-29JAN2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to SY) with quote oracle set to RedStone Price Feed for cUSD_FUNDAMENTAL. USDC = USD.
+        "0x2fb3713487c7812e7309935b034f40228841666f6b048faf31fd2110ae674f20",  # PT-stcUSD-23JUL2026/USDC -> lltv 91.5%, oracle: OjoPTFeed oracle for stcUSD. RedStone Price Feed for cUSD_FUNDAMENTAL and Redstone USDC/USD v2.
+        "0x702b7ec7628de2622e51e1bb34a7e6ad9e95f3a25a2ed361e4ce621f23f5e642",  # PT-cUSD-23JUL2026/USDC -> lltv 91.5%, oracle: OjoPTFeed oracle for cUSD. RedStone Price Feed for cUSD_FUNDAMENTAL and Redstone USDC/USD v2.
+        "0xbbf7ce1b40d32d3e3048f5cf27eeaa6de8cb27b80194690aab191a63381d8c99",  # siUSD/USDC -> lltv 91.5%, oracle: infinity accouting contract provides the price iUSD, vault rate siUSD to iUSD. usdc = 1 using dummy oracle.
     ],
     Chain.BASE: [
         "0x6aa81f51dfc955df598e18006deae56ce907ac02b0b5358705f1a28fcea23cc0",  # wstETH/WETH -> lltv 96.5%, oracle: Chainlink wstETH-stETH Exchange Rate
@@ -270,6 +275,8 @@ MARKETS_RISK_2 = {
         "0x0e9d558490ed0cd523681a8c51d171fd5568b04311d0906fec47d668fb55f5d9",  # BTCK/vbUSDC -> lltv 77%, oracle: Redstone BTC/USD
         "0x071ed2047610c7b33e1540e49fcc0a6852cb783cca0dd7dc428f32fd791a020f",  # wstETH/AUSD -> lltv 86%, oracle: RedStone Price Feed for wstETH. USD=AUSD.
         "0xa7cd449cc319d65be3d0926d6b6f599a8c3434bd95ba3e91bbf1ee5e80e72b56",  # LBTC/vbUSDC -> lltv 86%, oracle: RedStone Price Feed for LBTC_FUNDAMENTAL and RedStone BTC/USD. USD=vbUSDC.
+        "0x2c4f26c76b4de51d3c9260c15a796cd2a35efab17786d0aa78ca2e638b0f8ba8",  # yvvbUSDC/vbETH -> lltv 77%, oracle: yearn vault exchange rate. Chainlink ETH/USD and Chainlink USDC/USD.
+        "0x61fcb4d6d1534eedeb0e0bea361745f727d73f14569d231c4a2b39232b6b7312",  # yvvbUSDT/vbWBTC -> lltv 77%, oracle: yearn vault exchange rate. Chainlink WBTC/USD and Chainlink USDT/USD.
     ],
     Chain.POLYGON: [
         "0x41e537c46cc0e2f82aa69107cd72573f585602d8c33c9b440e08eaba5e8fded1",  # MATICX/USDT -> lltv 77%, oracle: Chainlink Calculated MaticX / USD, but there is no oracle for USDT/USD. Maticx has liquidity around 7M without slippage, around 1.7M USD. Withdrawing Matic will take 90 checkpoints (2-3 days) as per Polygon's native unstaking
@@ -302,6 +309,7 @@ MARKETS_RISK_3 = {
         "0xce68c7aa336675e42bbc8eaa8b5ecc7ebd816bf8625b5316330c6ac2dabc4cf2",  # SolvBTC/BTC -> lltv 94.5%, oracle: upgradeable MetaOracleDeviationTimelock with prime oracle morpho oracle with 1:1 hardcoded rate
         "0x7a7018e22a8bb2d08112eae9391e09f065a8ae7ae502c1c23dc96c21411a6efd",  # EIGEN/USDC -> lltv 77%, oracle: Redstone EIGEN/USD. USD = USDC.
         "0xb8afc953c3cc8077b4a4bf459bede8d3f80be45ca1f244e4bca13b7b1030eed5",  # PT-syrupUSDC-30OCT2025/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) syrupUSDC. syrupUSDC = USDC.
+        "0xaac3ffcdf8a75919657e789fa72ab742a7bbfdf5bb0b87e4bbeb3c29bbbbb05c",  # PT-siUSD-26MAR2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) siUSD. USDC = 1 using dummy oracle.
     ],
     Chain.BASE: [
         "0x9a697eb760dd12aaea23699c96ea2ebbfe48b7af64138d92c4d232b9ed380024",  # PT-LBTC-29MAY2025/cbBTC -> lltv 91.5%, oracle: Pendle PT with LinearDiscountOracle. Higher lltv than PT-LBTC-27MAR2025 / WBTC.
@@ -422,15 +430,28 @@ def get_vault_url(vault_data: Dict[str, Any]) -> str:
     return f"{MORPHO_URL}/{get_chain_name(chain)}/vault/{vault_data['address']}"
 
 
-def bad_debt_alert(markets: List[Dict[str, Any]], vault_name: str = "") -> None:
+def bad_debt_alert(
+    markets: List[Dict[str, Any]],
+    vault_name: str,
+    vault_url: str,
+    chain: Chain,
+    alerted_markets: set[str],
+) -> None:
     """
     Send telegram message if bad debt is detected in any market.
 
     Args:
         markets: List of market data
         vault_name: Name of the vault (for alert message)
+        vault_url: URL of the vault
+        chain: Chain the vault is on
+        alerted_markets: Set of market unique keys already alerted (prevents duplicates across vaults)
     """
     for market in markets:
+        unique_key = market["uniqueKey"]
+        if unique_key in alerted_markets:
+            continue
+
         bad_debt = market["badDebt"]["usd"]
         borrowed_tvl = market["state"]["borrowAssetsUsd"]
 
@@ -440,25 +461,26 @@ def bad_debt_alert(markets: List[Dict[str, Any]], vault_name: str = "") -> None:
 
         # Alert if bad debt ratio exceeds threshold
         if bad_debt / borrowed_tvl > BAD_DEBT_RATIO:
+            alerted_markets.add(unique_key)
             market_url = get_market_url(market)
             market_name = f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
 
             message = (
-                f"🚨 Bad debt detected for Morpho {vault_name}\n"
+                f"🚨 Bad debt detected in [{vault_name}]({vault_url}) on {chain.name}\n"
                 f"💹 Market: [{market_name}]({market_url})\n"
-                f"💸 Bad debt: ${bad_debt:,.2f} USD\n"
-                f"📊 Bad debt ratio: {(bad_debt / borrowed_tvl):.2%}\n"
+                f"💸 Bad debt: ${bad_debt:,.2f} ({(bad_debt / borrowed_tvl):.2%} of borrowed)\n"
             )
 
             send_telegram_message(message, PROTOCOL)
 
 
-def check_high_allocation(vault_data):
+def check_allocation_and_risk(vault_data):
     """
-    Send telegram message if high allocation is detected in any market.
-    Send another message if total risk level is too high.
+    Check per-market allocation and total vault risk level.
+    Sends a consolidated alert if any markets exceed allocation thresholds.
+    Sends a separate alert if total risk level exceeds the vault's maximum.
     """
-    total_assets = vault_data.get("state", {}).get("totalAssetsUsd", 0)
+    total_assets = vault_data.get("state", {}).get("totalAssetsUsd", 0) or 0
     if total_assets == 0:
         return
 
@@ -478,6 +500,7 @@ def check_high_allocation(vault_data):
         raise ValueError(f"Vault {vault_address} not found in VAULTS_BY_CHAIN config")
 
     total_risk_level = 0.0
+    allocation_violations: list[str] = []
 
     for allocation in vault_data["state"]["allocation"]:
         # market without collateral asset is idle asset
@@ -486,7 +509,10 @@ def check_high_allocation(vault_data):
 
         market = allocation["market"]
         unique_key = market["uniqueKey"]
-        market_supply = allocation.get("supplyAssetsUsd", 0)
+        market_supply = allocation.get("supplyAssetsUsd", 0) or 0
+        if market_supply == 0:
+            logger.info("Skipping market %s with no supply assets", unique_key)
+            continue
         allocation_ratio = min(market_supply / total_assets, 1.0)  # prevent allocation ratio from exceeding 100%
 
         # Determine market risk level
@@ -507,12 +533,10 @@ def check_high_allocation(vault_data):
         if allocation_ratio > allocation_threshold:
             market_url = get_market_url(market)
             market_name = f"{market['collateralAsset']['symbol']}/{market['loanAsset']['symbol']}"
-            message = (
-                f"🔺 High allocation detected in [{vault_name}]({vault_url}) on {chain.name}\n"
-                f"💹 Market [{market_name}]({market_url})\n"
-                f"🔢 Allocation: {allocation_ratio:.1%} but max acceptable allocation is {allocation_threshold:.1%}\n"
+            allocation_violations.append(
+                f"- [{market_name}]({market_url}) (risk {market_risk_level}): "
+                f"{allocation_ratio:.1%} (max: {allocation_threshold:.1%})"
             )
-            send_telegram_message(message, PROTOCOL)
 
         # Calculate weighted risk score for each market allocation
         # risk_multiplier: market risk tier (1-5, higher = riskier)
@@ -520,14 +544,23 @@ def check_high_allocation(vault_data):
         # total_risk_level: sum of (risk_tier * allocation) across all markets
         total_risk_level += risk_multiplier * allocation_ratio
 
+    # Send consolidated allocation alert if any markets exceed thresholds
+    if allocation_violations:
+        violations_text = "\n".join(allocation_violations)
+        message = (
+            f"🔺 High allocation in [{vault_name}]({vault_url}) (risk {risk_level}) on {chain.name}\n"
+            f"{violations_text}\n"
+        )
+        send_telegram_message(message, PROTOCOL)
+
     # print total risk level and vault name
-    print(f"Total risk level: {total_risk_level:.1%}, vault: {vault_name} on {chain.name}")
+    logger.info("Total risk level: %s, vault: %s on %s", f"{total_risk_level:.2f}", vault_name, chain.name)
     # round total_risk_level to 2 decimal places
     total_risk_level = round(total_risk_level, 2)
     if total_risk_level > MAX_RISK_THRESHOLDS[risk_level]:
         message = (
-            f"🔺 High allocation detected in [{vault_name}]({vault_url}) on {chain.name}\n"
-            f"🔢 Total risk level: {total_risk_level:.1%} but max acceptable is {MAX_RISK_THRESHOLDS[risk_level]}\n"
+            f"⚠️ High risk level in [{vault_name}]({vault_url}) (risk {risk_level}) on {chain.name}\n"
+            f"🔢 Risk level: {total_risk_level:.2f} (max: {MAX_RISK_THRESHOLDS[risk_level]:.2f})\n"
             f"🔢 Total assets: ${total_assets:,.2f}\n"
         )
         send_telegram_message(message, PROTOCOL)
@@ -637,28 +670,31 @@ def check_combined_liquidity_threshold(
 ) -> None:
     """Check if combined liquidity meets threshold and send alert if needed."""
     if combined_total_assets < 10_000:
-        print(
-            f"Skipping {asset_symbol} combined liquidity check: total assets ${combined_total_assets:,.2f} below threshold"
+        logger.info(
+            "Skipping %s combined liquidity check: total assets $%s below threshold",
+            asset_symbol,
+            f"{combined_total_assets:,.2f}",
         )
         return
 
     combined_liquidity_ratio = combined_liquidity / combined_total_assets
 
-    print(
-        f"Combined {asset_symbol} liquidity check: {vault_count} vaults on {chain.name}, "
-        f"${combined_total_assets:,.2f} total assets, "
-        f"{combined_liquidity_ratio:.1%} liquidity ratio"
+    logger.info(
+        "Combined %s liquidity check: %s vaults on %s, $%s total assets, %s liquidity ratio",
+        asset_symbol,
+        vault_count,
+        chain.name,
+        f"{combined_total_assets:,.2f}",
+        f"{combined_liquidity_ratio:.1%}",
     )
 
     if combined_liquidity_ratio < LIQUIDITY_THRESHOLD_YV_COLLATERAL:
         vault_list = ", ".join(vault_names)
         message = (
-            f"⚠️ Low combined liquidity detected for {asset_symbol} YV collateral vaults on {chain.name}\n"
-            f"🚨 Combined vaults: {vault_list}\n"
-            f"🚨 Min liquidity is {LIQUIDITY_THRESHOLD_YV_COLLATERAL:.1%} of total assets.\n"
-            f"💰 Combined liquidity: {combined_liquidity_ratio:.1%} of total assets\n"
-            f"💵 Combined liquidity: ${combined_liquidity:,.2f}\n"
-            f"📊 Combined total assets: ${combined_total_assets:,.2f}"
+            f"⚠️ Low combined liquidity for {asset_symbol} YV collateral vaults on {chain.name}\n"
+            f"🏦 Vaults: {vault_list}\n"
+            f"💰 Liquidity: ${combined_liquidity:,.2f} ({combined_liquidity_ratio:.1%} of ${combined_total_assets:,.2f})\n"
+            f"📊 Min threshold: {LIQUIDITY_THRESHOLD_YV_COLLATERAL:.1%}\n"
         )
         send_telegram_message(message, PROTOCOL)
 
@@ -743,10 +779,9 @@ def check_low_liquidity(vault_data):
     # standard liquidity check (YV collateral vaults are handled separately)
     if liquidity_ratio < LIQUIDITY_THRESHOLD:
         message = (
-            f"⚠️ Low liquidity detected in [{vault_name}]({vault_url}) on {chain.name}\n"
-            f"💰 Liquidity: {liquidity_ratio:.1%} of total assets\n"
-            f"💵 Liquidity: ${liquidity:,.2f}\n"
-            f"📊 Total Assets: ${total_assets:,.2f}"
+            f"⚠️ Low liquidity in [{vault_name}]({vault_url}) on {chain.name}\n"
+            f"💰 Liquidity: ${liquidity:,.2f} ({liquidity_ratio:.1%} of ${total_assets:,.2f})\n"
+            f"📊 Min threshold: {LIQUIDITY_THRESHOLD:.1%}\n"
         )
         send_telegram_message(message, PROTOCOL)
 
@@ -756,7 +791,7 @@ def main() -> None:
     Check markets for low liquidity, high allocation and bad debt.
     Send telegram message if data cannot be fetched.
     """
-    print("Checking Morpho markets...")
+    logger.info("Checking Morpho markets...")
 
     # Collect all vault addresses from all chains
     vault_addresses = []
@@ -850,21 +885,26 @@ def main() -> None:
     # Check combined liquidity for all vaults (handles YV collateral grouping)
     check_low_liquidity_combined(vaults_data)
 
+    alerted_markets: set[str] = set()
+
     for vault_data in vaults_data:
-        # Check high allocation for each vault
-        check_high_allocation(vault_data)
+        # Check per-market allocation and total risk level
+        check_allocation_and_risk(vault_data)
 
         # Check bad debt for each market in the vault
         vault_markets = []
         for allocation in vault_data["state"]["allocation"]:
             market_supply_usd = allocation.get("market", {}).get("state", {}).get("supplyAssetsUsd")
-            if allocation["enabled"] and (market_supply_usd or 0) > 0:
+            if allocation["enabled"] and (market_supply_usd or 0) > 1e4:  # skip low value markets
                 market = allocation["market"]
                 if market["collateralAsset"] is not None:
                     # market without collateral asset is idle asset
                     vault_markets.append(market)
 
-        bad_debt_alert(vault_markets, vault_data["name"])
+        vault_name = vault_data["name"]
+        vault_url = get_vault_url(vault_data)
+        chain = Chain.from_chain_id(vault_data["chain"]["id"])
+        bad_debt_alert(vault_markets, vault_name, vault_url, chain, alerted_markets)
 
 
 if __name__ == "__main__":

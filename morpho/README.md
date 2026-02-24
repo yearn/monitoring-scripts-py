@@ -58,8 +58,8 @@ For vaults that are used as collateral in Yearn v3 strategies (YV collateral vau
 
 **Thresholds:**
 
-- **Regular vaults:** 1% liquidity threshold.
-- **YV collateral vaults:** 15% liquidity threshold, more conservative due to their use as collateral and more liquidity is needed for liquidating YV tokens as collateral.
+- **Regular vaults:** Defined in [markets.py#24](./markets.py#24) variable.
+- **YV collateral vaults:** Defined in [markets.py#25](./markets.py#25) variable, more conservative due to their use as collateral and more liquidity is needed for liquidating YV tokens as collateral.
 
 **Logic:** For each asset group (e.g., all USDC vaults at one chain), the system:
 

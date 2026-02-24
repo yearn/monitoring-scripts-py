@@ -11,8 +11,12 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
+from utils.logging import get_logger
+
 # Load environment variables from .env file
 load_dotenv()
+
+logger = get_logger("utils.config")
 
 
 @dataclass
@@ -47,7 +51,7 @@ class Config:
         try:
             return int(value)
         except ValueError:
-            print(f"Warning: Invalid integer value for {key}: {value}. Using default {default}")
+            logger.warning("Invalid integer value for %s: %s. Using default %s", key, value, default)
             return default
 
     @staticmethod
@@ -59,7 +63,7 @@ class Config:
         try:
             return float(value)
         except ValueError:
-            print(f"Warning: Invalid float value for {key}: {value}. Using default {default}")
+            logger.warning("Invalid float value for %s: %s. Using default %s", key, value, default)
             return default
 
     @staticmethod

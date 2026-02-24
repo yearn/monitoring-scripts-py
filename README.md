@@ -7,12 +7,16 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 ## Supported Protocols
 
 - [Aave V3](./aave/README.md)
+- [Bad Debt](./bad-debt/)
+- [Cap](./cap/README.md)
 - [Compound V3](./compound/README.md)
 - [Ethena](./ethena/README.md)
 - [Euler](./euler/README.md)
 - [Fluid](./fluid/README.md)
+- [Infinifi](./infinifi/README.md)
 - [Lido](./lido/README.md)
 - [LRTs](./lrt-pegs/README.md)
+- [Maple](./maple/README.md)
 - [Maker DAO](./maker/README.md)
 - [Moonwell](./moonwell/README.md)
 - [Morpho](./morpho/README.md)
@@ -23,6 +27,13 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 - [Spark](./spark/README.md)
 - [Stargate](./stargate/README.md)
 - [USD0 - Usual Money](./usd0/README.md)
+- [USDAI](./usdai/README.md)
+- [Yearn](./yearn/README.md)
+
+## Cross-Protocol Monitoring
+
+- [Timelock Alerts](./timelock/README.md) — monitors OpenZeppelin `TimelockController` contracts for `CallScheduled` events across multiple protocols and sends Telegram alerts to protocol-specific channels.
+- [Safe Multisigs](./safe/main.py) — monitors Safe multisig wallets for queued transactions across multiple protocols.
 
 ## Telegram Alerts
 
@@ -75,7 +86,10 @@ Format and lint code with ruff:
 ```bash
 uv run ruff format .
 uv run ruff check --fix .
+uv run pytest tests/
 ```
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for full style guidelines, project conventions, and instructions on adding new protocols.
 
 ## Details
 

@@ -66,12 +66,13 @@ class TestConfig(unittest.TestCase):
 class TestTelegram(unittest.TestCase):
     """Tests for Telegram utility functions."""
 
-    @patch("utils.telegram.requests.get")
-    def test_send_telegram_message_success(self, mock_get):
+    @patch("utils.telegram.requests.post")
+    def test_send_telegram_message_success(self, mock_post):
         # Setup mock response
         mock_response = unittest.mock.Mock()
         mock_response.status_code = 200
-        mock_get.return_value = mock_response
+        mock_response.raise_for_status = unittest.mock.Mock()
+        mock_post.return_value = mock_response
 
         # Test with environment variables
         with patch.dict(
@@ -85,19 +86,19 @@ class TestTelegram(unittest.TestCase):
             send_telegram_message("Test message", "test")
 
             # Verify the request was made with the correct parameters
-            mock_get.assert_called_once()
-            args, kwargs = mock_get.call_args
-            self.assertEqual(kwargs["params"]["text"], "Test message")
-            self.assertEqual(kwargs["params"]["parse_mode"], "Markdown")
+            mock_post.assert_called_once()
+            args, kwargs = mock_post.call_args
+            self.assertEqual(kwargs["json"]["text"], "Test message")
+            self.assertEqual(kwargs["json"]["parse_mode"], "Markdown")
 
     @patch("utils.telegram.requests.get")
     def test_send_telegram_message_missing_credentials(self, mock_get):
         # Test with missing environment variables
         with patch.dict(os.environ, {}, clear=True):
-            # Should not raise exceptions but print a warning
-            with patch("builtins.print") as mock_print:
+            # Should not raise exceptions but log a warning
+            with patch("utils.telegram.logger") as mock_logger:
                 send_telegram_message("Test message", "test")
-                mock_print.assert_any_call("Warning: Missing Telegram credentials for test")
+                mock_logger.warning.assert_any_call("Missing Telegram credentials for %s", "test")
 
             # Verify no request was made
             mock_get.assert_not_called()

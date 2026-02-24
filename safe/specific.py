@@ -5,6 +5,10 @@ from eth_abi import decode
 from eth_utils import to_checksum_address
 from web3 import Web3
 
+from utils.logging import get_logger
+
+logger = get_logger("safe.specific")
+
 
 class Call:
     def __init__(self, target: str, value: int, call_data: bytes):
@@ -64,7 +68,7 @@ def handle_pendle(provider_url, hex_encoded_data: str) -> str:
     aggreate_function_signature = "0x1acaa198"
     # Remove '0x' prefix if present
     if not hex_encoded_data.startswith(aggreate_function_signature):
-        print("Invalid input data")
+        logger.warning("Invalid input data")
         return ""
 
     hex_encoded_data = hex_encoded_data.removeprefix(aggreate_function_signature)
@@ -72,7 +76,7 @@ def handle_pendle(provider_url, hex_encoded_data: str) -> str:
 
     number_of_calls = len(parsed_calls)
     if number_of_calls == 0:
-        print("No function calls found")
+        logger.warning("No function calls found")
         return ""
 
     message = "-" * 20

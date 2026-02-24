@@ -3,11 +3,13 @@ import os
 import requests
 from dotenv import load_dotenv
 
+from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
 load_dotenv()
 api_key = os.getenv("GRAPH_API_KEY")
-PROTOCOL = "SILO"
+PROTOCOL = "silo"
+logger = get_logger(PROTOCOL)
 
 
 def check_positions():
@@ -108,7 +110,7 @@ def check_positions():
 
 
 def main():
-    print("Checking positions in Arbitrum: ")
+    logger.info("Checking positions in Arbitrum")
     check_positions()
 
 
