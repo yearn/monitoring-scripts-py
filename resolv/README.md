@@ -37,11 +37,11 @@ The script [resolv/resolv.py](resolv.py) monitors several critical metrics:
    - Alerts if USR over-collateralization is below 130%
    - Alerts if market delta absolute value exceeds 6%
    - Alerts if strategy net exposure exceeds 3% of TVL
-   - Alerts on percentage changes:
-     - TVL change ≥ 10%
-     - USR TVL change ≥ 10%
-     - RLP TVL change ≥ 10%
-     - Backing assets value change ≥ 5%
+   - Alerts on negative percentage changes (drops only):
+     - TVL drop ≥ 10%
+     - USR TVL drop ≥ 10%
+     - RLP TVL drop ≥ 10%
+     - Backing assets value drop ≥ 5%
    - Alerts if RLP/USR ratio changes by ≥ 5% (absolute)
 
 ## Governance

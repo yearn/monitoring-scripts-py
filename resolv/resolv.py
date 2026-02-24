@@ -253,12 +253,12 @@ def _check_metric_change_ratio(
     error_messages: list[str],
     cache: dict[str, float | None],
 ) -> None:
-    """Check if metric changed by ratio threshold and alert if so."""
+    """Check if metric dropped by ratio threshold and alert if so."""
     cache_key = _reserves_cache_key(metric_key)
     cached = cache.get(cache_key)
     if cached is not None and cached > 0:
         change_ratio = (current - cached) / cached
-        if abs(change_ratio) >= ratio_trigger:
+        if change_ratio <= -ratio_trigger:
             error_messages.append(
                 f"⚠️ Resolv reserves {label} changed by {change_ratio * 100:.2f}% "
                 f"({_format_usd(cached)} → {_format_usd(current)})"
