@@ -51,6 +51,7 @@ TIMELOCK_LIST: list[TimelockConfig] = [
     TimelockConfig("0x2386dc45added673317ef068992f19421b481f4c", 1, "FLUID", "Fluid Timelock"),
     TimelockConfig("0x3c28b7c7ba1a1f55c9ce66b263b33b204f2126ea", 1, "LRT", "Puffer Timelock"),
     TimelockConfig("0x2e59a20f205bb85a89c53f1936454680651e618e", 1, "LIDO", "Lido Timelock"),
+    TimelockConfig("0x2efff88747eb5a3ff00d4d8d0f0800e306c0426b", 1, "MAPLE", "Maple GovernorTimelock"),
     # Chain 8453 - Base
     TimelockConfig("0xf817cb3092179083c48c014688d98b72fb61464f", 8453, "LRT", "superOETH Timelock"),
 ]
@@ -107,9 +108,10 @@ def format_delay(seconds: int) -> str:
     return " ".join(parts)
 
 
-def load_events(limit: int, since_ts: int) -> dict:
+def load_events(limit: int, since_ts: int, timelocks: list[TimelockConfig] | None = None) -> dict:
     """Fetch TimelockEvent events from the Envio GraphQL API."""
-    addresses = [t.address for t in TIMELOCK_LIST]
+    source = timelocks if timelocks is not None else TIMELOCK_LIST
+    addresses = [t.address for t in source]
     _logger.info("load_events limit=%s since_ts=%s addresses=%s", limit, since_ts, len(addresses))
     query = """
     query GetTimelockEvents($limit: Int!, $sinceTs: Int!, $addresses: [String!]!) {
@@ -161,7 +163,7 @@ def _format_delay_info(delay: int | None, timelock_type: str) -> str | None:
         return None
 
     delay_val = int(delay)
-    if timelock_type in ("Compound", "Puffer"):
+    if timelock_type in ("Compound", "Puffer", "Maple"):
         # Absolute timestamp
         relative = delay_val - int(time.time())
         if relative > 0:
@@ -243,6 +245,9 @@ def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> st
         if metadata:
             lines.append(f"📄 Metadata: {metadata}")
         lines.append(f"🆔 Vote: {first.get('operationId') or ''}")
+
+    elif timelock_type == "Maple":
+        lines.append(f"🆔 Proposal: {first.get('operationId') or ''}")
 
     elif timelock_type in ("TimelockController", "Compound", "Puffer"):
         for event in events:
@@ -348,6 +353,12 @@ def main() -> None:
     )
     parser.add_argument("--no-cache", action="store_true", help="Disable caching of last processed timestamp")
     parser.add_argument(
+        "--protocol",
+        type=str,
+        default="",
+        help="Filter to a specific protocol (e.g. MAPLE, AAVE). Case-insensitive.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default=DEFAULT_LOG_LEVEL,
@@ -355,6 +366,16 @@ def main() -> None:
     )
     args = parser.parse_args()
     _logger.setLevel(args.log_level.upper())
+
+    # Filter timelocks by protocol if specified
+    filtered_timelocks: list[TimelockConfig] | None = None
+    if args.protocol:
+        protocol_filter = args.protocol.upper()
+        filtered_timelocks = [t for t in TIMELOCK_LIST if t.protocol.upper() == protocol_filter]
+        if not filtered_timelocks:
+            _logger.error("No timelocks found for protocol: %s", args.protocol)
+            sys.exit(1)
+        _logger.info("Filtering to protocol %s: %s timelocks", protocol_filter, len(filtered_timelocks))
 
     use_cache = not args.no_cache
 
@@ -373,7 +394,7 @@ def main() -> None:
 
     _logger.info("Fetching TimelockEvent events since timestamp %s", since_ts)
 
-    response = load_events(args.limit, since_ts)
+    response = load_events(args.limit, since_ts, filtered_timelocks)
     if "errors" in response:
         _logger.error("GraphQL errors: %s", response["errors"])
         sys.exit(1)
