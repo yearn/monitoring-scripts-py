@@ -422,64 +422,6 @@
       ]
     },
     {
-      "id": "a22678ba-dc69-4f22-86d9-18757a688d3d",
-      "project_id": "6932cbec-2970-425a-a734-cb8374d95744",
-      "name": "Event CallScheduled emitted in CAP TimelockController",
-      "description": "Timelock controller is owner of cUSD vault",
-      "enabled": true,
-      "color": "#eeeeee",
-      "severity": "default",
-      "created_at": "2025-12-19T01:39:13.677282Z",
-      "delivery_channels": [
-        {
-          "delivery_channel_id": "acdd2d9a-70da-4805-b7a3-da00f6619d2c",
-          "delivery_channel": {
-            "id": "acdd2d9a-70da-4805-b7a3-da00f6619d2c",
-            "type": "telegram",
-            "owner_id": "1f750734-c720-4fde-9d60-d7edd0c04d91",
-            "project_id": null,
-            "label": "CAP Alerts SAM",
-            "reference_id": "d9fe061d-9db7-4290-a95f-b378c8047c89",
-            "enabled": true,
-            "created_at": "2025-12-19T01:38:35.286271Z",
-            "information": {
-              "chat_id": -1003568823334
-            }
-          },
-          "enabled": true,
-          "created_at": "2025-12-19T01:39:55.846285Z"
-        }
-      ],
-      "is_editable": true,
-      "updated_at": "2025-12-19T01:39:55.848978Z",
-      "expressions": [
-        {
-          "type": "contract_address",
-          "expression": {
-            "address": "0xd8236031d8279d82e615af2bfab5fc0127a329ab",
-            "transaction_type": null
-          }
-        },
-        {
-          "type": "network",
-          "expression": {
-            "network_id": "1"
-          }
-        },
-        {
-          "type": "emitted_log",
-          "expression": {
-            "address": "0xd8236031d8279d82e615af2bfab5fc0127a329ab",
-            "match_any": false,
-            "match_non_project_contracts": false,
-            "event_name": "CallScheduled",
-            "event_id": "0x4cf4410cc57040e44862ef0f45f3dd5a5e02db8eb8add648d4b0e236f1d07dca",
-            "decode_events": false
-          }
-        }
-      ]
-    },
-    {
       "id": "c8108fff-b1f4-4cb0-abd3-c37ad541e6aa",
       "project_id": "6932cbec-2970-425a-a734-cb8374d95744",
       "name": "Event CallScheduled emitted in KelpDAO(rsETH) Timelock",
