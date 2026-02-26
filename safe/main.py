@@ -79,18 +79,6 @@ ALL_SAFE_ADDRESSES = [
     ["AAVE", "polygon-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
     ["AAVE", "arbitrum-main", "0x1A0581dd5C7C3DA4Ba1CDa7e0BcA7286afc4973b"],
     [
-        "MOONWELL",
-        "base-main",
-        "0x446342AF4F3bCD374276891C6bb3411bf2F8779E",
-        "Moonwell Admin of timelock controller",
-    ],  # admin of timelock controller
-    [
-        "MOONWELL",
-        "base-main",
-        "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
-        "Moonwell Pause guardian of comptroller contract",
-    ],  # pause guardian of comptroller contract
-    [
         "MORPHO",
         "mainnet",
         "0x84258B3C495d8e9b10D0d4A7867392F149Da4274",
@@ -100,7 +88,7 @@ ALL_SAFE_ADDRESSES = [
         "RESOLV",
         "mainnet",
         "0xD6889F307BE1b83Bb355d5DA7d4478FB0d2Af547",
-        "RESOLV timelock contract. Used in ETH+",
+        "RESOLV timelock contract",
     ],  # timelock contract
     [
         "LRT",
@@ -138,12 +126,6 @@ ALL_SAFE_ADDRESSES = [
         "0x783B08aA21DE056717173f72E04Be0E91328A07b",
         "sUSDai Admin Safe",
     ],
-    # [
-    #     "INFINIFI",
-    #     "mainnet",
-    #     "0x80608f852D152024c0a2087b16939235fEc2400c",
-    #     "Infinifi Team Multisig",
-    # ],
     [
         "CAP MONEY",
         "mainnet",
@@ -156,6 +138,25 @@ ALL_SAFE_ADDRESSES = [
         "0xd6d4Bcde6c816F17889f1Dd3000aF0261B03a196",
         "Maple DAO Multisig (syrupUSDC)",
     ],
+    # NOTE: Moonwell multisig monitoring is disabled for now
+    # [
+    #     "MOONWELL",
+    #     "base-main",
+    #     "0x446342AF4F3bCD374276891C6bb3411bf2F8779E",
+    #     "Moonwell Admin of timelock controller",
+    # ],  # admin of timelock controller
+    # [
+    #     "MOONWELL",
+    #     "base-main",
+    #     "0xB9d4acf113a423Bc4A64110B8738a52E51C2AB38",
+    #     "Moonwell Pause guardian of comptroller contract",
+    # ],  # pause guardian of comptroller contract
+    # [
+    #     "INFINIFI",
+    #     "mainnet",
+    #     "0x80608f852D152024c0a2087b16939235fEc2400c",
+    #     "Infinifi Team Multisig",
+    # ],
     # [
     #     "USD0",
     #     "mainnet",
