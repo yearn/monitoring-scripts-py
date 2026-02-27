@@ -26,6 +26,7 @@ Compare the scheduling event against existing contract types in the [Envio confi
 | `PufferTimelock` | `TransactionQueued(bytes32 indexed txHash, address indexed target, bytes callData, uint256 indexed operationId, uint256 lockedUntil)` |
 | `LidoTimelock` | `StartVote(uint256 indexed voteId, address indexed creator, string metadata)` |
 | `MapleTimelock` | `ProposalScheduled(uint256 indexed proposalId, (bytes32,bool,uint32,uint32,uint32) proposal)` |
+| `MakerDSPause` | `LogNote(bytes4 indexed sig, address indexed guy, bytes32 indexed foo, bytes32 indexed bar, uint256 wad, bytes fax)` (anonymous, `note` modifier on `plot()`) |
 
 **If the event signature matches an existing type** — reuse that contract type (skip to Step 2a).
 **If the event signature is different** — create a new contract type (go to Step 2b).
