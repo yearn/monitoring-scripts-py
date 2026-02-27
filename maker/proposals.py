@@ -44,7 +44,11 @@ def get_proposals():
                 continue
 
             spell_data = proposal.get("spellData", {})
-            status = _get_spell_status(spell_data)
+
+            # Only alert on scheduled (not yet executed) proposals
+            if not spell_data.get("hasBeenScheduled") or spell_data.get("hasBeenCast"):
+                continue
+
             link = SKY_EXECUTIVE_URL + proposal["key"]
 
             message += f"📕 Title: {proposal['title']}\n"
@@ -53,7 +57,6 @@ def get_proposals():
                 if len(blurb) > 450:
                     blurb = blurb[:450].rsplit(" ", 1)[0] + "..."
                 message += f"📝 Summary: {blurb}\n"
-            message += f"📊 Status: {status}\n"
             message += f"🔗 Link: {link}\n"
             message += f"📅 Date: {proposal_date.strftime('%Y-%m-%d')}\n"
             if spell_data.get("eta"):
@@ -80,15 +83,6 @@ def get_proposals():
         error_message = f"Error processing Sky executive proposals: {e}"
         logger.error("%s", error_message)
         send_telegram_message(error_message, PROTOCOL, True)
-
-
-def _get_spell_status(spell_data: dict) -> str:
-    """Derive a human-readable status from spell data."""
-    if spell_data.get("hasBeenCast"):
-        return "Executed"
-    if spell_data.get("hasBeenScheduled"):
-        return "Scheduled (awaiting execution)"
-    return "Active (voting)"
 
 
 if __name__ == "__main__":
