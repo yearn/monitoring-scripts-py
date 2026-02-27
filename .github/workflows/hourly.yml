@@ -37,3 +37,4 @@ jobs:
         aave/proposals.py
         compound/proposals.py
         fluid/proposals.py
+        maker/proposals.py
