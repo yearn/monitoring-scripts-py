@@ -58,7 +58,7 @@ The `TimelockEvent` type includes fields that vary by timelock type:
 **Common fields (all types):**
 - **`id`** - Unique identifier: `${chainId}_${blockNumber}_${logIndex}`
 - **`timelockAddress`** - Address of the timelock contract
-- **`timelockType`** - Type discriminator: `"TimelockController"`, `"Aave"`, `"Compound"`, `"Puffer"`, `"Lido"`, `"Maple"`, or `"MakerDSPause"`
+- **`timelockType`** - Type discriminator: `"TimelockController"`, `"Aave"`, `"Compound"`, `"Puffer"`, `"Lido"`, or `"Maple"`
 - **`eventName`** - Original event name (e.g., `"CallScheduled"`, `"ProposalQueued"`, `"QueueTransaction"`, etc.)
 - **`chainId`** - Chain ID (1 for Mainnet, 8453 for Base, etc.)
 - **`blockNumber`** - Block number where the event was emitted
@@ -73,7 +73,6 @@ The `TimelockEvent` type includes fields that vary by timelock type:
 - **Puffer**: `target`, `data`, `delay` (absolute timestamp/lockedUntil), `operationId` (txHash)
 - **Lido**: `creator`, `metadata`, `operationId` (voteId)
 - **Maple**: `delay` (absolute timestamp/delayedUntil), `operationId` (proposalId)
-- **MakerDSPause**: `target` (spell address/usr), `data` (calldata/fax), `delay` (absolute timestamp/eta), `operationId` (plan hash)
 
 For complete field mapping details, see [`detils.md`](./detils.md).
 
@@ -96,7 +95,6 @@ For complete field mapping details, see [`detils.md`](./detils.md).
 | [0x3c28b7c7ba1a1f55c9ce66b263b33b204f2126ea](https://etherscan.io/address/0x3c28b7c7ba1a1f55c9ce66b263b33b204f2126ea) | Mainnet | LRT | Puffer Timelock |
 | [0x2e59a20f205bb85a89c53f1936454680651e618e](https://etherscan.io/address/0x2e59a20f205bb85a89c53f1936454680651e618e) | Mainnet | LIDO | Lido Timelock |
 | [0x2efff88747eb5a3ff00d4d8d0f0800e306c0426b](https://etherscan.io/address/0x2efff88747eb5a3ff00d4d8d0f0800e306c0426b) | Mainnet | MAPLE | Maple GovernorTimelock |
-| [0xbe286431454714f511008713973d3b053a2d38f3](https://etherscan.io/address/0xbe286431454714f511008713973d3b053a2d38f3) | Mainnet | MAKER | Maker DSPause |
 | [0xf817cb3092179083c48c014688d98b72fb61464f](https://basescan.org/address/0xf817cb3092179083c48c014688d98b72fb61464f) | Base | LRT | superOETH Timelock |
 
 ## How to Add a New Timelock
