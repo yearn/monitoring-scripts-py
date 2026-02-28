@@ -150,7 +150,7 @@ class TestAlert(unittest.TestCase):
     def test_emoji_prefix_medium(self, mock_send):
         alert = Alert(severity=AlertSeverity.MEDIUM, message="warn msg", protocol="test")
         send_alert(alert)
-        mock_send.assert_called_once_with("⚠️ warn msg", "test", True, False)
+        mock_send.assert_called_once_with("⚠️ warn msg", "test", False, False)
 
     @patch("utils.alert.send_telegram_message")
     def test_emoji_prefix_high(self, mock_send):
@@ -165,18 +165,16 @@ class TestAlert(unittest.TestCase):
         mock_send.assert_called_once_with("🔴 crit msg", "test", False, False)
 
     @patch("utils.alert.send_telegram_message")
-    def test_silent_default_low_medium(self, mock_send):
-        # LOW and MEDIUM default to silent=True
-        for sev in (AlertSeverity.LOW, AlertSeverity.MEDIUM):
-            mock_send.reset_mock()
-            send_alert(Alert(severity=sev, message="m", protocol="p"))
-            _, args, _ = mock_send.mock_calls[0]
-            self.assertTrue(args[2], f"{sev.value} should default to silent")
+    def test_silent_default_low(self, mock_send):
+        # LOW defaults to silent=True
+        send_alert(Alert(severity=AlertSeverity.LOW, message="m", protocol="p"))
+        _, args, _ = mock_send.mock_calls[0]
+        self.assertTrue(args[2], "LOW should default to silent")
 
     @patch("utils.alert.send_telegram_message")
-    def test_silent_default_high_critical(self, mock_send):
-        # HIGH and CRITICAL default to silent=False (loud)
-        for sev in (AlertSeverity.HIGH, AlertSeverity.CRITICAL):
+    def test_silent_default_medium_high_critical(self, mock_send):
+        # MEDIUM, HIGH and CRITICAL default to silent=False (loud)
+        for sev in (AlertSeverity.MEDIUM, AlertSeverity.HIGH, AlertSeverity.CRITICAL):
             mock_send.reset_mock()
             send_alert(Alert(severity=sev, message="m", protocol="p"))
             _, args, _ = mock_send.mock_calls[0]
