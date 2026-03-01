@@ -2,10 +2,11 @@
 
 import os
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import requests
 
+from utils.alert import Alert, AlertSeverity, register_alert_hook, send_alert
 from utils.config import Config, ProtocolConfig
 from utils.telegram import TelegramError, send_telegram_message
 
@@ -119,6 +120,273 @@ class TestTelegram(unittest.TestCase):
             # Should raise TelegramError
             with self.assertRaises(TelegramError):
                 send_telegram_message("Test message", "test")
+
+
+class TestAlert(unittest.TestCase):
+    """Tests for the Alert system."""
+
+    def test_severity_enum_values(self):
+        self.assertEqual(AlertSeverity.LOW.value, "LOW")
+        self.assertEqual(AlertSeverity.MEDIUM.value, "MEDIUM")
+        self.assertEqual(AlertSeverity.HIGH.value, "HIGH")
+        self.assertEqual(AlertSeverity.CRITICAL.value, "CRITICAL")
+
+    def test_alert_dataclass_immutability(self):
+        alert = Alert(severity=AlertSeverity.HIGH, message="test", protocol="proto")
+        with self.assertRaises(AttributeError):
+            alert.message = "changed"
+
+    def test_alert_default_metadata(self):
+        alert = Alert(severity=AlertSeverity.LOW, message="test", protocol="proto")
+        self.assertEqual(alert.metadata, {})
+
+    @patch("utils.alert.send_telegram_message")
+    def test_emoji_prefix_low(self, mock_send):
+        alert = Alert(severity=AlertSeverity.LOW, message="info msg", protocol="test")
+        send_alert(alert)
+        mock_send.assert_called_once_with("ℹ️ info msg", "test", True, False)
+
+    @patch("utils.alert.send_telegram_message")
+    def test_emoji_prefix_medium(self, mock_send):
+        alert = Alert(severity=AlertSeverity.MEDIUM, message="warn msg", protocol="test")
+        send_alert(alert)
+        mock_send.assert_called_once_with("⚠️ warn msg", "test", False, False)
+
+    @patch("utils.alert.send_telegram_message")
+    def test_emoji_prefix_high(self, mock_send):
+        alert = Alert(severity=AlertSeverity.HIGH, message="high msg", protocol="test")
+        send_alert(alert)
+        mock_send.assert_called_once_with("🚨 high msg", "test", False, False)
+
+    @patch("utils.alert.send_telegram_message")
+    def test_emoji_prefix_critical(self, mock_send):
+        alert = Alert(severity=AlertSeverity.CRITICAL, message="crit msg", protocol="test")
+        send_alert(alert)
+        mock_send.assert_called_once_with("🔴 crit msg", "test", False, False)
+
+    @patch("utils.alert.send_telegram_message")
+    def test_silent_default_low(self, mock_send):
+        # LOW defaults to silent=True
+        send_alert(Alert(severity=AlertSeverity.LOW, message="m", protocol="p"))
+        _, args, _ = mock_send.mock_calls[0]
+        self.assertTrue(args[2], "LOW should default to silent")
+
+    @patch("utils.alert.send_telegram_message")
+    def test_silent_default_medium_high_critical(self, mock_send):
+        # MEDIUM, HIGH and CRITICAL default to silent=False (loud)
+        for sev in (AlertSeverity.MEDIUM, AlertSeverity.HIGH, AlertSeverity.CRITICAL):
+            mock_send.reset_mock()
+            send_alert(Alert(severity=sev, message="m", protocol="p"))
+            _, args, _ = mock_send.mock_calls[0]
+            self.assertFalse(args[2], f"{sev.value} should default to loud")
+
+    @patch("utils.alert.send_telegram_message")
+    def test_silent_explicit_override(self, mock_send):
+        # Override silent for a HIGH alert to True
+        alert = Alert(severity=AlertSeverity.HIGH, message="m", protocol="p")
+        send_alert(alert, silent=True)
+        _, args, _ = mock_send.mock_calls[0]
+        self.assertTrue(args[2])
+
+        # Override silent for a LOW alert to False
+        mock_send.reset_mock()
+        alert = Alert(severity=AlertSeverity.LOW, message="m", protocol="p")
+        send_alert(alert, silent=False)
+        _, args, _ = mock_send.mock_calls[0]
+        self.assertFalse(args[2])
+
+    @patch("utils.alert.send_telegram_message")
+    def test_plain_text_passthrough(self, mock_send):
+        alert = Alert(severity=AlertSeverity.MEDIUM, message="m", protocol="p")
+        send_alert(alert, plain_text=True)
+        _, args, _ = mock_send.mock_calls[0]
+        self.assertTrue(args[3])
+
+    @patch("utils.alert.send_telegram_message")
+    def test_hook_invoked_for_high(self, mock_send):
+        hook = MagicMock()
+        register_alert_hook(hook)
+        try:
+            alert = Alert(severity=AlertSeverity.HIGH, message="m", protocol="p")
+            send_alert(alert)
+            hook.assert_called_once_with(alert)
+        finally:
+            register_alert_hook(None)
+
+    @patch("utils.alert.send_telegram_message")
+    def test_hook_invoked_for_critical(self, mock_send):
+        hook = MagicMock()
+        register_alert_hook(hook)
+        try:
+            alert = Alert(severity=AlertSeverity.CRITICAL, message="m", protocol="p")
+            send_alert(alert)
+            hook.assert_called_once_with(alert)
+        finally:
+            register_alert_hook(None)
+
+    @patch("utils.alert.send_telegram_message")
+    def test_hook_not_called_for_low_medium(self, mock_send):
+        hook = MagicMock()
+        register_alert_hook(hook)
+        try:
+            for sev in (AlertSeverity.LOW, AlertSeverity.MEDIUM):
+                hook.reset_mock()
+                send_alert(Alert(severity=sev, message="m", protocol="p"))
+                hook.assert_not_called()
+        finally:
+            register_alert_hook(None)
+
+    @patch("utils.alert.send_telegram_message")
+    def test_hook_exception_swallowed(self, mock_send):
+        hook = MagicMock(side_effect=RuntimeError("hook broke"))
+        register_alert_hook(hook)
+        try:
+            alert = Alert(severity=AlertSeverity.HIGH, message="m", protocol="p")
+            # Should NOT raise
+            send_alert(alert)
+            hook.assert_called_once_with(alert)
+            # Telegram message should still have been sent
+            mock_send.assert_called_once()
+        finally:
+            register_alert_hook(None)
+
+
+class TestDispatch(unittest.TestCase):
+    """Tests for the emergency dispatch utility."""
+
+    @patch("utils.dispatch.requests.post")
+    @patch("utils.dispatch._record_dispatch")
+    @patch("utils.dispatch._is_on_cooldown", return_value=False)
+    def test_dispatch_sends_correct_payload(self, mock_cooldown, mock_record, mock_post):
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_post.return_value = mock_response
+
+        alert = Alert(severity=AlertSeverity.HIGH, message="Reserves low", protocol="infinifi")
+
+        with patch.dict(os.environ, {"GITHUB_PAT_DISPATCH": "ghp_test_token"}):
+            dispatch_emergency_withdrawal(alert)
+
+        mock_post.assert_called_once()
+        call_kwargs = mock_post.call_args[1]
+        payload = call_kwargs["json"]
+        self.assertEqual(payload["event_type"], "emergency_withdrawal")
+        self.assertEqual(payload["client_payload"]["protocol"], "infinifi")
+        self.assertEqual(payload["client_payload"]["severity"], "HIGH")
+        # Payload should only contain protocol and severity (no markets/vault/chain)
+        self.assertEqual(set(payload["client_payload"].keys()), {"protocol", "severity"})
+
+        # Verify auth header
+        headers = call_kwargs["headers"]
+        self.assertEqual(headers["Authorization"], "Bearer ghp_test_token")
+
+        mock_record.assert_called_once_with("infinifi")
+
+    @patch("utils.dispatch.requests.post")
+    def test_dispatch_skips_low_severity(self, mock_post):
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        alert = Alert(severity=AlertSeverity.LOW, message="info", protocol="infinifi")
+        dispatch_emergency_withdrawal(alert)
+        mock_post.assert_not_called()
+
+    @patch("utils.dispatch.requests.post")
+    def test_dispatch_skips_medium_severity(self, mock_post):
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        alert = Alert(severity=AlertSeverity.MEDIUM, message="warn", protocol="infinifi")
+        dispatch_emergency_withdrawal(alert)
+        mock_post.assert_not_called()
+
+    @patch("utils.dispatch.requests.post")
+    @patch("utils.dispatch._is_on_cooldown", return_value=False)
+    def test_dispatch_skips_unknown_protocol(self, mock_cooldown, mock_post):
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        alert = Alert(severity=AlertSeverity.HIGH, message="alert", protocol="unknown_protocol")
+
+        with patch.dict(os.environ, {"GITHUB_PAT_DISPATCH": "ghp_test_token"}):
+            dispatch_emergency_withdrawal(alert)
+
+        mock_post.assert_not_called()
+
+    @patch("utils.dispatch.requests.post")
+    @patch("utils.dispatch._is_on_cooldown", return_value=True)
+    def test_dispatch_skips_on_cooldown(self, mock_cooldown, mock_post):
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        alert = Alert(severity=AlertSeverity.HIGH, message="alert", protocol="infinifi")
+
+        with patch.dict(os.environ, {"GITHUB_PAT_DISPATCH": "ghp_test_token"}):
+            dispatch_emergency_withdrawal(alert)
+
+        mock_post.assert_not_called()
+
+    @patch("utils.dispatch.requests.post")
+    @patch("utils.dispatch._is_on_cooldown", return_value=False)
+    def test_dispatch_skips_missing_pat(self, mock_cooldown, mock_post):
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        alert = Alert(severity=AlertSeverity.HIGH, message="alert", protocol="infinifi")
+
+        with patch.dict(os.environ, {}, clear=True):
+            dispatch_emergency_withdrawal(alert)
+
+        mock_post.assert_not_called()
+
+    @patch("utils.dispatch.requests.post")
+    @patch("utils.dispatch._record_dispatch")
+    @patch("utils.dispatch._is_on_cooldown", return_value=False)
+    def test_dispatch_critical_sends_critical_severity(self, mock_cooldown, mock_record, mock_post):
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_post.return_value = mock_response
+
+        alert = Alert(severity=AlertSeverity.CRITICAL, message="total failure", protocol="infinifi")
+
+        with patch.dict(os.environ, {"GITHUB_PAT_DISPATCH": "ghp_test_token"}):
+            dispatch_emergency_withdrawal(alert)
+
+        payload = mock_post.call_args[1]["json"]
+        self.assertEqual(payload["client_payload"]["severity"], "CRITICAL")
+
+    @patch("utils.dispatch.requests.post")
+    @patch("utils.dispatch._record_dispatch")
+    @patch("utils.dispatch._is_on_cooldown", return_value=False)
+    def test_dispatch_handles_request_exception(self, mock_cooldown, mock_record, mock_post):
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        mock_post.side_effect = requests.RequestException("Connection error")
+
+        alert = Alert(severity=AlertSeverity.HIGH, message="alert", protocol="infinifi")
+
+        with patch.dict(os.environ, {"GITHUB_PAT_DISPATCH": "ghp_test_token"}):
+            # Should not raise
+            dispatch_emergency_withdrawal(alert)
+
+        mock_record.assert_not_called()
+
+    def test_cooldown_logic(self):
+        import time
+
+        from utils.dispatch import _is_on_cooldown
+
+        with patch("utils.dispatch.get_last_value_for_key_from_file") as mock_get:
+            # No previous dispatch
+            mock_get.return_value = 0
+            self.assertFalse(_is_on_cooldown("infinifi"))
+
+            # Recent dispatch (within cooldown)
+            mock_get.return_value = str(time.time() - 10)
+            self.assertTrue(_is_on_cooldown("infinifi", cooldown_seconds=60))
+
+            # Old dispatch (past cooldown)
+            mock_get.return_value = str(time.time() - 7200)
+            self.assertFalse(_is_on_cooldown("infinifi", cooldown_seconds=3600))
 
 
 if __name__ == "__main__":

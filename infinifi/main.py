@@ -2,15 +2,19 @@ import requests
 from web3 import Web3
 
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, register_alert_hook, send_alert
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
+from utils.dispatch import dispatch_emergency_withdrawal
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 # Constants
 PROTOCOL = "infinifi"
 logger = get_logger(PROTOCOL)
+
+# Register emergency dispatch hook for HIGH/CRITICAL alerts
+register_alert_hook(dispatch_emergency_withdrawal)
 IUSD_ADDRESS = Web3.to_checksum_address("0x48f9e38f3070AD8945DFEae3FA70987722E3D89c")
 LIQUID_RESERVES_THRESHOLD = 15_000_000
 BACKING_PER_IUSD_MIN = 0.999
@@ -52,7 +56,7 @@ def send_breach_alert_once(cache_key, alert_message):
     last_state = int(get_last_value_for_key_from_file(cache_filename, cache_key))
 
     if last_state == 0:
-        send_telegram_message(alert_message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.HIGH, alert_message, PROTOCOL))
         write_last_value_to_file(cache_filename, cache_key, 1)
 
 
@@ -165,7 +169,8 @@ def main():
                 and last_reserves >= LIQUID_RESERVES_THRESHOLD
             ):
                 msg = f"📉 *Infinifi Liquid Reserves Alert*\n\nReserves dropped below ${LIQUID_RESERVES_THRESHOLD:,.0f}: ${liquid_reserves:,.2f}"
-                send_telegram_message(msg, PROTOCOL)
+                # TODO: add hook data
+                send_alert(Alert(AlertSeverity.HIGH, msg, PROTOCOL))
 
             write_last_value_to_file(cache_filename, cache_key_reserves, liquid_reserves)
 
@@ -273,10 +278,13 @@ def main():
                 if more_count > 0:
                     moved_lines.append(f"- ...and {more_count} more farms")
 
-                send_telegram_message(
-                    "⚠️ *Infinifi Farm Allocation Shift Alert*\n\n"
-                    "Farm allocation ratio changed by more than 10% vs previous run:\n" + "\n".join(moved_lines),
-                    PROTOCOL,
+                send_alert(
+                    Alert(
+                        AlertSeverity.MEDIUM,
+                        "*Infinifi Farm Allocation Shift Alert*\n\n"
+                        "Farm allocation ratio changed by more than 10% vs previous run:\n" + "\n".join(moved_lines),
+                        PROTOCOL,
+                    )
                 )
 
             if activated_farms:
@@ -286,15 +294,20 @@ def main():
                 if more_count > 0:
                     activated_lines.append(f"- ...and {more_count} more farms")
 
-                send_telegram_message(
-                    "ℹ️ *Infinifi Farm Activation Alert*\n\n"
-                    "Farms previously at 0 ratio are now above 5% of TVL:\n" + "\n".join(activated_lines),
-                    PROTOCOL,
+                send_alert(
+                    Alert(
+                        AlertSeverity.LOW,
+                        "*Infinifi Farm Activation Alert*\n\n"
+                        "Farms previously at 0 ratio are now above 5% of TVL:\n" + "\n".join(activated_lines),
+                        PROTOCOL,
+                    )
                 )
 
     except Exception as e:
         logger.error("Error: %s", e)
-        send_telegram_message(f"⚠️ Infinifi monitoring failed: {e}", PROTOCOL, False, True)
+        send_alert(
+            Alert(AlertSeverity.MEDIUM, f"Infinifi monitoring failed: {e}", PROTOCOL), silent=False, plain_text=True
+        )
 
 
 if __name__ == "__main__":
