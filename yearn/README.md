@@ -34,6 +34,32 @@ Optional flags:
 - `--chain-ids` (default: `1`)
 - `--no-cache` (disable caching)
 
+=======
+
+## Endorsed Vault Check
+
+The script `yearn/check_endorsed.py` verifies that all Yearn v3 vaults listed in the yDaemon API are actually endorsed on-chain in the registry contract. It runs [weekly via GitHub Actions](../.github/workflows/weekly.yml).
+
+### How It Works
+
+For each supported chain (Mainnet, Polygon, Base, Arbitrum, Katana):
+
+1. Fetches all v3 vault addresses from the [yDaemon API](https://ydaemon.yearn.fi).
+2. Calls `isEndorsed(address)` on the registry contract (`0xd40ecF29e001c76Dcc4cC0D9cd50520CE845B038`).
+3. Collects any vault that is listed in yDaemon but **not** endorsed on-chain.
+
+### Alerts
+
+If any unendorsed vaults are found, a Telegram alert is sent to the Yearn group listing each address grouped by chain. If the message exceeds the Telegram character limit, a short summary with a link to the GitHub Actions logs is sent instead.
+
+### Usage
+
+```bash
+uv run yearn/check_endorsed.py
+```
+
+=======
+
 ## Timelock Monitoring
 
 Yearn TimelockController contracts are monitored across 6 chains via the shared [timelock monitoring script](../timelock/README.md). Alerts are routed to the `YEARN` Telegram channel.
@@ -51,19 +77,3 @@ All chains use the same contract address: `0x88ba032be87d5ef1fbe87336b7090767f36
 | Katana | [katanascan.com](https://katanascan.com/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) |
 | Optimism | [optimistic.etherscan.io](https://optimistic.etherscan.io/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) |
 
-### Alert Format
-
-```
-⏰ TIMELOCK: New Operation Scheduled
-🅿️ Protocol: YEARN
-📋 Timelock: Yearn TimelockController
-🔗 Chain: Mainnet
-📌 Type: TimelockController
-📝 Event: CallScheduled
-⏳ Delay: 2d
-🎯 Target: 0x1234...
-📝 Function: 0xabcdef12
-🔗 Tx: https://etherscan.io/tx/0x...
-```
-
-For batch operations (`scheduleBatch`), all calls are included in a single message with `--- Call N ---` separators.
