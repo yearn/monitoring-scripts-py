@@ -54,35 +54,45 @@ def fetch_ydaemon_vaults(chain: Chain) -> List[str]:
     response = requests.get(url, timeout=30)
     response.raise_for_status()
     vaults = response.json()
-    return [vault["address"] for vault in vaults if "address" in vault]
+    return [vault["address"].lower() for vault in vaults if "address" in vault]
 
 
-def check_endorsed_for_chain(chain: Chain, addresses: List[str]) -> List[str]:
-    """Check which yDaemon vaults are not endorsed on-chain for a given chain.
+def fetch_onchain_endorsed(chain: Chain, addresses: List[str]) -> Dict[str, bool]:
+    """Batch-fetch the endorsed status for each address from the on-chain registry.
 
     Args:
-        chain: The chain to check.
-        addresses: List of vault addresses from yDaemon.
+        chain: The chain to query.
+        addresses: List of vault addresses to check.
 
     Returns:
-        List of unendorsed vault addresses.
+        Mapping of address to its endorsed status.
     """
     client = ChainManager.get_client(chain)
     registry = client.get_contract(REGISTRY_ADDRESS, REGISTRY_ABI)
 
-    unendorsed = []
-    for address in addresses:
-        try:
-            checksum = Web3.to_checksum_address(address)
-            endorsed = registry.functions.isEndorsed(checksum).call()
-            if not endorsed:
-                logger.warning("Not endorsed on %s: %s", chain.name, address)
-                unendorsed.append(address)
-        except Exception as e:
-            logger.error("Error checking %s on %s: %s", address, chain.name, e)
-            unendorsed.append(address)
+    with client.batch_requests() as batch:
+        for addr in addresses:
+            batch.add(registry.functions.isEndorsed(Web3.to_checksum_address(addr)))
+        results = batch.execute()
 
-    logger.info("Chain %s: %d/%d unendorsed", chain.name, len(unendorsed), len(addresses))
+    return dict(zip(addresses, results))
+
+
+def get_unendorsed(chain: Chain, endorsed_map: Dict[str, bool]) -> List[str]:
+    """Return addresses that are not endorsed on-chain.
+
+    Args:
+        chain: The chain (used for logging).
+        endorsed_map: Mapping of address to endorsed status.
+
+    Returns:
+        List of unendorsed vault addresses.
+    """
+    unendorsed = [addr for addr, endorsed in endorsed_map.items() if not endorsed]
+    for addr in unendorsed:
+        logger.warning("Not endorsed on %s: %s", chain.name, addr)
+
+    logger.info("Chain %s: %d/%d unendorsed", chain.name, len(unendorsed), len(endorsed_map))
     return unendorsed
 
 
@@ -98,7 +108,7 @@ def build_alert_message(errors: Dict[Chain, List[str]], total_checked: int) -> s
     """
     total_errors = sum(len(addrs) for addrs in errors.values())
     lines = [
-        "*yDaemon Endorsed Check*",
+        "👹 *yDaemon Endorsed Check*",
         f"Checked {total_checked} vaults, found {total_errors} unendorsed:\n",
     ]
     for chain, addresses in errors.items():
@@ -131,7 +141,8 @@ def main() -> None:
         logger.info("Found %d vaults for %s", len(addresses), chain.name)
         total_checked += len(addresses)
 
-        unendorsed = check_endorsed_for_chain(chain, addresses)
+        endorsed_map = fetch_onchain_endorsed(chain, addresses)
+        unendorsed = get_unendorsed(chain, endorsed_map)
         if unendorsed:
             all_errors[chain] = unendorsed
 
@@ -156,7 +167,7 @@ def main() -> None:
                 run_url = f"{server}/{repo}/actions/runs/{run_id}"
 
         message = (
-            f"*yDaemon Endorsed Check*\n"
+            f"👹 *yDaemon Endorsed Check*\n"
             f"Found {total_errors} unendorsed vaults across {len(all_errors)} chains.\n"
             f"Too many to list here."
         )
