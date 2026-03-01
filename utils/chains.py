@@ -6,6 +6,7 @@ EXPLORER_URLS: dict[int, str] = {
     137: "https://polygonscan.com",
     8453: "https://basescan.org",
     42161: "https://arbiscan.io",
+    747474: "https://katanascan.com",
 }
 
 

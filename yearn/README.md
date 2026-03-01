@@ -1,6 +1,6 @@
 # Yearn Monitoring
 
-This folder contains monitoring scripts for Yearn vault activity.
+This folder contains monitoring scripts for Yearn vault activity and timelock operations.
 
 ## Large Flows
 
@@ -33,3 +33,37 @@ Optional flags:
 - `--since-seconds` (default: `7200`)
 - `--chain-ids` (default: `1`)
 - `--no-cache` (disable caching)
+
+## Timelock Monitoring
+
+Yearn TimelockController contracts are monitored across 6 chains via the shared [timelock monitoring script](../timelock/README.md). Alerts are routed to the `YEARN` Telegram channel.
+
+### Monitored Addresses
+
+All chains use the same contract address: `0x88ba032be87d5ef1fbe87336b7090767f367bf73`
+
+| Chain | Explorer |
+|-------|----------|
+| Mainnet | [etherscan.io](https://etherscan.io/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) |
+| Base | [basescan.org](https://basescan.org/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) |
+| Arbitrum | [arbiscan.io](https://arbiscan.io/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) |
+| Polygon | [polygonscan.com](https://polygonscan.com/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) |
+| Katana | [katanascan.com](https://katanascan.com/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) |
+| Optimism | [optimistic.etherscan.io](https://optimistic.etherscan.io/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) |
+
+### Alert Format
+
+```
+⏰ TIMELOCK: New Operation Scheduled
+🅿️ Protocol: YEARN
+📋 Timelock: Yearn TimelockController
+🔗 Chain: Mainnet
+📌 Type: TimelockController
+📝 Event: CallScheduled
+⏳ Delay: 2d
+🎯 Target: 0x1234...
+📝 Function: 0xabcdef12
+🔗 Tx: https://etherscan.io/tx/0x...
+```
+
+For batch operations (`scheduleBatch`), all calls are included in a single message with `--- Call N ---` separators.

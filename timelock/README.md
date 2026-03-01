@@ -100,7 +100,7 @@ For complete field mapping details, see [`detils.md`](./detils.md).
 | [0x88ba032be87d5ef1fbe87336b7090767f367bf73](https://basescan.org/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) | Base | YEARN | Yearn TimelockController |
 | [0x88ba032be87d5ef1fbe87336b7090767f367bf73](https://arbiscan.io/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) | Arbitrum | YEARN | Yearn TimelockController |
 | [0x88ba032be87d5ef1fbe87336b7090767f367bf73](https://polygonscan.com/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) | Polygon | YEARN | Yearn TimelockController |
-| 0x88ba032be87d5ef1fbe87336b7090767f367bf73 | Katana | YEARN | Yearn TimelockController |
+| [0x88ba032be87d5ef1fbe87336b7090767f367bf73](https://katanascan.com/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) | Katana | YEARN | Yearn TimelockController |
 | [0x88ba032be87d5ef1fbe87336b7090767f367bf73](https://optimistic.etherscan.io/address/0x88ba032be87d5ef1fbe87336b7090767f367bf73) | Optimism | YEARN | Yearn TimelockController |
 
 ## How to Add a New Timelock
