@@ -54,10 +54,17 @@ TIMELOCK_LIST: list[TimelockConfig] = [
     TimelockConfig("0x2efff88747eb5a3ff00d4d8d0f0800e306c0426b", 1, "MAPLE", "Maple GovernorTimelock"),
     # Chain 8453 - Base
     TimelockConfig("0xf817cb3092179083c48c014688d98b72fb61464f", 8453, "LRT", "superOETH Timelock"),
+    # Yearn Timelock (0x88Ba032be87d5EF1fbE87336B7090767F367BF73) - all chains
+    TimelockConfig("0x88ba032be87d5ef1fbe87336b7090767f367bf73", 1, "YEARN", "Yearn TimelockController"),
+    TimelockConfig("0x88ba032be87d5ef1fbe87336b7090767f367bf73", 8453, "YEARN", "Yearn TimelockController"),
+    TimelockConfig("0x88ba032be87d5ef1fbe87336b7090767f367bf73", 42161, "YEARN", "Yearn TimelockController"),
+    TimelockConfig("0x88ba032be87d5ef1fbe87336b7090767f367bf73", 137, "YEARN", "Yearn TimelockController"),
+    TimelockConfig("0x88ba032be87d5ef1fbe87336b7090767f367bf73", 747474, "YEARN", "Yearn TimelockController"),
+    TimelockConfig("0x88ba032be87d5ef1fbe87336b7090767f367bf73", 10, "YEARN", "Yearn TimelockController"),
 ]
 
-# Lookup by lowercase address
-TIMELOCKS: dict[str, TimelockConfig] = {t.address: t for t in TIMELOCK_LIST}
+# Lookup by (lowercase address, chain_id) to support same address on multiple chains
+TIMELOCKS: dict[tuple[str, int], TimelockConfig] = {(t.address, t.chain_id): t for t in TIMELOCK_LIST}
 
 _logger = get_logger("timelock_alerts")
 
@@ -295,7 +302,8 @@ def process_events(events: list[dict], use_cache: bool) -> None:
         # so call order within batch operations is preserved
 
         timelock_addr = op_events[0]["timelockAddress"].lower()
-        timelock_info = TIMELOCKS.get(timelock_addr)
+        chain_id = int(op_events[0]["chainId"])
+        timelock_info = TIMELOCKS.get((timelock_addr, chain_id))
         if not timelock_info:
             _logger.warning("Unknown timelock address: %s", timelock_addr)
             continue
