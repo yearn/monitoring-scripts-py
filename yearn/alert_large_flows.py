@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 from decimal import Decimal, getcontext
 
@@ -302,20 +303,12 @@ def get_token_price_usd(chain_id: int, token_address: str, symbol: str) -> Decim
         raise RuntimeError(f"Unsupported chain for pricing: {chain_id}")
     token_key = f"{chain}:{token_address.lower()}"
 
-    for attempt in range(3):
-        try:
-            prices = _defillama_fetch_prices([token_key])
-            price = prices.get(token_key)
-            if price is None:
-                raise RuntimeError(f"Missing price for {token_key}")
-            _price_cache[cache_key] = (time.time(), price)
-            return price
-        except Exception as exc:
-            if attempt == 2:
-                raise
-            _logger.warning("defillama price attempt %d failed: %s", attempt + 1, exc)
-
-    raise RuntimeError("DeFiLlama price fetch failed after retries")
+    prices = _defillama_fetch_prices([token_key])
+    price = prices.get(token_key)
+    if price is None:
+        raise RuntimeError(f"Missing price for {token_key}")
+    _price_cache[cache_key] = (time.time(), price)
+    return price
 
 
 def load_events(limit: int, chain_ids: list[int], since_ts: int | None):
@@ -491,7 +484,8 @@ def main():
     parser.add_argument("--limit", type=int, default=100)
     parser.add_argument("--threshold-usd", type=Decimal, default=Decimal("5000000"))  # 5M USD
     parser.add_argument("--since-seconds", type=int, default=7200)  # 2 hours is default
-    parser.add_argument("--chain-ids", type=str, default="1")
+    default_chain_ids = ",".join(str(c) for c in sorted({v["chain_id"] for v in VAULTS.values()}))
+    parser.add_argument("--chain-ids", type=str, default=default_chain_ids)
     parser.add_argument("--no-cache", action="store_true", help="Disable caching of last alerted tx")
     parser.add_argument(
         "--log-level",
