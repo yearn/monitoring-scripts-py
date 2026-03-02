@@ -482,7 +482,7 @@ def alert_on_large_flows(events: list[dict], threshold_usd: Decimal, use_cache: 
 def main():
     parser = argparse.ArgumentParser(description="Alert on large deposit/withdraw events.")
     parser.add_argument("--limit", type=int, default=100)
-    parser.add_argument("--threshold-usd", type=Decimal, default=Decimal("5000000"))  # 5M USD
+    parser.add_argument("--threshold-usd", type=Decimal, default=Decimal("1000000"))  # 1M USD
     parser.add_argument("--since-seconds", type=int, default=7200)  # 2 hours is default
     default_chain_ids = ",".join(str(c) for c in sorted({v["chain_id"] for v in VAULTS.values()}))
     parser.add_argument("--chain-ids", type=str, default=default_chain_ids)
