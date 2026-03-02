@@ -21,6 +21,7 @@ dependencies = [
     "cytoolz==0.12.3",
     "dataclasses-json==0.6.7",
     "deprecated==1.2.14",
+    "defillama-sdk==0.1.4",
     "dune-client==1.7.7",
     "eth-abi==5.1.0",
     "eth-account==0.13.3",
