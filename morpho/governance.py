@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import requests
 from web3 import Web3
 
 from utils.abi import load_abi
@@ -16,6 +17,7 @@ PROTOCOL = "morpho"
 logger = get_logger("morpho.governance")
 MORPHO_URL = "https://app.morpho.org"
 COMPOUND_URL = "https://compound.blue"
+API_URL = "https://api.morpho.org/graphql"
 
 PENDING_CAP_TYPE = "pending_cap"
 REMOVABLE_AT_TYPE = "removable_at"
@@ -93,6 +95,38 @@ def get_vault_url_by_name(vault_name, chain: Chain):
     return None
 
 
+def fetch_market_name(market_id: str, chain: Chain) -> str:
+    """Fetch market name from Morpho GraphQL API.
+
+    Returns a human-readable name like 'WBTC/USDC (86.00%)' or falls back to the market ID.
+    """
+    query = """
+    query GetMarket($uniqueKey: String!, $chainId: Int!) {
+        marketByUniqueKey(uniqueKey: $uniqueKey, chainId: $chainId) {
+            lltv
+            loanAsset { symbol, decimals }
+            collateralAsset { symbol }
+        }
+    }
+    """
+    try:
+        response = requests.post(
+            API_URL,
+            json={"query": query, "variables": {"uniqueKey": market_id, "chainId": chain.chain_id}},
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        market = data["data"]["marketByUniqueKey"]
+        collateral_symbol = market["collateralAsset"]["symbol"] if market.get("collateralAsset") else "idle"
+        loan_symbol = market["loanAsset"]["symbol"]
+        lltv_pct = int(market["lltv"]) / 1e18 * 100
+        return f"{collateral_symbol}/{loan_symbol} ({lltv_pct:.2f}%)"
+    except Exception as e:
+        logger.warning("Failed to fetch market name for %s: %s", market_id, e)
+        return market_id
+
+
 def check_markets_pending_cap(name, morpho_contract, chain, w3):
     with w3.batch_requests() as batch:
         batch.add(morpho_contract.functions.supplyQueueLength())
@@ -166,8 +200,14 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
             if pending_cap_timestamp > last_executed_morpho:
                 difference_in_percentage = ((pending_cap_value - current_cap) / current_cap) * 100
                 time = datetime.fromtimestamp(pending_cap_timestamp).strftime("%Y-%m-%d %H:%M:%S")
+                market_name = fetch_market_name(market, chain)
                 send_telegram_message(
-                    f"Updating cap to new cap {pending_cap_value}, current cap {current_cap}, difference: {difference_in_percentage:.2f}%. \nFor vault [{name}]({vault_url}) for market: [{market}]({market_url}) on {chain.name}. Queued for {time}",
+                    (
+                        f"Updating cap to new cap {pending_cap_value}, current cap {current_cap}, "
+                        f"difference: {difference_in_percentage:.2f}%. \n"
+                        f"For vault [{name}]({vault_url}) for market: [{market_name}]({market_url}) on {chain.name}. "
+                        f"Queued for {time}"
+                    ),
                     PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(vault_address, market, PENDING_CAP_TYPE, pending_cap_timestamp)
@@ -184,8 +224,9 @@ def check_markets_pending_cap(name, morpho_contract, chain, w3):
         if removable_at > 0:
             if removable_at > get_last_executed_morpho_from_file(vault_address, market, REMOVABLE_AT_TYPE):
                 time = datetime.fromtimestamp(removable_at).strftime("%Y-%m-%d %H:%M:%S")
+                market_name = fetch_market_name(market, chain)
                 send_telegram_message(
-                    f"Vault [{name}]({vault_url}) queued to remove market: [{market}]({market_url}) at {time}",
+                    f"Vault [{name}]({vault_url}) queued to remove market: [{market_name}]({market_url}) at {time}",
                     PROTOCOL,
                 )
                 write_last_executed_morpho_to_file(vault_address, market, REMOVABLE_AT_TYPE, removable_at)
@@ -229,7 +270,7 @@ def get_data_for_chain(chain: Chain):
     vaults = VAULTS_BY_CHAIN[chain]
 
     logger.info("Processing Morpho Vaults on %s ...", chain.name)
-    logger.info("Vaults: %s", vaults)
+    logger.debug("Vaults: %s", vaults)
 
     for vault in vaults:
         morpho_contract = client.eth.contract(address=vault[1], abi=ABI_MORPHO)
