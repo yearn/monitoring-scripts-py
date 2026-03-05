@@ -1,12 +1,17 @@
 """
-Maple Finance syrupUSDC loan collateral monitoring.
+Maple Finance syrupUSDC collateral monitoring.
 
 Fetches collateral breakdown from the Maple Finance GraphQL API and calculates
 a weighted risk score based on predefined asset risk ratings.
 
+Uses syrupGlobals for the official combined collateralization ratio across all
+Syrup pools (syrupUSDC + syrupUSDT). The ratio uses only overcollateralized loans
+as the denominator, excluding DeFi strategy deployments (Sky, Aave, etc.).
+See: https://docs.maple.finance/integrate/technical-resources/collateral-and-yield-disclosure
+
 Monitors:
 - Weighted collateral risk score — alerts when above threshold
-- Collateralization ratio — alerts when ratio drops below threshold
+- Collateralization ratio (via syrupGlobals) — alerts when ratio drops below threshold
 """
 
 from datetime import datetime, timezone
@@ -42,6 +47,19 @@ RISK_SCORE_THRESHOLD = 1.5
 
 # Alert if collateralization ratio drops below this threshold
 COLLATERALIZATION_RATIO_THRESHOLD = 1.5  # 150%
+
+# syrupGlobals provides the official combined collateralization ratio across all Syrup pools.
+# collateralRatio = collateralValue / loansValue (only overcollateralized loans, excludes DeFi strategies).
+# See: https://docs.maple.finance/integrate/technical-resources/collateral-and-yield-disclosure
+SYRUP_GLOBALS_QUERY = """
+{
+  syrupGlobals {
+    collateralRatio
+    collateralValue
+    loansValue
+  }
+}
+"""
 
 COLLATERAL_QUERY = (
     """
@@ -122,6 +140,41 @@ def fetch_collateral_data() -> tuple[list[dict], dict]:
     return collaterals, pool_data
 
 
+def fetch_syrup_globals() -> dict:
+    """Fetch combined collateralization data from syrupGlobals.
+
+    Returns the official combined ratio across all Syrup pools. loansValue only
+    includes overcollateralized borrower loans, excluding DeFi strategy deployments.
+
+    Returns:
+        Dict with collateralRatio (float), collateralValue (float USD), loansValue (float USD).
+
+    Raises:
+        ValueError: If the API response is malformed.
+        requests.RequestException: If the API request fails.
+    """
+    response = requests.post(
+        MAPLE_GRAPHQL_URL,
+        json={"query": SYRUP_GLOBALS_QUERY},
+        timeout=30,
+    )
+    response.raise_for_status()
+
+    data = response.json()
+    if "errors" in data:
+        raise ValueError(f"Maple GraphQL errors: {data['errors']}")
+
+    globals_data = data.get("data", {}).get("syrupGlobals")
+    if not globals_data:
+        raise ValueError("syrupGlobals not found in Maple API response")
+
+    return {
+        "collateralRatio": int(globals_data["collateralRatio"]) / 1e8,
+        "collateralValue": int(globals_data["collateralValue"]) / 1e6,
+        "loansValue": int(globals_data["loansValue"]) / 1e6,
+    }
+
+
 def calculate_risk_score(collaterals: list[dict]) -> tuple[float, list[dict]]:
     """Calculate weighted average risk score from collateral data.
 
@@ -165,45 +218,40 @@ def calculate_risk_score(collaterals: list[dict]) -> tuple[float, list[dict]]:
     return weighted_risk, active_collaterals
 
 
-def check_collateralization_ratio(total_collateral_usd: float, loans_outstanding_usd: float) -> None:
-    """Check collateralization ratio and alert if it drops below threshold.
+def check_collateralization_ratio() -> None:
+    """Check combined collateralization ratio via syrupGlobals and alert if below threshold.
 
-    Args:
-        total_collateral_usd: Total USD value of all collateral from the API.
-        loans_outstanding_usd: Total outstanding loan principal (AUM from loan managers).
+    Uses Maple's official syrupGlobals endpoint which provides the combined ratio
+    across all Syrup pools. loansValue only includes overcollateralized borrower loans,
+    excluding DeFi strategy deployments (Sky, Aave, etc.).
     """
-    if loans_outstanding_usd <= 0:
-        logger.info("No outstanding loans — skipping collateralization ratio check")
-        return
-
-    ratio = total_collateral_usd / loans_outstanding_usd
+    syrup_globals = fetch_syrup_globals()
+    ratio = syrup_globals["collateralRatio"]
+    collateral_usd = syrup_globals["collateralValue"]
+    loans_usd = syrup_globals["loansValue"]
 
     logger.info(
-        "Collateralization ratio: %.1f%% (threshold: %.0f%%) | Collateral: %s / Loans: %s",
+        "Collateralization ratio (syrupGlobals): %.1f%% (threshold: %.0f%%) | Collateral: %s / Loans: %s",
         ratio * 100,
         COLLATERALIZATION_RATIO_THRESHOLD * 100,
-        format_usd(total_collateral_usd),
-        format_usd(loans_outstanding_usd),
+        format_usd(collateral_usd),
+        format_usd(loans_usd),
     )
 
     if ratio < COLLATERALIZATION_RATIO_THRESHOLD:
         message = (
-            f"🚨 *Maple syrupUSDC Collateralization Ratio Alert*\n"
+            f"🚨 *Maple Collateralization Ratio Alert*\n"
             f"📊 Ratio: {ratio:.1%} (threshold: {COLLATERALIZATION_RATIO_THRESHOLD:.0%})\n"
-            f"💰 Collateral: {format_usd(total_collateral_usd)}\n"
-            f"📋 Loans outstanding: {format_usd(loans_outstanding_usd)}\n"
+            f"💰 Collateral: {format_usd(collateral_usd)}\n"
+            f"📋 Loans (excl. strategies): {format_usd(loans_usd)}\n"
             f"⚠️ Collateral coverage is below safe threshold\n"
             f"🔗 [Pool Details](https://app.maple.finance/earn/details)"
         )
         send_telegram_message(message, PROTOCOL)
 
 
-def check_collateral_risk(loans_outstanding_usd: float = 0.0) -> None:
-    """Check loan collateral risk and alert if weighted risk score exceeds threshold.
-
-    Args:
-        loans_outstanding_usd: Total outstanding loan principal for collateralization ratio check.
-    """
+def check_collateral_risk() -> None:
+    """Check loan collateral risk and alert if weighted risk score exceeds threshold."""
     collaterals, pool_data = fetch_collateral_data()
 
     # Log extended pool data from subgraph
@@ -219,6 +267,9 @@ def check_collateral_risk(loans_outstanding_usd: float = 0.0) -> None:
         format_usd(subgraph_accounted_interest),
     )
 
+    # Check combined collateralization ratio via syrupGlobals
+    check_collateralization_ratio()
+
     risk_score, active_collaterals = calculate_risk_score(collaterals)
 
     if not active_collaterals:
@@ -226,9 +277,6 @@ def check_collateral_risk(loans_outstanding_usd: float = 0.0) -> None:
         return
 
     total_usd = sum(c["usd_value"] for c in active_collaterals)
-
-    # Check collateralization ratio
-    check_collateralization_ratio(total_usd, loans_outstanding_usd)
 
     # Log collateral breakdown
     breakdown_lines = []

@@ -7,8 +7,8 @@
 - **Unrealized Losses:** Checks both FixedTermLoanManager and OpenTermLoanManager for non-zero `unrealizedLosses()`. Any non-zero value indicates an active loan impairment.
 - **Strategy Allocations:** Tracks `assetsUnderManagement()` on Aave and Sky strategy contracts for DeFi allocation visibility.
 - **Withdrawal Queue vs Liquid Funds:** Alerts when pending withdrawal shares reach 20% of liquid funds (Aave + Sky strategy AUM).
-- **Loan Collateral Risk:** Fetches collateral breakdown from the Maple GraphQL API and calculates a USD-weighted risk score. Each collateral asset has a risk rating (1=low, 2=medium, 3=high). Alerts when the weighted score exceeds 1.5, or when unknown collateral assets appear. **Note:** The [Maple frontend](https://app.maple.finance/earn/details) combines collateral across both syrupUSDC and syrupUSDT pools — this monitor tracks only syrupUSDC pool collateral (`0x80ac24...`).
-- **Collateralization Ratio:** Compares total collateral USD value (from API) against outstanding loan AUM (on-chain). Alerts when ratio drops below 150%.
+- **Loan Collateral Risk:** Fetches syrupUSDC pool collateral breakdown from the Maple GraphQL API and calculates a USD-weighted risk score. Each collateral asset has a risk rating (1=low, 2=medium, 3=high). Alerts when the weighted score exceeds 1.5, or when unknown collateral assets appear.
+- **Collateralization Ratio:** Uses Maple's [`syrupGlobals`](https://docs.maple.finance/integrate/technical-resources/collateral-and-yield-disclosure) endpoint for the official combined collateralization ratio across all Syrup pools (syrupUSDC + syrupUSDT). The ratio only counts overcollateralized borrower loans as the denominator — DeFi strategy deployments (Sky, Aave, PYUSD, aUSDT, etc.) are excluded. Alerts when ratio drops below 150%.
 - **Pool Delegate Cover:** Monitors USDC balance of the PoolDelegateCover contract — the delegate's "skin in the game" that gets slashed first on defaults. Alerts on any decrease or zero balance.
 
 ## Key Contracts
@@ -33,7 +33,7 @@
 | Withdrawal queue | >=20% of liquid funds | Warning |
 | Collateral risk score | >1.5 weighted average | Warning |
 | Unknown collateral asset | Any new asset not in risk map | Warning |
-| Collateralization ratio | <150% collateral/loans | Warning |
+| Collateralization ratio | <150% collateral/loans (via syrupGlobals, combined across pools) | Warning |
 | Delegate cover decrease | Any decrease or zero balance | Warning |
 
 ## Collateral Risk Scores
