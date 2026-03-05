@@ -8,6 +8,8 @@
 - **Strategy Allocations:** Tracks `assetsUnderManagement()` on Aave and Sky strategy contracts for DeFi allocation visibility.
 - **Withdrawal Queue vs Liquid Funds:** Alerts when pending withdrawal shares reach 20% of liquid funds (Aave + Sky strategy AUM).
 - **Loan Collateral Risk:** Fetches collateral breakdown from the Maple GraphQL API and calculates a USD-weighted risk score. Each collateral asset has a risk rating (1=low, 2=medium, 3=high). Alerts when the weighted score exceeds 1.5, or when unknown collateral assets appear.
+- **Collateralization Ratio:** Compares total collateral USD value (from API) against outstanding loan AUM (on-chain). Alerts when ratio drops below 150%.
+- **Pool Delegate Cover:** Monitors USDC balance of the PoolDelegateCover contract — the delegate's "skin in the game" that gets slashed first on defaults. Alerts on any decrease or zero balance.
 
 ## Key Contracts
 
@@ -19,6 +21,7 @@
 | AaveStrategy | [`0x560B3A85Af1cEF113BB60105d0Cf21e1d05F91d4`](https://etherscan.io/address/0x560B3A85Af1cEF113BB60105d0Cf21e1d05F91d4) | DeFi allocation |
 | SkyStrategy | [`0x859C9980931fa0A63765fD8EF2e29918Af5b038C`](https://etherscan.io/address/0x859C9980931fa0A63765fD8EF2e29918Af5b038C) | DeFi allocation |
 | WithdrawalManagerQueue | [`0x1bc47a0Dd0FdaB96E9eF982fdf1F34DC6207cfE3`](https://etherscan.io/address/0x1bc47a0Dd0FdaB96E9eF982fdf1F34DC6207cfE3) | Withdrawal processing |
+| PoolDelegateCover | [`0x9e62FE15d0E99cE2b30CE0D256e9Ab7b6893AfF5`](https://etherscan.io/address/0x9e62FE15d0E99cE2b30CE0D256e9Ab7b6893AfF5) | Delegate skin-in-the-game |
 
 ## Alert Thresholds
 
@@ -30,6 +33,8 @@
 | Withdrawal queue | >=20% of liquid funds | Warning |
 | Collateral risk score | >1.5 weighted average | Warning |
 | Unknown collateral asset | Any new asset not in risk map | Warning |
+| Collateralization ratio | <150% collateral/loans | Warning |
+| Delegate cover decrease | Any decrease or zero balance | Warning |
 
 ## Collateral Risk Scores
 
@@ -39,7 +44,7 @@
 | XRP | 2 | Medium |
 | LBTC | 2 | Medium |
 | HYPE | 2 | Medium |
-| USTB | 3 | High |
+| USTB | 2 | Medium |
 | jitoSOL | 2 | Medium |
 
 Unknown assets default to risk score 3 (High) and trigger an alert for review.

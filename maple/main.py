@@ -8,6 +8,8 @@ Monitors:
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
 - Withdrawal queue vs liquid funds — alerts when pending withdrawals >= 20% of liquid funds (Aave + Sky)
 - Loan collateral risk — weighted risk score based on collateral asset types
+- Collateralization ratio — alerts when collateral/loans ratio drops below 150%
+- Pool Delegate Cover — alerts when delegate cover balance drops to zero
 """
 
 from maple.collateral import check_collateral_risk
@@ -37,6 +39,8 @@ FIXED_TERM_LOAN_MANAGER = "0x4A1c3F0D9aD0b3f9dA085bEBfc22dEA54263371b"
 OPEN_TERM_LOAN_MANAGER = "0x6ACEb4cAbA81Fa6a8065059f3A944fb066A10fAc"
 AAVE_STRATEGY = "0x560B3A85Af1cEF113BB60105d0Cf21e1d05F91d4"
 SKY_STRATEGY = "0x859C9980931fa0A63765fD8EF2e29918Af5b038C"
+POOL_DELEGATE_COVER = "0x9e62FE15d0E99cE2b30CE0D256e9Ab7b6893AfF5"
+USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
 # USDC has 6 decimals
 USDC_DECIMALS = 6
@@ -45,6 +49,18 @@ ONE_SHARE = 10**USDC_DECIMALS  # 1e6
 # --- Cache Keys ---
 CACHE_KEY_PPS = "MAPLE_PPS"
 CACHE_KEY_TVL = "MAPLE_TVL"
+CACHE_KEY_DELEGATE_COVER = "MAPLE_DELEGATE_COVER"
+
+# Minimal ERC20 ABI for balanceOf
+ABI_ERC20_BALANCE = [
+    {
+        "type": "function",
+        "name": "balanceOf",
+        "inputs": [{"name": "account", "type": "address"}],
+        "outputs": [{"name": "", "type": "uint256"}],
+        "stateMutability": "view",
+    }
+]
 
 # --- Thresholds ---
 TVL_CHANGE_THRESHOLD = 0.15  # 15% TVL change alert
@@ -114,8 +130,12 @@ def check_tvl(client, pool) -> float:
     return tvl_usd
 
 
-def check_unrealized_losses(client) -> None:
-    """Check unrealized losses on both loan managers."""
+def check_unrealized_losses(client) -> float:
+    """Check unrealized losses on both loan managers.
+
+    Returns:
+        Total loans outstanding (AUM) across both loan managers in USD.
+    """
     fixed_lm = client.eth.contract(address=FIXED_TERM_LOAN_MANAGER, abi=ABI_LOAN_MANAGER)
     open_lm = client.eth.contract(address=OPEN_TERM_LOAN_MANAGER, abi=ABI_LOAN_MANAGER)
 
@@ -153,6 +173,8 @@ def check_unrealized_losses(client) -> None:
             f"🔗 [OpenTermLM](https://etherscan.io/address/{OPEN_TERM_LOAN_MANAGER})"
         )
         send_telegram_message(message, PROTOCOL)
+
+    return fixed_aum + open_aum
 
 
 def check_strategy_and_withdrawal_queue(client, pool) -> None:
@@ -201,6 +223,43 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
         send_telegram_message(message, PROTOCOL)
 
 
+def check_delegate_cover(client) -> None:
+    """Check Pool Delegate Cover USDC balance and alert on changes.
+
+    The Pool Delegate Cover is "skin in the game" — USDC deposited by the pool delegate
+    that gets slashed first in case of loan defaults. A zero or decreasing balance
+    reduces delegate accountability.
+    """
+    usdc = client.eth.contract(address=USDC_ADDRESS, abi=ABI_ERC20_BALANCE)
+    cover_balance = client.execute(usdc.functions.balanceOf(POOL_DELEGATE_COVER).call)
+    cover_usd = cover_balance / ONE_SHARE
+
+    previous_cover = get_cache_value(CACHE_KEY_DELEGATE_COVER)
+    logger.info("Pool Delegate Cover: %s (previous: %s)", format_usd(cover_usd), format_usd(previous_cover))
+
+    if cover_usd == 0:
+        # Only alert once when cover is first detected as zero (previous > 0 or first run)
+        if previous_cover > 0:
+            message = (
+                f"🚨 *Maple syrupUSDC Pool Delegate Cover Empty*\n"
+                f"📊 Cover balance dropped from {format_usd(previous_cover)} to $0\n"
+                f"⚠️ No delegate skin-in-the-game — reduced accountability for loan defaults\n"
+                f"🔗 [PoolDelegateCover](https://etherscan.io/address/{POOL_DELEGATE_COVER})"
+            )
+            send_telegram_message(message, PROTOCOL)
+    elif previous_cover > 0 and cover_usd < previous_cover:
+        decrease_pct = (previous_cover - cover_usd) / previous_cover * 100
+        message = (
+            f"⚠️ *Maple syrupUSDC Pool Delegate Cover Decrease*\n"
+            f"📊 Cover: {format_usd(previous_cover)} → {format_usd(cover_usd)} (-{decrease_pct:.1f}%)\n"
+            f"🔗 [PoolDelegateCover](https://etherscan.io/address/{POOL_DELEGATE_COVER})"
+        )
+        send_telegram_message(message, PROTOCOL)
+
+    if cover_usd != previous_cover:
+        set_cache_value(CACHE_KEY_DELEGATE_COVER, cover_usd)
+
+
 def main() -> None:
     logger.info("Starting Maple syrupUSDC monitoring...")
 
@@ -210,9 +269,10 @@ def main() -> None:
     try:
         pps = check_pps(client, pool)
         tvl = check_tvl(client, pool)
-        check_unrealized_losses(client)
+        loans_outstanding = check_unrealized_losses(client)
         check_strategy_and_withdrawal_queue(client, pool)
-        check_collateral_risk()
+        check_collateral_risk(loans_outstanding_usd=loans_outstanding)
+        check_delegate_cover(client)
 
         logger.info(
             "Monitoring complete — PPS: %.8f, TVL: %s",

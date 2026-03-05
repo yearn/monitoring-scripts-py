@@ -4,7 +4,9 @@ Maple Finance syrupUSDC loan collateral monitoring.
 Fetches collateral breakdown from the Maple Finance GraphQL API and calculates
 a weighted risk score based on predefined asset risk ratings.
 
-Alerts when the weighted risk score exceeds the configured threshold.
+Monitors:
+- Weighted collateral risk score — alerts when above threshold
+- Collateralization ratio — alerts when ratio drops below threshold
 """
 
 import requests
@@ -24,7 +26,7 @@ SYRUP_USDC_POOL_ID = "0x80ac24aa929eaf5013f6436cda2a7ba190f5cc0b"
 ASSET_RISK_SCORES: dict[str, int] = {
     "BTC": 1,
     "XRP": 2,
-    "USTB": 3,
+    "USTB": 2,
     "jitoSOL": 2,
     "LBTC": 2,
     "HYPE": 2,
@@ -35,6 +37,9 @@ DEFAULT_RISK_SCORE = 3
 
 # Alert if weighted risk score exceeds this threshold
 RISK_SCORE_THRESHOLD = 1.5
+
+# Alert if collateralization ratio drops below this threshold
+COLLATERALIZATION_RATIO_THRESHOLD = 1.5  # 150%
 
 COLLATERAL_QUERY = (
     """
@@ -127,8 +132,45 @@ def calculate_risk_score(collaterals: list[dict]) -> tuple[float, list[dict]]:
     return weighted_risk, active_collaterals
 
 
-def check_collateral_risk() -> None:
-    """Check loan collateral risk and alert if weighted risk score exceeds threshold."""
+def check_collateralization_ratio(total_collateral_usd: float, loans_outstanding_usd: float) -> None:
+    """Check collateralization ratio and alert if it drops below threshold.
+
+    Args:
+        total_collateral_usd: Total USD value of all collateral from the API.
+        loans_outstanding_usd: Total outstanding loan principal (AUM from loan managers).
+    """
+    if loans_outstanding_usd <= 0:
+        logger.info("No outstanding loans — skipping collateralization ratio check")
+        return
+
+    ratio = total_collateral_usd / loans_outstanding_usd
+
+    logger.info(
+        "Collateralization ratio: %.1f%% (threshold: %.0f%%) | Collateral: %s / Loans: %s",
+        ratio * 100,
+        COLLATERALIZATION_RATIO_THRESHOLD * 100,
+        format_usd(total_collateral_usd),
+        format_usd(loans_outstanding_usd),
+    )
+
+    if ratio < COLLATERALIZATION_RATIO_THRESHOLD:
+        message = (
+            f"🚨 *Maple syrupUSDC Collateralization Ratio Alert*\n"
+            f"📊 Ratio: {ratio:.1%} (threshold: {COLLATERALIZATION_RATIO_THRESHOLD:.0%})\n"
+            f"💰 Collateral: {format_usd(total_collateral_usd)}\n"
+            f"📋 Loans outstanding: {format_usd(loans_outstanding_usd)}\n"
+            f"⚠️ Collateral coverage is below safe threshold\n"
+            f"🔗 [Pool Details](https://app.maple.finance/earn/details)"
+        )
+        send_telegram_message(message, PROTOCOL)
+
+
+def check_collateral_risk(loans_outstanding_usd: float = 0.0) -> None:
+    """Check loan collateral risk and alert if weighted risk score exceeds threshold.
+
+    Args:
+        loans_outstanding_usd: Total outstanding loan principal for collateralization ratio check.
+    """
     collaterals = fetch_collateral_data()
     risk_score, active_collaterals = calculate_risk_score(collaterals)
 
@@ -137,6 +179,9 @@ def check_collateral_risk() -> None:
         return
 
     total_usd = sum(c["usd_value"] for c in active_collaterals)
+
+    # Check collateralization ratio
+    check_collateralization_ratio(total_usd, loans_outstanding_usd)
 
     # Log collateral breakdown
     breakdown_lines = []
