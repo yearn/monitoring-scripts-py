@@ -1,9 +1,5 @@
 # Maker DAO
 
-## Bad Debt
-
-[Github actions bot](https://github.com/tapired/monitoring-scripts-py/blob/main/.github/workflows/bad-debt.yml) for bad debt in the protocol. Uses [Risk DAO](https://bad-debt.riskdao.org/) data. Sends telegram message if the bad debt ratio is above `0.1%`.
-
 ## Governance
 
 ### Proposals Script
@@ -27,6 +23,8 @@ To get the proposal data from the received alert:
 3. check proposals on [Maker DAO voting site](https://vote.makerdao.com/executive), after rebranding use [SKY DAO voting site](https://vote.sky.money/executive)
 4. [match proposal with spell address](https://vote.makerdao.com/executive/template-executive-vote-lite-psm-usdc-a-phase-2-setup-august-22-2024) with DssSpell address from tx
 
-Tenderly alert for [EOA wallet pocket](https://dashboard.tenderly.co/yearn/sam/alerts/rules/3fd3aa9f-5679-4f9d-8d58-a11c0439bd17) which holds USDC funds for PSM. It could remove approval for Maker LitePSM and break sUSDC strategy. This EOA is [Coinbase Web3 Wallet](https://forum.sky.money/t/litepsm-lite-psm-usdc-a-introduction-and-overview/24512).
-
 [Governance DSPause module docs](https://docs.makerdao.com/smart-contract-modules/governance-module/pause-detailed-documentation).
+
+## PSM Balance
+
+Tenderly alert for [PSM balance](https://dashboard.tenderly.co/yearn/sam/alerts/rules/4033c908-e924-43c1-a12c-5be712c039d8) of USDC. If the balance is less than 2B USDC, telegram alert is sent Maker DAO channel. On 5th March 2026, the balance was 4.46B USDC, [PSM contract](https://etherscan.io/address/0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341#readContract).
