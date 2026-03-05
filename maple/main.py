@@ -8,7 +8,7 @@ Monitors:
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
 - Withdrawal queue vs liquid funds — alerts when pending withdrawals >= 20% of liquid funds (Aave + Sky)
 - Loan collateral risk — weighted risk score based on collateral asset types
-- Collateralization ratio — alerts when collateral/loans ratio drops below 150%
+- Collateralization ratio (via syrupGlobals) — alerts when combined ratio drops below 150%
 - Pool Delegate Cover — alerts when delegate cover balance drops to zero
 """
 
@@ -269,9 +269,9 @@ def main() -> None:
     try:
         pps = check_pps(client, pool)
         tvl = check_tvl(client, pool)
-        loans_outstanding = check_unrealized_losses(client)
+        check_unrealized_losses(client)
         check_strategy_and_withdrawal_queue(client, pool)
-        check_collateral_risk(loans_outstanding_usd=loans_outstanding)
+        check_collateral_risk()
         check_delegate_cover(client)
 
         logger.info(
