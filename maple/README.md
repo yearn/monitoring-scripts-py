@@ -5,6 +5,7 @@
 - **PPS (Price Per Share):** Tracks `convertToAssets(1e6)` on the syrupUSDC pool. Should be monotonically increasing. Alerts on any decrease, which would indicate loan impairment or loss.
 - **TVL (Total Value Locked):** Monitors `totalAssets()`. Alerts on changes exceeding 15% between runs.
 - **Unrealized Losses:** Checks both FixedTermLoanManager and OpenTermLoanManager for non-zero `unrealizedLosses()`. Any non-zero value indicates an active loan impairment.
+- **Unrealized Losses vs Pool Size:** (via subgraph) Per-pool check across syrupUSDC and syrupUSDT. Alerts when unrealized losses reach >=0.5% of pool total assets.
 - **Strategy Allocations:** Tracks `assetsUnderManagement()` on Aave and Sky strategy contracts for DeFi allocation visibility.
 - **Withdrawal Queue vs Liquid Funds:** Alerts when pending withdrawal shares reach 20% of liquid funds (Aave + Sky strategy AUM).
 - **Loan Collateral Risk:** Fetches combined collateral breakdown across both syrupUSDC and syrupUSDT pools from the Maple GraphQL API and calculates a USD-weighted risk score. Each collateral asset has a risk rating (1=low, 2=medium, 3=high). Alerts when the weighted score exceeds 1.5, or when unknown collateral assets appear.
@@ -29,7 +30,8 @@
 |--------|-----------|----------|
 | PPS decrease | Any decrease | Critical |
 | TVL change | >15% between runs | Warning |
-| Unrealized losses | Any non-zero | Critical |
+| Unrealized losses | Any non-zero (chain) | Critical |
+| Unrealized losses vs pool | >=0.5% of pool assets (subgraph) | Warning |
 | Withdrawal queue | >=20% of liquid funds | Warning |
 | Collateral risk score | >1.5 weighted average | Warning |
 | Unknown collateral asset | Any new asset not in risk map | Warning |

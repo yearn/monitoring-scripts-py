@@ -13,6 +13,7 @@ See: https://docs.maple.finance/integrate/technical-resources/collateral-and-yie
 Monitors:
 - Weighted collateral risk score — alerts when above threshold
 - Collateralization ratio (via syrupGlobals) — alerts when ratio drops below threshold
+- Unrealized losses — alerts when >= 0.5% of pool total assets
 """
 
 from datetime import datetime, timezone
@@ -49,6 +50,9 @@ RISK_SCORE_THRESHOLD = 1.5
 
 # Alert if collateralization ratio drops below this threshold
 COLLATERALIZATION_RATIO_THRESHOLD = 1.5  # 150%
+
+# Alert if unrealized losses exceed this % of pool total assets
+UNREALIZED_LOSSES_THRESHOLD = 0.005  # 0.5%
 
 # syrupGlobals provides the official combined collateralization ratio across all Syrup pools.
 # collateralRatio = collateralValue / loansValue (only overcollateralized loans, excludes DeFi strategies).
@@ -128,6 +132,12 @@ def fetch_collateral_data() -> tuple[list[dict], list[dict]]:
     if not pools:
         raise ValueError("No Syrup pools found in Maple API response")
 
+    if len(pools) < 2:
+        logger.warning(
+            "Expected 2 Syrup pools (syrupUSDC + syrupUSDT), got %d — subgraph may be incomplete",
+            len(pools),
+        )
+
     # Merge collateral across both pools — same asset from different pools gets combined
     collateral_by_asset: dict[str, dict] = {}
     pools_data = []
@@ -145,11 +155,14 @@ def fetch_collateral_data() -> tuple[list[dict], list[dict]]:
         )
 
         for collateral in pool.get("poolMeta", {}).get("poolCollaterals", []):
-            asset = collateral["asset"]
-            usd_value = float(collateral.get("assetValueUsd", "0"))
+            asset = collateral.get("asset")
+            if not asset:
+                logger.warning("Skipping collateral with missing asset: %s", collateral)
+                continue
+            usd_value = float(collateral.get("assetValueUsd") or "0")
             if asset in collateral_by_asset:
                 existing = collateral_by_asset[asset]
-                existing["assetValueUsd"] = str(float(existing["assetValueUsd"]) + usd_value)
+                existing["assetValueUsd"] = str(float(existing.get("assetValueUsd") or "0") + usd_value)
             else:
                 collateral_by_asset[asset] = {**collateral}
 
@@ -184,10 +197,19 @@ def fetch_syrup_globals() -> dict:
     if not globals_data:
         raise ValueError("syrupGlobals not found in Maple API response")
 
+    collateral_ratio = globals_data.get("collateralRatio")
+    collateral_value = globals_data.get("collateralValue")
+    loans_value = globals_data.get("loansValue")
+    if collateral_ratio is None or collateral_value is None or loans_value is None:
+        raise ValueError(
+            f"syrupGlobals missing required fields: collateralRatio={collateral_ratio!r}, "
+            f"collateralValue={collateral_value!r}, loansValue={loans_value!r}"
+        )
+
     return {
-        "collateralRatio": int(globals_data["collateralRatio"]) / 1e8,
-        "collateralValue": int(globals_data["collateralValue"]) / 1e6,
-        "loansValue": int(globals_data["loansValue"]) / 1e6,
+        "collateralRatio": int(collateral_ratio) / 1e8,
+        "collateralValue": int(collateral_value) / 1e6,
+        "loansValue": int(loans_value) / 1e6,
     }
 
 
@@ -206,14 +228,16 @@ def calculate_risk_score(collaterals: list[dict]) -> tuple[float, list[dict]]:
     weighted_risk_sum = 0.0
 
     for collateral in collaterals:
-        usd_value = float(collateral.get("assetValueUsd", "0"))
+        usd_value = float(collateral.get("assetValueUsd") or "0")
         if usd_value <= 0:
             continue
 
-        asset = collateral["asset"]
+        asset = collateral.get("asset")
+        if not asset:
+            continue
         risk_score = ASSET_RISK_SCORES.get(asset, DEFAULT_RISK_SCORE)
 
-        # assetValueUsd is in cents (6 decimal USD), convert to dollars
+        # assetValueUsd is in 6 decimal, convert to dollars
         usd_value_dollars = usd_value / 1e6
 
         active_collaterals.append(
@@ -266,6 +290,28 @@ def check_collateralization_ratio() -> None:
         send_telegram_message(message, PROTOCOL)
 
 
+def check_unrealized_losses(pools_data: list[dict]) -> None:
+    """Check unrealized losses per pool and alert if >= 0.5% of total assets."""
+    for pool_data in pools_data:
+        total_assets = pool_data["totalAssets"]
+        unrealized_losses = pool_data["unrealizedLosses"]
+        if total_assets <= 0:
+            continue
+
+        ratio = unrealized_losses / total_assets
+        if ratio >= UNREALIZED_LOSSES_THRESHOLD:
+            losses_usd = unrealized_losses / 1e6
+            assets_usd = total_assets / 1e6
+            message = (
+                f"🚨 *Maple Syrup Unrealized Losses Alert*\n"
+                f"📊 {pool_data['name']}: unrealized losses are {ratio:.1%} of pool assets\n"
+                f"💰 Losses: {format_usd(losses_usd)} | Pool assets: {format_usd(assets_usd)}\n"
+                f"⚠️ Threshold: {UNREALIZED_LOSSES_THRESHOLD:.1%}\n"
+                f"🔗 [Pool Details](https://app.maple.finance/earn/details)"
+            )
+            send_telegram_message(message, PROTOCOL)
+
+
 def check_collateral_risk() -> None:
     """Check loan collateral risk and alert if weighted risk score exceeds threshold."""
     collaterals, pools_data = fetch_collateral_data()
@@ -283,6 +329,9 @@ def check_collateral_risk() -> None:
 
     # Check combined collateralization ratio via syrupGlobals
     check_collateralization_ratio()
+
+    # Check unrealized losses vs pool size
+    check_unrealized_losses(pools_data)
 
     risk_score, active_collaterals = calculate_risk_score(collaterals)
 
