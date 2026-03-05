@@ -7,6 +7,7 @@
 - **Unrealized Losses:** Checks both FixedTermLoanManager and OpenTermLoanManager for non-zero `unrealizedLosses()`. Any non-zero value indicates an active loan impairment.
 - **Strategy Allocations:** Tracks `assetsUnderManagement()` on Aave and Sky strategy contracts for DeFi allocation visibility.
 - **Withdrawal Queue vs Liquid Funds:** Alerts when pending withdrawal shares reach 20% of liquid funds (Aave + Sky strategy AUM).
+- **Loan Collateral Risk:** Fetches collateral breakdown from the Maple GraphQL API and calculates a USD-weighted risk score. Each collateral asset has a risk rating (1=low, 2=medium, 3=high). Alerts when the weighted score exceeds 1.5, or when unknown collateral assets appear.
 
 ## Key Contracts
 
@@ -27,6 +28,21 @@
 | TVL change | >15% between runs | Warning |
 | Unrealized losses | Any non-zero | Critical |
 | Withdrawal queue | >=20% of liquid funds | Warning |
+| Collateral risk score | >1.5 weighted average | Warning |
+| Unknown collateral asset | Any new asset not in risk map | Warning |
+
+## Collateral Risk Scores
+
+| Asset | Risk Score | Level |
+|-------|-----------|-------|
+| BTC | 1 | Low |
+| XRP | 2 | Medium |
+| LBTC | 2 | Medium |
+| HYPE | 2 | Medium |
+| USTB | 3 | High |
+| jitoSOL | 2 | Medium |
+
+Unknown assets default to risk score 3 (High) and trigger an alert for review.
 
 ## Governance Monitoring
 

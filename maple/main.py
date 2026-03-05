@@ -7,8 +7,10 @@ Monitors:
 - Unrealized losses on loan managers — alerts on any non-zero value
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
 - Withdrawal queue vs liquid funds — alerts when pending withdrawals >= 20% of liquid funds (Aave + Sky)
+- Loan collateral risk — weighted risk score based on collateral asset types
 """
 
+from maple.collateral import check_collateral_risk
 from utils.abi import load_abi
 from utils.cache import get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
@@ -210,6 +212,7 @@ def main() -> None:
         tvl = check_tvl(client, pool)
         check_unrealized_losses(client)
         check_strategy_and_withdrawal_queue(client, pool)
+        check_collateral_risk()
 
         logger.info(
             "Monitoring complete — PPS: %.8f, TVL: %s",
