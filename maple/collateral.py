@@ -38,6 +38,7 @@ ASSET_RISK_SCORES: dict[str, int] = {
     "USTB": 2,
     "LBTC": 2,
     "HYPE": 2,
+    "jitoSOL": 3,
 }
 
 # Default risk score for unknown assets

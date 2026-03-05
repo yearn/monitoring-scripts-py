@@ -38,15 +38,7 @@
 
 ## Collateral Risk Scores
 
-| Asset | Risk Score | Level |
-|-------|-----------|-------|
-| BTC | 1 | Low |
-| XRP | 2 | Medium |
-| LBTC | 2 | Medium |
-| HYPE | 2 | Medium |
-| USTB | 2 | Medium |
-
-Unknown assets default to risk score 5 (Unknown) and trigger an alert for review.
+Scores are defined in [`maple/collateral.py`](./collateral.py#L35). Unknown assets default to risk score 5 (Unknown) and trigger an alert for review.
 
 ## Governance Monitoring
 
