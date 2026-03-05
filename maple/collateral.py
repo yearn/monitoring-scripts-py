@@ -27,13 +27,12 @@ ASSET_RISK_SCORES: dict[str, int] = {
     "BTC": 1,
     "XRP": 2,
     "USTB": 2,
-    "jitoSOL": 2,
     "LBTC": 2,
     "HYPE": 2,
 }
 
 # Default risk score for unknown assets
-DEFAULT_RISK_SCORE = 3
+DEFAULT_RISK_SCORE = 5
 
 # Alert if weighted risk score exceeds this threshold
 RISK_SCORE_THRESHOLD = 1.5

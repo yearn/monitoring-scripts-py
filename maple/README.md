@@ -45,9 +45,8 @@
 | LBTC | 2 | Medium |
 | HYPE | 2 | Medium |
 | USTB | 2 | Medium |
-| jitoSOL | 2 | Medium |
 
-Unknown assets default to risk score 3 (High) and trigger an alert for review.
+Unknown assets default to risk score 5 (Unknown) and trigger an alert for review.
 
 ## Governance Monitoring
 
