@@ -9,6 +9,8 @@ Monitors:
 - Collateralization ratio — alerts when ratio drops below threshold
 """
 
+from datetime import datetime, timezone
+
 import requests
 
 from utils.formatting import format_usd
@@ -44,8 +46,19 @@ COLLATERALIZATION_RATIO_THRESHOLD = 1.5  # 150%
 COLLATERAL_QUERY = (
     """
 {
+  _meta {
+    block {
+      number
+      timestamp
+    }
+  }
   poolV2S(where: {id: "%s"}) {
     id
+    name
+    totalAssets
+    principalOut
+    unrealizedLosses
+    accountedInterest
     poolMeta {
       poolCollaterals {
         asset
@@ -61,11 +74,12 @@ COLLATERAL_QUERY = (
 )
 
 
-def fetch_collateral_data() -> list[dict]:
-    """Fetch collateral data from Maple Finance GraphQL API.
+def fetch_collateral_data() -> tuple[list[dict], dict]:
+    """Fetch collateral and pool data from Maple Finance GraphQL API.
 
     Returns:
-        List of collateral dicts with asset, assetAmount, assetDecimals, assetValueUsd fields.
+        Tuple of (collaterals, pool_data) where pool_data contains totalAssets,
+        principalOut, unrealizedLosses, accountedInterest fields.
 
     Raises:
         ValueError: If the API response is malformed or pool not found.
@@ -82,11 +96,30 @@ def fetch_collateral_data() -> list[dict]:
     if "errors" in data:
         raise ValueError(f"Maple GraphQL errors: {data['errors']}")
 
+    # Log subgraph sync status
+    meta = data.get("data", {}).get("_meta", {})
+    block_info = meta.get("block", {})
+    block_number = block_info.get("number")
+    block_timestamp = block_info.get("timestamp")
+    if block_timestamp:
+        sync_time = datetime.fromtimestamp(block_timestamp, tz=timezone.utc)
+        logger.info("Subgraph synced to block %s (%s UTC)", block_number, sync_time.strftime("%Y-%m-%d %H:%M:%S"))
+
     pools = data.get("data", {}).get("poolV2S", [])
     if not pools:
         raise ValueError(f"Pool {SYRUP_USDC_POOL_ID} not found in Maple API response")
 
-    return pools[0].get("poolMeta", {}).get("poolCollaterals", [])
+    pool = pools[0]
+    collaterals = pool.get("poolMeta", {}).get("poolCollaterals", [])
+
+    pool_data = {
+        "totalAssets": int(pool.get("totalAssets", "0")),
+        "principalOut": int(pool.get("principalOut", "0")),
+        "unrealizedLosses": int(pool.get("unrealizedLosses", "0")),
+        "accountedInterest": int(pool.get("accountedInterest", "0")),
+    }
+
+    return collaterals, pool_data
 
 
 def calculate_risk_score(collaterals: list[dict]) -> tuple[float, list[dict]]:
@@ -171,7 +204,21 @@ def check_collateral_risk(loans_outstanding_usd: float = 0.0) -> None:
     Args:
         loans_outstanding_usd: Total outstanding loan principal for collateralization ratio check.
     """
-    collaterals = fetch_collateral_data()
+    collaterals, pool_data = fetch_collateral_data()
+
+    # Log extended pool data from subgraph
+    subgraph_total_assets = pool_data["totalAssets"] / 1e6
+    subgraph_principal_out = pool_data["principalOut"] / 1e6
+    subgraph_unrealized_losses = pool_data["unrealizedLosses"] / 1e6
+    subgraph_accounted_interest = pool_data["accountedInterest"] / 1e6
+    logger.info(
+        "Subgraph pool data — TVL: %s, Principal out: %s, Unrealized losses: %s, Accrued interest: %s",
+        format_usd(subgraph_total_assets),
+        format_usd(subgraph_principal_out),
+        format_usd(subgraph_unrealized_losses),
+        format_usd(subgraph_accounted_interest),
+    )
+
     risk_score, active_collaterals = calculate_risk_score(collaterals)
 
     if not active_collaterals:
