@@ -1,8 +1,9 @@
 """
-Maple Finance syrupUSDC collateral monitoring.
+Maple Finance Syrup collateral monitoring.
 
-Fetches collateral breakdown from the Maple Finance GraphQL API and calculates
-a weighted risk score based on predefined asset risk ratings.
+Fetches collateral breakdown from the Maple Finance GraphQL API across both
+syrupUSDC and syrupUSDT pools, and calculates a weighted risk score based on
+predefined asset risk ratings.
 
 Uses syrupGlobals for the official combined collateralization ratio across all
 Syrup pools (syrupUSDC + syrupUSDT). The ratio uses only overcollateralized loans
@@ -27,6 +28,7 @@ logger = get_logger(PROTOCOL)
 
 MAPLE_GRAPHQL_URL = "https://api.maple.finance/v2/graphql"
 SYRUP_USDC_POOL_ID = "0x80ac24aa929eaf5013f6436cda2a7ba190f5cc0b"
+SYRUP_USDT_POOL_ID = "0x356b8d89c1e1239cbbb9de4815c39a1474d5ba7d"
 
 # Asset risk scores from issue #147
 # 1 = low risk, 2 = medium risk, 3 = high risk
@@ -61,8 +63,7 @@ SYRUP_GLOBALS_QUERY = """
 }
 """
 
-COLLATERAL_QUERY = (
-    """
+COLLATERAL_QUERY = """
 {
   _meta {
     block {
@@ -70,7 +71,7 @@ COLLATERAL_QUERY = (
       timestamp
     }
   }
-  poolV2S(where: {id: "%s"}) {
+  poolV2S(where: {id_in: ["%s", "%s"]}) {
     id
     name
     totalAssets
@@ -87,20 +88,20 @@ COLLATERAL_QUERY = (
     }
   }
 }
-"""
-    % SYRUP_USDC_POOL_ID
-)
+""" % (SYRUP_USDC_POOL_ID, SYRUP_USDT_POOL_ID)
 
 
-def fetch_collateral_data() -> tuple[list[dict], dict]:
-    """Fetch collateral and pool data from Maple Finance GraphQL API.
+def fetch_collateral_data() -> tuple[list[dict], list[dict]]:
+    """Fetch collateral and pool data for both syrupUSDC and syrupUSDT from Maple GraphQL API.
+
+    Collateral is merged across both pools (same asset from different pools is combined).
 
     Returns:
-        Tuple of (collaterals, pool_data) where pool_data contains totalAssets,
-        principalOut, unrealizedLosses, accountedInterest fields.
+        Tuple of (combined_collaterals, pools_data) where pools_data contains per-pool
+        totalAssets, principalOut, unrealizedLosses, accountedInterest fields.
 
     Raises:
-        ValueError: If the API response is malformed or pool not found.
+        ValueError: If the API response is malformed or pools not found.
         requests.RequestException: If the API request fails.
     """
     response = requests.post(
@@ -125,19 +126,34 @@ def fetch_collateral_data() -> tuple[list[dict], dict]:
 
     pools = data.get("data", {}).get("poolV2S", [])
     if not pools:
-        raise ValueError(f"Pool {SYRUP_USDC_POOL_ID} not found in Maple API response")
+        raise ValueError("No Syrup pools found in Maple API response")
 
-    pool = pools[0]
-    collaterals = pool.get("poolMeta", {}).get("poolCollaterals", [])
+    # Merge collateral across both pools — same asset from different pools gets combined
+    collateral_by_asset: dict[str, dict] = {}
+    pools_data = []
 
-    pool_data = {
-        "totalAssets": int(pool.get("totalAssets", "0")),
-        "principalOut": int(pool.get("principalOut", "0")),
-        "unrealizedLosses": int(pool.get("unrealizedLosses", "0")),
-        "accountedInterest": int(pool.get("accountedInterest", "0")),
-    }
+    for pool in pools:
+        pool_name = pool.get("name", pool["id"])
+        pools_data.append(
+            {
+                "name": pool_name,
+                "totalAssets": int(pool.get("totalAssets", "0")),
+                "principalOut": int(pool.get("principalOut", "0")),
+                "unrealizedLosses": int(pool.get("unrealizedLosses", "0")),
+                "accountedInterest": int(pool.get("accountedInterest", "0")),
+            }
+        )
 
-    return collaterals, pool_data
+        for collateral in pool.get("poolMeta", {}).get("poolCollaterals", []):
+            asset = collateral["asset"]
+            usd_value = float(collateral.get("assetValueUsd", "0"))
+            if asset in collateral_by_asset:
+                existing = collateral_by_asset[asset]
+                existing["assetValueUsd"] = str(float(existing["assetValueUsd"]) + usd_value)
+            else:
+                collateral_by_asset[asset] = {**collateral}
+
+    return list(collateral_by_asset.values()), pools_data
 
 
 def fetch_syrup_globals() -> dict:
@@ -252,20 +268,18 @@ def check_collateralization_ratio() -> None:
 
 def check_collateral_risk() -> None:
     """Check loan collateral risk and alert if weighted risk score exceeds threshold."""
-    collaterals, pool_data = fetch_collateral_data()
+    collaterals, pools_data = fetch_collateral_data()
 
-    # Log extended pool data from subgraph
-    subgraph_total_assets = pool_data["totalAssets"] / 1e6
-    subgraph_principal_out = pool_data["principalOut"] / 1e6
-    subgraph_unrealized_losses = pool_data["unrealizedLosses"] / 1e6
-    subgraph_accounted_interest = pool_data["accountedInterest"] / 1e6
-    logger.info(
-        "Subgraph pool data — TVL: %s, Principal out: %s, Unrealized losses: %s, Accrued interest: %s",
-        format_usd(subgraph_total_assets),
-        format_usd(subgraph_principal_out),
-        format_usd(subgraph_unrealized_losses),
-        format_usd(subgraph_accounted_interest),
-    )
+    # Log per-pool subgraph data
+    for pool_data in pools_data:
+        logger.info(
+            "Subgraph %s — TVL: %s, Principal out: %s, Unrealized losses: %s, Accrued interest: %s",
+            pool_data["name"],
+            format_usd(pool_data["totalAssets"] / 1e6),
+            format_usd(pool_data["principalOut"] / 1e6),
+            format_usd(pool_data["unrealizedLosses"] / 1e6),
+            format_usd(pool_data["accountedInterest"] / 1e6),
+        )
 
     # Check combined collateralization ratio via syrupGlobals
     check_collateralization_ratio()
@@ -273,7 +287,7 @@ def check_collateral_risk() -> None:
     risk_score, active_collaterals = calculate_risk_score(collaterals)
 
     if not active_collaterals:
-        logger.warning("No active collateral found for syrupUSDC pool")
+        logger.warning("No active collateral found across Syrup pools")
         return
 
     total_usd = sum(c["usd_value"] for c in active_collaterals)
@@ -305,7 +319,7 @@ def check_collateral_risk() -> None:
             )
 
         message = (
-            f"🚨 *Maple syrupUSDC Collateral Risk Alert*\n"
+            f"🚨 *Maple Syrup Collateral Risk Alert*\n"
             f"📊 Weighted risk score: {risk_score:.2f} (threshold: {RISK_SCORE_THRESHOLD:.1f})\n"
             f"💰 Total collateral: {format_usd(total_usd)}\n\n"
             f"*Collateral Breakdown:*\n" + "\n".join(collateral_lines) + "\n\n"
@@ -319,7 +333,7 @@ def check_collateral_risk() -> None:
     if unknown_assets:
         unknown_lines = [f"• {c['asset']}: {format_usd(c['usd_value'])}" for c in unknown_assets]
         message = (
-            "⚠️ *Maple syrupUSDC Unknown Collateral Asset*\n"
+            "⚠️ *Maple Syrup Unknown Collateral Asset*\n"
             "New collateral assets detected that are not in the risk mapping:\n"
             + "\n".join(unknown_lines)
             + "\n\nPlease update the risk scores in `maple/collateral.py`"
