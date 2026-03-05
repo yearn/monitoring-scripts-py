@@ -7,7 +7,7 @@ from utils.web3_wrapper import ChainManager
 CUSD = "0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC"
 PROTOCOL = "cap"
 logger = get_logger(PROTOCOL)
-ALERT_THRESHOLD = 100_000_000  # 100M
+ALERT_THRESHOLD = 60_000_000  # 60M
 
 
 def main():
@@ -52,7 +52,7 @@ def main():
         lines.append(line)
 
     if total_normalized < ALERT_THRESHOLD:
-        message = "💧 CAP Withdrawable Liquidity (Mainnet)\n" + "\n".join(lines)
+        message = "🔻 CAP Withdrawable Liquidity (Mainnet)\n" + "\n".join(lines)
         send_telegram_message(message, PROTOCOL, False)
 
 
