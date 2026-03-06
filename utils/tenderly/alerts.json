@@ -185,6 +185,61 @@
       ]
     },
     {
+      "id": "4033c908-e924-43c1-a12c-5be712c039d8",
+      "project_id": "6932cbec-2970-425a-a734-cb8374d95744",
+      "name": "PSM USDC balance dropped bellow 2B",
+      "description": "On March 5h, 2026, the balance was 4.46B USDC.",
+      "enabled": true,
+      "color": "#ffda79",
+      "severity": "warning",
+      "created_at": "2026-03-05T11:36:07.946294Z",
+      "delivery_channels": [
+        {
+          "delivery_channel_id": "d269e1fe-465a-432b-ab01-129f155eff83",
+          "delivery_channel": {
+            "id": "d269e1fe-465a-432b-ab01-129f155eff83",
+            "type": "telegram",
+            "owner_id": "1f750734-c720-4fde-9d60-d7edd0c04d91",
+            "project_id": null,
+            "label": "MakerDAO Alerts SAM",
+            "reference_id": "2e3af9b9-6814-4dcb-9a2e-a1d79e95ba0f",
+            "enabled": true,
+            "created_at": "2024-08-22T11:21:46.882552Z",
+            "information": {
+              "chat_id": -1002184015556
+            }
+          },
+          "enabled": true,
+          "created_at": "2026-03-05T11:57:30.187956Z"
+        }
+      ],
+      "is_editable": true,
+      "updated_at": "2026-03-05T11:57:30.29889Z",
+      "expressions": [
+        {
+          "type": "contract_address",
+          "expression": {
+            "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "transaction_type": null
+          }
+        },
+        {
+          "type": "network",
+          "expression": {
+            "network_id": "1"
+          }
+        },
+        {
+          "type": "eth_balance",
+          "expression": {
+            "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "threshold": "2000000000",
+            "operator": "<"
+          }
+        }
+      ]
+    },
+    {
       "id": "65153e56-1f79-45a2-8453-b61beeeab411",
       "project_id": "6932cbec-2970-425a-a734-cb8374d95744",
       "name": "Event CallScheduled emitted in Renzo(ezETH) TimelockController",
