@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
 
@@ -69,7 +70,7 @@ TIMELOCKS: dict[tuple[str, int], TimelockConfig] = {(t.address, t.chain_id): t f
 _logger = get_logger("timelock_alerts")
 
 
-def http_json(url: str, method: str = "GET", body: dict | None = None, headers: dict | None = None) -> dict:
+def http_json(url: str, method: str = "GET", body: dict | None = None, headers: dict | None = None) -> dict | None:
     """Make an HTTP request and return JSON response."""
     _logger.info("http_json %s %s", method, url)
     data = None
@@ -80,13 +81,21 @@ def http_json(url: str, method: str = "GET", body: dict | None = None, headers: 
         data = json.dumps(body).encode("utf-8")
         req_headers["Content-Type"] = "application/json"
     req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        payload = json.loads(resp.read().decode("utf-8"))
-        _logger.info("http_json status=%s", resp.status)
-        return payload
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+                _logger.info("http_json status=%s", resp.status)
+                return payload
+        except (urllib.error.URLError, ConnectionError, OSError) as e:
+            _logger.warning("http_json attempt %s/%s failed: %s", attempt, max_retries, e)
+            if attempt < max_retries:
+                time.sleep(2 * attempt)
+    return None
 
 
-def gql_request(query: str, variables: dict) -> dict:
+def gql_request(query: str, variables: dict) -> dict | None:
     """Execute a GraphQL query against the Envio indexer."""
     if not ENVIO_GRAPHQL_URL:
         raise RuntimeError(
@@ -115,7 +124,7 @@ def format_delay(seconds: int) -> str:
     return " ".join(parts)
 
 
-def load_events(limit: int, since_ts: int, timelocks: list[TimelockConfig] | None = None) -> dict:
+def load_events(limit: int, since_ts: int, timelocks: list[TimelockConfig] | None = None) -> dict | None:
     """Fetch TimelockEvent events from the Envio GraphQL API."""
     source = timelocks if timelocks is not None else TIMELOCK_LIST
     addresses = [t.address for t in source]
@@ -403,9 +412,20 @@ def main() -> None:
     _logger.info("Fetching TimelockEvent events since timestamp %s", since_ts)
 
     response = load_events(args.limit, since_ts, filtered_timelocks)
+    if response is None:
+        msg = "⚠️ Timelock alerts: Envio API is unreachable after 3 retries"
+        _logger.error(msg)
+        for protocol in {t.protocol for t in (filtered_timelocks or TIMELOCK_LIST)}:
+            try:
+                send_telegram_message(msg, protocol)
+            except Exception:
+                _logger.exception("Failed to send Envio error alert for protocol %s", protocol)
+        return
     if "errors" in response:
-        _logger.error("GraphQL errors: %s", response["errors"])
-        sys.exit(1)
+        msg = f"Timelock alerts: GraphQL errors: {response['errors']}"
+        _logger.error(msg)
+        send_telegram_message(msg, protocol, plain_text=True)
+        return
 
     data = response.get("data", {})
     events = data.get("TimelockEvent", [])
