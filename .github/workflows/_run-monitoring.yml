@@ -82,6 +82,9 @@ env:
   TELEGRAM_CHAT_ID_USDAI: ${{ secrets.TELEGRAM_CHAT_ID_USDAI }}
   TELEGRAM_CHAT_ID_YEARN: ${{ secrets.TELEGRAM_CHAT_ID_YEARN }}
 
+  # ── GitHub PAT (dispatch) ──
+  GITHUB_PAT_DISPATCH: ${{ secrets.GITHUB_PAT_DISPATCH }}
+
   # ── API Keys ──
   GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
   TALLY_API_KEY: ${{ secrets.TALLY_API_KEY }}
