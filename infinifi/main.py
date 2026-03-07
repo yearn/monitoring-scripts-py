@@ -17,6 +17,7 @@ BACKING_PER_IUSD_MIN = 0.999
 REDEMPTION_TO_LIQUID_RATIO_MAX = 0.8
 FARM_RATIO_CHANGE_ALERT_THRESHOLD = 0.30
 FARM_RATIO_ACTIVATION_ALERT_THRESHOLD = 0.03
+FARM_RATIO_MIN_TVL_ALERT = 0.01
 
 # API Configuration
 API_BASE_URL = "https://api.infinifi.xyz"
@@ -242,7 +243,11 @@ def main():
                 last_ratio = to_float(get_last_value_for_key_from_file(cache_filename, cache_key_farm_ratio))
                 if last_ratio > 0:
                     ratio_change_pct = abs(farm_ratio - last_ratio) / last_ratio
-                    if ratio_change_pct > FARM_RATIO_CHANGE_ALERT_THRESHOLD:
+                    # skip farm if ratio change is less than 1% of TVL
+                    if (
+                        ratio_change_pct > FARM_RATIO_CHANGE_ALERT_THRESHOLD
+                        and max(last_ratio, farm_ratio) >= FARM_RATIO_MIN_TVL_ALERT
+                    ):
                         moved_farms.append(
                             {
                                 "label": farm_label,
