@@ -17,6 +17,7 @@ BACKING_PER_IUSD_MIN = 0.999
 REDEMPTION_TO_LIQUID_RATIO_MAX = 0.8
 FARM_RATIO_CHANGE_ALERT_THRESHOLD = 0.30
 FARM_RATIO_ACTIVATION_ALERT_THRESHOLD = 0.03
+RWA_FARM_IDENTIFIERS = ["fasanara", "falconx"]
 
 # API Configuration
 API_BASE_URL = "https://api.infinifi.xyz"
@@ -88,6 +89,7 @@ def main():
         pending_redemptions = 0
         reserve_ratio = 0
         illiquid_ratio = 0
+        junior_tvl = 0
         farms = []
         # target_reserve_ratio = 0
         # target_illiquid_ratio = 0
@@ -115,6 +117,10 @@ def main():
             if total_backing > 0:
                 reserve_ratio = liquid_reserves / total_backing
                 illiquid_ratio = 1 - reserve_ratio
+
+            receipt_stats = stats.get("receipt")
+            if receipt_stats and "totalLockedNormalized" in receipt_stats:
+                junior_tvl = to_float(receipt_stats["totalLockedNormalized"])
 
             farms = api_data["data"].get("farms", [])
 
@@ -291,6 +297,40 @@ def main():
                     "Farms previously at 0 ratio are now above 5% of TVL:\n" + "\n".join(activated_lines),
                     PROTOCOL,
                 )
+
+        # Alert 7: Junior TVL below total RWA exposure
+        # Junior tranche (locked iUSD) covers potential losses from RWA farms.
+        if junior_tvl > 0 and farms:
+            rwa_exposure = sum(
+                to_float(f.get("assetsNormalized"))
+                for f in farms
+                if any(identifier in f.get("name", "").lower() for identifier in RWA_FARM_IDENTIFIERS)
+            )
+
+            if rwa_exposure > 0:
+                logger.info("Junior TVL:      $%s", f"{junior_tvl:,.2f}")
+                logger.info("RWA Exposure:    $%s", f"{rwa_exposure:,.2f}")
+
+                cache_key_junior_rwa = f"{PROTOCOL}_junior_below_rwa_breach"
+                if junior_tvl < rwa_exposure:
+                    rwa_farms_detail = [
+                        f"- {f.get('label', f.get('name', 'unknown'))}: ${to_float(f.get('assetsNormalized')):,.2f}"
+                        for f in farms
+                        if any(identifier in f.get("name", "").lower() for identifier in RWA_FARM_IDENTIFIERS)
+                        and to_float(f.get("assetsNormalized")) > 0
+                    ]
+                    send_breach_alert_once(
+                        cache_key=cache_key_junior_rwa,
+                        alert_message=(
+                            "🚨 *Infinifi Junior TVL Below RWA Exposure*\n\n"
+                            f"Junior TVL (locked iUSD): ${junior_tvl:,.2f}\n"
+                            f"Total RWA exposure: ${rwa_exposure:,.2f}\n"
+                            f"Shortfall: ${rwa_exposure - junior_tvl:,.2f}\n\n"
+                            f"RWA farms:\n" + "\n".join(rwa_farms_detail)
+                        ),
+                    )
+                else:
+                    clear_breach_state(cache_key_junior_rwa)
 
     except Exception as e:
         logger.error("Error: %s", e)
