@@ -36,7 +36,11 @@ def send_telegram_message(
     Raises:
         TelegramError: If the message fails to send
     """
-    logger.info("Sending telegram message:\n%s", message)
+    logger.debug("Sending telegram message:\n%s", message)
+
+    if os.getenv("LOG_LEVEL", "INFO").upper() == "DEBUG":
+        logger.debug("Skipping Telegram send (LOG_LEVEL=DEBUG)")
+        return
 
     # Truncate long messages; disable Markdown to avoid broken entities
     if len(message) > MAX_MESSAGE_LENGTH:
