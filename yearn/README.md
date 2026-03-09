@@ -111,7 +111,7 @@ Mainnet
 
 ### Configuration
 
-The script has a minimum debt threshold (default: 1 token in 18 decimals) to avoid alerting on dust amounts. This can be adjusted via the `--min-debt-threshold` flag.
+The script has a minimum debt threshold (default: 1 token) to avoid alerting on dust amounts. This threshold is automatically scaled based on each vault's decimal precision (e.g., 1 USDC for 6-decimal vaults, 1 WETH for 18-decimal vaults). This can be adjusted via the `--min-debt-threshold` flag.
 
 ### Usage
 
@@ -122,7 +122,7 @@ uv run yearn/check_shadow_debt.py
 Optional flags:
 
 - `--chains` (default: `MAINNET,POLYGON,BASE,ARBITRUM,KATANA`) - Comma-separated chain names
-- `--min-debt-threshold` (default: `1000000000000000000`) - Minimum debt in wei to alert on
+- `--min-debt-threshold` (default: `1`) - Minimum debt in tokens to alert on (scaled per vault by decimals)
 
 =======
 

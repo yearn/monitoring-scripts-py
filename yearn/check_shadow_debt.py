@@ -42,8 +42,9 @@ VAULT_ABI = load_abi("common-abi/YearnV3Vault.json")
 # Chains to monitor
 CHAINS = [Chain.MAINNET, Chain.POLYGON, Chain.BASE, Chain.ARBITRUM, Chain.KATANA]
 
-# Minimum debt threshold (in wei) to alert on - ignore dust amounts
-MIN_DEBT_THRESHOLD = Decimal("1000000000000000000")  # 1 token in 18 decimals
+# Minimum debt threshold (in tokens) to alert on - ignore dust amounts
+# This will be scaled per vault based on decimals
+MIN_DEBT_THRESHOLD_TOKENS = Decimal("1")  # 1 token, regardless of decimals
 
 
 @dataclass
@@ -107,13 +108,29 @@ def fetch_ydaemon_vaults(chain: Chain) -> List[Dict]:
             {
                 "address": vault["address"].lower(),
                 "symbol": vault.get("symbol", "UNKNOWN"),
-                "decimals": vault.get("decimals", 18),
+                "decimals": vault.get("decimals"),  # Will be validated/fetched on-chain if missing
                 "known_strategies": [s.lower() for s in all_strategies],
             }
         )
 
     logger.info("Found %d vaults on %s", len(result), chain.name)
     return result
+
+
+def get_vault_decimals_onchain(chain: Chain, vault_address: str) -> int:
+    """Query vault decimals on-chain.
+
+    Args:
+        chain: The chain to query.
+        vault_address: The vault address.
+
+    Returns:
+        Number of decimals for the vault token.
+    """
+    client = ChainManager.get_client(chain)
+    vault = client.get_contract(Web3.to_checksum_address(vault_address), VAULT_ABI)
+    decimals: int = client.execute(vault.functions.decimals().call)
+    return decimals
 
 
 def get_vault_strategies_onchain(
@@ -180,7 +197,7 @@ def detect_shadow_debt(
         vault_symbol: Vault symbol.
         vault_decimals: Vault decimals.
         strategies_info: Strategy information dict.
-        min_debt_threshold: Minimum debt threshold in wei.
+        min_debt_threshold: Minimum debt threshold in tokens (will be scaled by vault decimals).
 
     Returns:
         ShadowDebtIssue if found, None otherwise.
@@ -188,6 +205,9 @@ def detect_shadow_debt(
     strategies_with_shadow_debt: List[StrategyInfo] = []
     total_shadow_debt = 0
     total_vault_debt = 0
+
+    # Scale threshold to vault's decimal precision
+    threshold_in_wei = min_debt_threshold * Decimal(10) ** vault_decimals
 
     for strategy_info in strategies_info.values():
         # Only count activated strategies
@@ -199,7 +219,7 @@ def detect_shadow_debt(
         # Check if strategy has debt but is not in default queue
         if strategy_info.current_debt > 0 and not strategy_info.in_default_queue:
             # Apply minimum threshold to avoid alerting on dust
-            if Decimal(strategy_info.current_debt) >= min_debt_threshold:
+            if Decimal(strategy_info.current_debt) >= threshold_in_wei:
                 strategies_with_shadow_debt.append(strategy_info)
                 total_shadow_debt += strategy_info.current_debt
                 logger.warning(
@@ -302,14 +322,14 @@ def check_vault_shadow_debt(chain: Chain, vault_data: Dict, min_debt_threshold: 
     Args:
         chain: The chain.
         vault_data: Vault data from yDaemon.
-        min_debt_threshold: Minimum debt threshold in wei.
+        min_debt_threshold: Minimum debt threshold in tokens.
 
     Returns:
         ShadowDebtIssue if found, None otherwise.
     """
     vault_address = vault_data["address"]
     vault_symbol = vault_data["symbol"]
-    vault_decimals = vault_data["decimals"]
+    vault_decimals = vault_data.get("decimals")
     known_strategies = vault_data["known_strategies"]
 
     if not known_strategies:
@@ -317,6 +337,16 @@ def check_vault_shadow_debt(chain: Chain, vault_data: Dict, min_debt_threshold: 
         return None
 
     try:
+        # Verify decimals or fetch from on-chain if missing/invalid
+        if vault_decimals is None or not isinstance(vault_decimals, int) or vault_decimals < 0 or vault_decimals > 77:
+            logger.warning(
+                "Invalid or missing decimals (%s) for vault %s, querying on-chain",
+                vault_decimals,
+                vault_address,
+            )
+            vault_decimals = get_vault_decimals_onchain(chain, vault_address)
+            logger.info("Vault %s has %d decimals (from on-chain)", vault_address, vault_decimals)
+
         strategies_info = get_vault_strategies_onchain(chain, vault_address, known_strategies)
 
         return detect_shadow_debt(
@@ -344,8 +374,8 @@ def main() -> None:
     parser.add_argument(
         "--min-debt-threshold",
         type=Decimal,
-        default=MIN_DEBT_THRESHOLD,
-        help="Minimum debt threshold in wei to alert on",
+        default=MIN_DEBT_THRESHOLD_TOKENS,
+        help="Minimum debt threshold in tokens to alert on (scaled per vault by decimals)",
     )
     args = parser.parse_args()
 
