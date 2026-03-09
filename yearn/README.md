@@ -60,6 +60,72 @@ uv run yearn/check_endorsed.py
 
 =======
 
+## Shadow Debt Check
+
+The script `yearn/check_shadow_debt.py` detects "shadow debt" issues in Yearn v3 vaults - when strategies have allocated debt but are NOT in the vault's default queue. This causes APR oracle calculations to be incomplete.
+
+### The Problem
+
+The `AprOracle.getWeightedAverageApr()` function only loops through strategies in the default queue:
+
+```solidity
+address[] memory strategies = IVault(_vault).get_default_queue();
+```
+
+If a vault has active strategies with debt that are NOT in this queue, the weighted average APR calculation will:
+- **Miss these strategies** completely
+- Report an **incomplete APR** (likely understated)
+- Cause vault depositors to see **inaccurate APR**
+
+### How It Works
+
+For each vault on each supported chain (Mainnet, Polygon, Base, Arbitrum, Katana):
+
+1. Fetches vault data from the [yDaemon API](https://ydaemon.yearn.fi), including all known strategies
+2. Queries the vault's default queue via `get_default_queue()`
+3. Batch-queries `strategies(address)` for each known strategy to get debt allocation
+4. Identifies strategies with `current_debt > 0` that are **not** in the default queue
+5. Alerts if any "shadow debt" is detected
+
+### Alerts
+
+A Telegram alert is sent when shadow debt is detected, including:
+- Vault address and symbol
+- Number of strategies with shadow debt
+- Amount of shadow debt per strategy
+- Percentage of total vault debt that is "in shadow"
+- Links to vault and strategy addresses on block explorers
+
+Example alert format:
+```
+🌑 Shadow Debt Alert
+Found 1 vault(s) with shadow debt affecting 2 strateg(ies)
+
+Mainnet
+  • 0xbe53a109... (USDC): 2 strateg(ies) with 1.5M debt (15% of total)
+    - 0x1234abcd...: 1.0M
+    - 0x5678efgh...: 500K
+
+⚠️ Impact: APR oracle calculations will be incomplete for these vaults
+```
+
+### Configuration
+
+The script has a minimum debt threshold (default: 1 token) to avoid alerting on dust amounts. This threshold is automatically scaled based on each vault's decimal precision (e.g., 1 USDC for 6-decimal vaults, 1 WETH for 18-decimal vaults). This can be adjusted via the `--min-debt-threshold` flag.
+
+### Usage
+
+```bash
+uv run yearn/check_shadow_debt.py
+```
+
+Optional flags:
+
+- `--chains` (default: `MAINNET,POLYGON,BASE,ARBITRUM,KATANA`) - Comma-separated chain names
+- `--min-debt-threshold` (default: `1`) - Minimum debt in tokens to alert on (scaled per vault by decimals)
+
+=======
+
 ## Timelock Monitoring
 
 Yearn TimelockController contracts are monitored across 6 chains via the shared [timelock monitoring script](../timelock/README.md). Alerts are routed to the `YEARN` Telegram channel.
