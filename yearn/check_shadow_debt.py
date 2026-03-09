@@ -373,6 +373,11 @@ def check_vault_shadow_debt(chain: Chain, vault_data: Dict, min_debt_threshold: 
     vault_decimals = vault_data.get("decimals")
     known_strategies = vault_data["known_strategies"]
 
+    # yvcrvUSD-2 uses shadow debt in normal operation due to high number of strategies, so can ignore
+    if chain.chain_id == 1 and vault_address == "0xbf319ddc2edc1eb6fdf9910e39b37be221c8805f":
+        logger.debug("Skipping vault %s (yvcrvUSD-2) - uses shadow debt in normal operation", vault_address)
+        return None
+
     if not known_strategies:
         logger.debug("No strategies known for vault %s, skipping", vault_address)
         return None
