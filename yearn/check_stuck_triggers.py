@@ -9,7 +9,6 @@ period (default 24 hours), which indicates potential keeper service issues.
 
 import argparse
 import json
-import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,7 +20,7 @@ from web3 import Web3
 
 from utils.chains import Chain
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
+from utils.telegram import send_telegram_message_with_fallback
 from utils.web3_wrapper import ChainManager
 
 load_dotenv()
@@ -496,26 +495,12 @@ def main() -> None:
     # Build and send alert
     message = build_alert_message(stuck_triggers, args.threshold_hours)
 
-    # If message is too long, truncate and add link to logs
-    max_length = 3000
-    if len(message) > max_length:
-        run_url = os.getenv("GITHUB_RUN_URL", "")
-        if not run_url:
-            server = os.getenv("GITHUB_SERVER_URL", "https://github.com")
-            repo = os.getenv("GITHUB_REPOSITORY", "")
-            run_id = os.getenv("GITHUB_RUN_ID", "")
-            if repo and run_id:
-                run_url = f"{server}/{repo}/actions/runs/{run_id}"
-
-        message = (
-            f"⚠️ *TKS Trigger Alert*\n"
-            f"Found {len(stuck_triggers)} trigger(s) stuck for >{args.threshold_hours:.0f} hours.\n"
-            f"Too many to list here."
-        )
-        if run_url:
-            message += f"\n[Check the full logs]({run_url})"
-
-    send_telegram_message(message, PROTOCOL)
+    fallback = (
+        f"⚠️ *TKS Trigger Alert*\n"
+        f"Found {len(stuck_triggers)} trigger(s) stuck for >{args.threshold_hours:.0f} hours.\n"
+        f"Too many to list here."
+    )
+    send_telegram_message_with_fallback(message, PROTOCOL, fallback)
     logger.info("Alert sent successfully")
 
 
