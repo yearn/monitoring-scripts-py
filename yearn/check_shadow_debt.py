@@ -255,6 +255,54 @@ def format_amount(amount: int, decimals: int) -> str:
         return f"{value:,.4f}"
 
 
+def print_summary(issues: List[ShadowDebtIssue]) -> None:
+    """Print console summary of shadow debt issues.
+
+    Args:
+        issues: List of shadow debt issues.
+    """
+    print("\n" + "=" * 80)
+    print("SHADOW DEBT SUMMARY")
+    print("=" * 80)
+
+    # Group by chain
+    issues_by_chain: Dict[Chain, List[ShadowDebtIssue]] = {}
+    for issue in issues:
+        if issue.chain not in issues_by_chain:
+            issues_by_chain[issue.chain] = []
+        issues_by_chain[issue.chain].append(issue)
+
+    for chain, chain_issues in sorted(issues_by_chain.items(), key=lambda x: x[0].name):
+        print(f"\n{chain.name}:")
+        print("-" * 80)
+
+        for issue in chain_issues:
+            shadow_debt_pct = (
+                (issue.total_shadow_debt * 100 / issue.total_vault_debt) if issue.total_vault_debt > 0 else 0
+            )
+
+            # Extract token name from vault symbol (e.g., "yvWETH" -> "WETH", "yvUSDC" -> "USDC")
+            token_symbol = issue.vault_symbol.replace("yv", "").replace("yvault-", "")
+
+            print(f"  Vault: {issue.vault_symbol} ({issue.vault_address})")
+            print(
+                f"  Shadow Debt: {format_amount(issue.total_shadow_debt, issue.vault_decimals)} {token_symbol} "
+                f"({shadow_debt_pct:.1f}% of total vault debt)"
+            )
+            print(f"  Affected Strategies: {len(issue.strategies_with_shadow_debt)}")
+
+            for strategy in issue.strategies_with_shadow_debt:
+                print(
+                    f"    - {strategy.address}: {format_amount(strategy.current_debt, issue.vault_decimals)} {token_symbol}"
+                )
+
+            print()
+
+    print("=" * 80)
+    print(f"Total: {len(issues)} vault(s) with shadow debt issues")
+    print("=" * 80 + "\n")
+
+
 def build_alert_message(issues: List[ShadowDebtIssue]) -> str:
     """Build Telegram alert message for shadow debt issues.
 
@@ -406,6 +454,9 @@ def main() -> None:
     if not all_issues:
         logger.info("No shadow debt issues detected")
         return
+
+    # Print console summary
+    print_summary(all_issues)
 
     # Send alert
     message = build_alert_message(all_issues)
