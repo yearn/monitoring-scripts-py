@@ -85,7 +85,6 @@ class TriggerState:
     triggered: bool
     first_seen: datetime
     last_checked: datetime
-    reason: Optional[str] = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
@@ -93,7 +92,6 @@ class TriggerState:
             "triggered": self.triggered,
             "first_seen": self.first_seen.isoformat(),
             "last_checked": self.last_checked.isoformat(),
-            "reason": self.reason,
         }
 
     @classmethod
@@ -103,7 +101,6 @@ class TriggerState:
             triggered=data["triggered"],
             first_seen=datetime.fromisoformat(data["first_seen"]),
             last_checked=datetime.fromisoformat(data["last_checked"]),
-            reason=data.get("reason"),
         )
 
 
@@ -271,10 +268,9 @@ def update_cache_with_current_state(
             if cache_key in cache and cache[cache_key].triggered:
                 # Already was triggered, just update last_checked
                 cache[cache_key].last_checked = now
-                cache[cache_key].reason = reason
             else:
                 # Newly triggered, record first_seen
-                cache[cache_key] = TriggerState(triggered=True, first_seen=now, last_checked=now, reason=reason)
+                cache[cache_key] = TriggerState(triggered=True, first_seen=now, last_checked=now)
         else:
             # Trigger is false, remove from cache if it exists
             if cache_key in cache:
@@ -282,7 +278,7 @@ def update_cache_with_current_state(
 
 
 def identify_stuck_triggers(
-    cache: Dict[str, TriggerState], threshold_hours: float, now: datetime
+    cache: Dict[str, TriggerState], threshold_hours: float, now: datetime, current_reasons: Dict[str, str]
 ) -> List[StuckTrigger]:
     """Identify triggers that have been stuck in 'true' state for too long.
 
@@ -290,6 +286,7 @@ def identify_stuck_triggers(
         cache: The cache dictionary with trigger states.
         threshold_hours: Minimum hours a trigger must be stuck to be reported.
         now: Current timestamp.
+        current_reasons: Map of cache_key to current reason string from live on-chain queries.
 
     Returns:
         List of StuckTrigger objects.
@@ -335,7 +332,7 @@ def identify_stuck_triggers(
                         strategy_address=strategy_address,
                         vault_address=vault_address,
                         hours_stuck=hours_stuck,
-                        reason=state.reason,
+                        reason=current_reasons.get(cache_key),
                     )
                 )
             except (ValueError, IndexError) as e:
@@ -446,6 +443,7 @@ def main() -> None:
     logger.info("Loaded %d cached trigger states", len(cache))
 
     # Check each chain
+    current_reasons: Dict[str, str] = {}
     for chain in chains_to_check:
         logger.info("Checking chain %s (id=%d)", chain.name, chain.chain_id)
 
@@ -471,6 +469,11 @@ def main() -> None:
             # Update cache with current state
             update_cache_with_current_state(cache, chain, current_triggers, now)
 
+            # Collect reasons keyed by full cache key for use in alert
+            for trigger_key, (triggered, reason) in current_triggers.items():
+                if triggered and reason:
+                    current_reasons[f"{chain.chain_id}_{trigger_key}"] = reason
+
         except requests.RequestException as e:
             logger.error("Failed to fetch yDaemon data for %s: %s", chain.name, e)
             continue
@@ -483,7 +486,7 @@ def main() -> None:
     logger.info("Saved %d trigger states to cache", len(cache))
 
     # Identify stuck triggers
-    stuck_triggers = identify_stuck_triggers(cache, args.threshold_hours, now)
+    stuck_triggers = identify_stuck_triggers(cache, args.threshold_hours, now, current_reasons)
     logger.info("Found %d stuck triggers", len(stuck_triggers))
 
     if not stuck_triggers:
