@@ -14,7 +14,9 @@ jobs:
     uses: ./.github/workflows/_run-monitoring.yml
     secrets: inherit
     with:
-      cache_file: cache-id.txt
+      cache_file: |
+        cache-id.txt
+        tks-trigger-cache.json
       cache_key_prefix: cache-id-v4
       scripts: |
         morpho/markets.py
@@ -30,6 +32,7 @@ jobs:
         silo/ur_sniff.py
         usdai/main.py
         yearn/alert_large_flows.py
+        yearn/check_stuck_triggers.py
         maple/main.py
         timelock/timelock_alerts.py
         # always run proposals after timelock alerts
