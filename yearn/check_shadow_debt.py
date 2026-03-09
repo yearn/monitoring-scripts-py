@@ -161,7 +161,7 @@ def get_vault_strategies_onchain(
         results = batch.execute()
 
     for strategy_addr, result in zip(known_strategies, results):
-        activation, last_report, current_debt, max_debt = result
+        activation, _, current_debt, max_debt = result
 
         strategies_info[strategy_addr] = StrategyInfo(
             address=strategy_addr,
@@ -261,9 +261,9 @@ def print_summary(issues: List[ShadowDebtIssue]) -> None:
     Args:
         issues: List of shadow debt issues.
     """
-    print("\n" + "=" * 80)
-    print("SHADOW DEBT SUMMARY")
-    print("=" * 80)
+    logger.info("=" * 80)
+    logger.info("SHADOW DEBT SUMMARY")
+    logger.info("=" * 80)
 
     # Group by chain
     issues_by_chain: Dict[Chain, List[ShadowDebtIssue]] = {}
@@ -273,8 +273,8 @@ def print_summary(issues: List[ShadowDebtIssue]) -> None:
         issues_by_chain[issue.chain].append(issue)
 
     for chain, chain_issues in sorted(issues_by_chain.items(), key=lambda x: x[0].name):
-        print(f"\n{chain.name}:")
-        print("-" * 80)
+        logger.info("%s:", chain.name)
+        logger.info("-" * 80)
 
         for issue in chain_issues:
             shadow_debt_pct = (
@@ -284,23 +284,28 @@ def print_summary(issues: List[ShadowDebtIssue]) -> None:
             # Extract token name from vault symbol (e.g., "yvWETH" -> "WETH", "yvUSDC" -> "USDC")
             token_symbol = issue.vault_symbol.replace("yv", "").replace("yvault-", "")
 
-            print(f"  Vault: {issue.vault_symbol} ({issue.vault_address})")
-            print(
-                f"  Shadow Debt: {format_amount(issue.total_shadow_debt, issue.vault_decimals)} {token_symbol} "
-                f"({shadow_debt_pct:.1f}% of total vault debt)"
+            logger.info("  Vault: %s (%s)", issue.vault_symbol, issue.vault_address)
+            logger.info(
+                "  Shadow Debt: %s %s (%s%% of total vault debt)",
+                format_amount(issue.total_shadow_debt, issue.vault_decimals),
+                token_symbol,
+                f"{shadow_debt_pct:.1f}",
             )
-            print(f"  Affected Strategies: {len(issue.strategies_with_shadow_debt)}")
+            logger.info("  Affected Strategies: %d", len(issue.strategies_with_shadow_debt))
 
             for strategy in issue.strategies_with_shadow_debt:
-                print(
-                    f"    - {strategy.address}: {format_amount(strategy.current_debt, issue.vault_decimals)} {token_symbol}"
+                logger.info(
+                    "    - %s: %s %s",
+                    strategy.address,
+                    format_amount(strategy.current_debt, issue.vault_decimals),
+                    token_symbol,
                 )
 
-            print()
+            logger.info("")
 
-    print("=" * 80)
-    print(f"Total: {len(issues)} vault(s) with shadow debt issues")
-    print("=" * 80 + "\n")
+    logger.info("=" * 80)
+    logger.info("Total: %d vault(s) with shadow debt issues", len(issues))
+    logger.info("=" * 80)
 
 
 def build_alert_message(issues: List[ShadowDebtIssue]) -> str:
