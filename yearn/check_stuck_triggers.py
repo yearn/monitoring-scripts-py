@@ -181,7 +181,7 @@ def check_triggers_for_chain(
             if "strategies" in vault:
                 for strategy in vault["strategies"]:
                     strategy_addr = Web3.to_checksum_address(strategy["address"])
-                    key = f"vault_report_{vault['address'].lower()}_{strategy['address'].lower()}"
+                    key = f"vault_report_{vault_addr.lower()}_{strategy_addr.lower()}"
                     batch.add(trigger_contract.functions.vaultReportTrigger(vault_addr, strategy_addr))
                     query_map.append(key)
 
@@ -189,12 +189,12 @@ def check_triggers_for_chain(
         if standalone_strategies:
             for strategy_addr in standalone_strategies:
                 strategy_addr_checksum = Web3.to_checksum_address(strategy_addr)
-                key = f"strategy_report_{strategy_addr.lower()}"
+                key = f"strategy_report_{strategy_addr}"
                 batch.add(trigger_contract.functions.strategyReportTrigger(strategy_addr_checksum))
                 query_map.append(key)
 
                 # Also check tend triggers for standalone strategies
-                key_tend = f"strategy_tend_{strategy_addr.lower()}"
+                key_tend = f"strategy_tend_{strategy_addr}"
                 batch.add(trigger_contract.functions.strategyTendTrigger(strategy_addr_checksum))
                 query_map.append(key_tend)
 
@@ -297,9 +297,6 @@ def identify_stuck_triggers(
     stuck_triggers = []
 
     for cache_key, state in cache.items():
-        if not state.triggered:
-            continue
-
         time_stuck = now - state.first_seen
         hours_stuck = time_stuck.total_seconds() / 3600
 
@@ -378,11 +375,12 @@ def build_alert_message(stuck_triggers: List[StuckTrigger], threshold_hours: flo
             trigger_label = trigger.trigger_type.replace("_", " ").title()
             lines.append(f"  • {trigger_label}: stuck for {trigger.hours_stuck:.1f} hours")
 
+            explorer_url = chain.explorer_url
             if trigger.vault_address:
-                vault_url = f"{chain.explorer_url}/address/{trigger.vault_address}"
+                vault_url = f"{explorer_url}/address/{trigger.vault_address}"
                 lines.append(f"    Vault: [{trigger.vault_address[:10]}...]({vault_url})")
 
-            strategy_url = f"{chain.explorer_url}/address/{trigger.strategy_address}"
+            strategy_url = f"{explorer_url}/address/{trigger.strategy_address}"
             lines.append(f"    Strategy: [{trigger.strategy_address[:10]}...]({strategy_url})")
 
             if trigger.reason:
