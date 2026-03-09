@@ -1,0 +1,414 @@
+#!/usr/bin/env python3
+"""Monitor Yearn v3 vaults for shadow debt issues.
+
+A "shadow debt" issue occurs when a strategy has allocated debt (current_debt > 0)
+but is NOT in the vault's default queue. This causes:
+  - getWeightedAverageApr() to miss these strategies
+  - Reported APR to be incomplete (likely understated)
+  - Vault depositors to see inaccurate APR
+
+This script fetches all vaults from yDaemon, queries their default queues and
+strategy debt allocations, and alerts if any strategies with debt are missing
+from the default queue.
+"""
+
+import argparse
+import os
+from dataclasses import dataclass
+from decimal import Decimal
+from typing import Dict, List, Set
+
+import requests
+from dotenv import load_dotenv
+from web3 import Web3
+
+from utils.abi import load_abi
+from utils.chains import Chain
+from utils.logging import get_logger
+from utils.telegram import send_telegram_message
+from utils.web3_wrapper import ChainManager
+
+load_dotenv()
+
+logger = get_logger("yearn.check_shadow_debt")
+
+PROTOCOL = "yearn"
+
+YDAEMON_BASE_URL = "https://ydaemon.yearn.fi/vaults/v3"
+YDAEMON_PARAMS = "hideAlways=true&strategiesDetails=withDetails&strategiesCondition=inQueue"
+
+VAULT_ABI = load_abi("common-abi/YearnV3Vault.json")
+
+# Chains to monitor
+CHAINS = [Chain.MAINNET, Chain.POLYGON, Chain.BASE, Chain.ARBITRUM, Chain.KATANA]
+
+# Minimum debt threshold (in wei) to alert on - ignore dust amounts
+MIN_DEBT_THRESHOLD = Decimal("1000000000000000000")  # 1 token in 18 decimals
+
+
+@dataclass
+class StrategyInfo:
+    """Strategy information from vault."""
+
+    address: str
+    activation: int
+    current_debt: int
+    max_debt: int
+    in_default_queue: bool
+
+
+@dataclass
+class ShadowDebtIssue:
+    """Represents a shadow debt issue for a vault."""
+
+    vault_address: str
+    vault_symbol: str
+    chain: Chain
+    strategies_with_shadow_debt: List[StrategyInfo]
+    total_shadow_debt: int
+    total_vault_debt: int
+    vault_decimals: int
+
+
+def fetch_ydaemon_vaults(chain: Chain) -> List[Dict]:
+    """Fetch vault data from yDaemon API for a given chain.
+
+    Args:
+        chain: The chain to fetch vaults for.
+
+    Returns:
+        List of vault data dicts with address, symbol, decimals, and strategies.
+    """
+    url = f"{YDAEMON_BASE_URL}?{YDAEMON_PARAMS}&chainIDs={chain.chain_id}"
+    logger.info("Fetching vaults from yDaemon for %s", chain.name)
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    vaults = response.json()
+
+    result = []
+    for vault in vaults:
+        if "address" not in vault:
+            continue
+
+        # Extract strategy addresses from yDaemon data
+        strategies = vault.get("strategies", {})
+        all_strategies = []
+
+        # Get strategies from different queues
+        if "inQueue" in strategies:
+            all_strategies.extend([s["address"] for s in strategies["inQueue"] if "address" in s])
+        if "outOfQueue" in strategies:
+            all_strategies.extend([s["address"] for s in strategies["outOfQueue"] if "address" in s])
+        if "debtRatio" in strategies:
+            # Some yDaemon responses use debtRatio structure
+            all_strategies.extend([s["address"] for s in strategies["debtRatio"] if "address" in s])
+
+        result.append(
+            {
+                "address": vault["address"].lower(),
+                "symbol": vault.get("symbol", "UNKNOWN"),
+                "decimals": vault.get("decimals", 18),
+                "known_strategies": [s.lower() for s in all_strategies],
+            }
+        )
+
+    logger.info("Found %d vaults on %s", len(result), chain.name)
+    return result
+
+
+def get_vault_strategies_onchain(
+    chain: Chain, vault_address: str, known_strategies: List[str]
+) -> Dict[str, StrategyInfo]:
+    """Query on-chain data for all known strategies of a vault.
+
+    Args:
+        chain: The chain to query.
+        vault_address: The vault address.
+        known_strategies: List of strategy addresses to check.
+
+    Returns:
+        Dict mapping strategy address to StrategyInfo.
+    """
+    client = ChainManager.get_client(chain)
+    vault = client.get_contract(Web3.to_checksum_address(vault_address), VAULT_ABI)
+
+    # Get default queue
+    default_queue_raw = client.execute(vault.functions.get_default_queue().call)
+    default_queue: Set[str] = {addr.lower() for addr in default_queue_raw}
+
+    logger.debug(
+        "Vault %s has default queue with %d strategies",
+        vault_address,
+        len(default_queue),
+    )
+
+    # Batch query strategy details
+    strategies_info: Dict[str, StrategyInfo] = {}
+
+    with client.batch_requests() as batch:
+        for strategy_addr in known_strategies:
+            batch.add(vault.functions.strategies(Web3.to_checksum_address(strategy_addr)))
+        results = batch.execute()
+
+    for strategy_addr, result in zip(known_strategies, results):
+        activation, last_report, current_debt, max_debt = result
+
+        strategies_info[strategy_addr] = StrategyInfo(
+            address=strategy_addr,
+            activation=activation,
+            current_debt=current_debt,
+            max_debt=max_debt,
+            in_default_queue=(strategy_addr in default_queue),
+        )
+
+    return strategies_info
+
+
+def detect_shadow_debt(
+    chain: Chain,
+    vault_address: str,
+    vault_symbol: str,
+    vault_decimals: int,
+    strategies_info: Dict[str, StrategyInfo],
+    min_debt_threshold: Decimal,
+) -> ShadowDebtIssue | None:
+    """Detect if a vault has shadow debt issues.
+
+    Args:
+        chain: The chain.
+        vault_address: Vault address.
+        vault_symbol: Vault symbol.
+        vault_decimals: Vault decimals.
+        strategies_info: Strategy information dict.
+        min_debt_threshold: Minimum debt threshold in wei.
+
+    Returns:
+        ShadowDebtIssue if found, None otherwise.
+    """
+    strategies_with_shadow_debt: List[StrategyInfo] = []
+    total_shadow_debt = 0
+    total_vault_debt = 0
+
+    for strategy_info in strategies_info.values():
+        # Only count activated strategies
+        if strategy_info.activation == 0:
+            continue
+
+        total_vault_debt += strategy_info.current_debt
+
+        # Check if strategy has debt but is not in default queue
+        if strategy_info.current_debt > 0 and not strategy_info.in_default_queue:
+            # Apply minimum threshold to avoid alerting on dust
+            if Decimal(strategy_info.current_debt) >= min_debt_threshold:
+                strategies_with_shadow_debt.append(strategy_info)
+                total_shadow_debt += strategy_info.current_debt
+                logger.warning(
+                    "Shadow debt detected: vault=%s strategy=%s debt=%d",
+                    vault_address,
+                    strategy_info.address,
+                    strategy_info.current_debt,
+                )
+
+    if not strategies_with_shadow_debt:
+        return None
+
+    return ShadowDebtIssue(
+        vault_address=vault_address,
+        vault_symbol=vault_symbol,
+        chain=chain,
+        strategies_with_shadow_debt=strategies_with_shadow_debt,
+        total_shadow_debt=total_shadow_debt,
+        total_vault_debt=total_vault_debt,
+        vault_decimals=vault_decimals,
+    )
+
+
+def format_amount(amount: int, decimals: int) -> str:
+    """Format token amount with decimals for display.
+
+    Args:
+        amount: Raw token amount.
+        decimals: Token decimals.
+
+    Returns:
+        Formatted string.
+    """
+    value = Decimal(amount) / (Decimal(10) ** decimals)
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:,.2f}M"
+    elif value >= 1_000:
+        return f"{value / 1_000:,.2f}K"
+    else:
+        return f"{value:,.4f}"
+
+
+def build_alert_message(issues: List[ShadowDebtIssue]) -> str:
+    """Build Telegram alert message for shadow debt issues.
+
+    Args:
+        issues: List of shadow debt issues.
+
+    Returns:
+        Formatted alert message.
+    """
+    total_issues = len(issues)
+    total_affected_strategies = sum(len(issue.strategies_with_shadow_debt) for issue in issues)
+
+    lines = [
+        "🌑 *Shadow Debt Alert*",
+        f"Found {total_issues} vault(s) with shadow debt affecting {total_affected_strategies} strateg(ies)\n",
+    ]
+
+    # Group by chain
+    issues_by_chain: Dict[Chain, List[ShadowDebtIssue]] = {}
+    for issue in issues:
+        if issue.chain not in issues_by_chain:
+            issues_by_chain[issue.chain] = []
+        issues_by_chain[issue.chain].append(issue)
+
+    for chain, chain_issues in sorted(issues_by_chain.items(), key=lambda x: x[0].name):
+        lines.append(f"*{chain.name}*")
+
+        for issue in chain_issues:
+            shadow_debt_pct = (
+                (issue.total_shadow_debt * 100 / issue.total_vault_debt) if issue.total_vault_debt > 0 else 0
+            )
+
+            explorer_url = chain.explorer_url
+            vault_link = f"[{issue.vault_address[:10]}...]({explorer_url}/address/{issue.vault_address})"
+
+            lines.append(
+                f"  • {vault_link} ({issue.vault_symbol}): "
+                f"{len(issue.strategies_with_shadow_debt)} strateg(ies) with "
+                f"{format_amount(issue.total_shadow_debt, issue.vault_decimals)} debt "
+                f"({shadow_debt_pct:.1f}% of total)"
+            )
+
+            # List each strategy
+            for strategy in issue.strategies_with_shadow_debt:
+                strategy_link = f"[{strategy.address[:10]}...]({explorer_url}/address/{strategy.address})"
+                lines.append(f"    - {strategy_link}: {format_amount(strategy.current_debt, issue.vault_decimals)}")
+
+        lines.append("")
+
+    lines.append("⚠️ *Impact:* APR oracle calculations will be incomplete for these vaults")
+
+    return "\n".join(lines)
+
+
+def check_vault_shadow_debt(chain: Chain, vault_data: Dict, min_debt_threshold: Decimal) -> ShadowDebtIssue | None:
+    """Check a single vault for shadow debt issues.
+
+    Args:
+        chain: The chain.
+        vault_data: Vault data from yDaemon.
+        min_debt_threshold: Minimum debt threshold in wei.
+
+    Returns:
+        ShadowDebtIssue if found, None otherwise.
+    """
+    vault_address = vault_data["address"]
+    vault_symbol = vault_data["symbol"]
+    vault_decimals = vault_data["decimals"]
+    known_strategies = vault_data["known_strategies"]
+
+    if not known_strategies:
+        logger.debug("No strategies known for vault %s, skipping", vault_address)
+        return None
+
+    try:
+        strategies_info = get_vault_strategies_onchain(chain, vault_address, known_strategies)
+
+        return detect_shadow_debt(
+            chain=chain,
+            vault_address=vault_address,
+            vault_symbol=vault_symbol,
+            vault_decimals=vault_decimals,
+            strategies_info=strategies_info,
+            min_debt_threshold=min_debt_threshold,
+        )
+    except Exception as e:
+        logger.error("Failed to check vault %s on %s: %s", vault_address, chain.name, e)
+        return None
+
+
+def main() -> None:
+    """Run shadow debt check across all configured chains."""
+    parser = argparse.ArgumentParser(description="Check for shadow debt in Yearn v3 vaults")
+    parser.add_argument(
+        "--chains",
+        type=str,
+        default=",".join(c.name for c in CHAINS),
+        help="Comma-separated chain names (e.g., MAINNET,BASE)",
+    )
+    parser.add_argument(
+        "--min-debt-threshold",
+        type=Decimal,
+        default=MIN_DEBT_THRESHOLD,
+        help="Minimum debt threshold in wei to alert on",
+    )
+    args = parser.parse_args()
+
+    logger.info("Starting shadow debt check")
+
+    # Parse chains
+    chain_names = [name.strip().upper() for name in args.chains.split(",")]
+    chains_to_check = [Chain.from_name(name.lower()) for name in chain_names]
+
+    min_debt_threshold = args.min_debt_threshold
+
+    all_issues: List[ShadowDebtIssue] = []
+
+    for chain in chains_to_check:
+        logger.info("Checking chain %s", chain.name)
+
+        try:
+            vaults = fetch_ydaemon_vaults(chain)
+        except requests.RequestException as e:
+            logger.error("Failed to fetch yDaemon data for %s: %s", chain.name, e)
+            continue
+
+        if not vaults:
+            logger.info("No vaults found on %s", chain.name)
+            continue
+
+        for vault_data in vaults:
+            issue = check_vault_shadow_debt(chain, vault_data, min_debt_threshold)
+            if issue:
+                all_issues.append(issue)
+
+    total_issues = len(all_issues)
+    logger.info("Check complete. Found %d vault(s) with shadow debt issues", total_issues)
+
+    if not all_issues:
+        logger.info("No shadow debt issues detected")
+        return
+
+    # Send alert
+    message = build_alert_message(all_issues)
+
+    # If message is too long, send summary
+    max_length = 3000
+    if len(message) > max_length:
+        run_url = os.getenv("GITHUB_RUN_URL", "")
+        if not run_url:
+            server = os.getenv("GITHUB_SERVER_URL", "https://github.com")
+            repo = os.getenv("GITHUB_REPOSITORY", "")
+            run_id = os.getenv("GITHUB_RUN_ID", "")
+            if repo and run_id:
+                run_url = f"{server}/{repo}/actions/runs/{run_id}"
+
+        total_strategies = sum(len(issue.strategies_with_shadow_debt) for issue in all_issues)
+        message = (
+            f"🌑 *Shadow Debt Alert*\n"
+            f"Found {total_issues} vault(s) with shadow debt affecting {total_strategies} strateg(ies).\n"
+            f"Too many to list here."
+        )
+        if run_url:
+            message += f"\n[Check full logs]({run_url})"
+
+    send_telegram_message(message, PROTOCOL)
+
+
+if __name__ == "__main__":
+    main()
