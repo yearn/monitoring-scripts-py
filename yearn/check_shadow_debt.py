@@ -35,7 +35,8 @@ logger = get_logger("yearn.check_shadow_debt")
 PROTOCOL = "yearn"
 
 YDAEMON_BASE_URL = "https://ydaemon.yearn.fi/vaults/v3"
-YDAEMON_PARAMS = "hideAlways=true&strategiesDetails=withDetails&strategiesCondition=inQueue"
+# Get all strategies regardless of queue status - we'll check queue membership on-chain
+YDAEMON_PARAMS = "hideAlways=true&strategiesDetails=withDetails"
 
 VAULT_ABI = load_abi("common-abi/YearnV3Vault.json")
 
@@ -92,17 +93,9 @@ def fetch_ydaemon_vaults(chain: Chain) -> List[Dict]:
             continue
 
         # Extract strategy addresses from yDaemon data
-        strategies = vault.get("strategies", {})
-        all_strategies = []
-
-        # Get strategies from different queues
-        if "inQueue" in strategies:
-            all_strategies.extend([s["address"] for s in strategies["inQueue"] if "address" in s])
-        if "outOfQueue" in strategies:
-            all_strategies.extend([s["address"] for s in strategies["outOfQueue"] if "address" in s])
-        if "debtRatio" in strategies:
-            # Some yDaemon responses use debtRatio structure
-            all_strategies.extend([s["address"] for s in strategies["debtRatio"] if "address" in s])
+        # yDaemon returns strategies as an array of strategy objects
+        strategies = vault.get("strategies", [])
+        all_strategies = [s["address"] for s in strategies if isinstance(s, dict) and "address" in s]
 
         result.append(
             {
@@ -382,8 +375,8 @@ def main() -> None:
     logger.info("Starting shadow debt check")
 
     # Parse chains
-    chain_names = [name.strip().upper() for name in args.chains.split(",")]
-    chains_to_check = [Chain.from_name(name.lower()) for name in chain_names]
+    chain_names = [name.strip().lower() for name in args.chains.split(",")]
+    chains_to_check = [Chain.from_name(name) for name in chain_names]
 
     min_debt_threshold = args.min_debt_threshold
 
