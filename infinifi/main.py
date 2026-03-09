@@ -30,7 +30,7 @@ SAFE_FARM_IDENTIFIERS = [
     "fluid usdc",
     "euler sentora usdc",
 ]
-JUNIOR_RISKY_COVERAGE_MIN = 0.8
+JUNIOR_RISKY_COVERAGE_MIN = 0.5
 
 # API Configuration
 API_BASE_URL = "https://api.infinifi.xyz"
