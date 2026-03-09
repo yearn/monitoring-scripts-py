@@ -430,7 +430,7 @@ def main() -> None:
     args = parser.parse_args()
 
     # Parse chains
-    chain_names = [name.strip().upper() for name in args.chains.split(",")]
+    chain_names = [name.strip() for name in args.chains.split(",")]
     chains_to_check = [Chain.from_name(name.lower()) for name in chain_names]
 
     # Parse standalone strategies
