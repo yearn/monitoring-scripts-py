@@ -274,9 +274,7 @@ def update_cache_with_current_state(
                 cache[cache_key].reason = reason
             else:
                 # Newly triggered, record first_seen
-                cache[cache_key] = TriggerState(
-                    triggered=True, first_seen=now, last_checked=now, reason=reason
-                )
+                cache[cache_key] = TriggerState(triggered=True, first_seen=now, last_checked=now, reason=reason)
         else:
             # Trigger is false, remove from cache if it exists
             if cache_key in cache:
@@ -403,9 +401,7 @@ def build_alert_message(stuck_triggers: List[StuckTrigger], threshold_hours: flo
 
 def main() -> None:
     """Main entry point for the stuck trigger monitoring script."""
-    parser = argparse.ArgumentParser(
-        description="Monitor TKS triggers for strategies/vaults stuck in 'true' state"
-    )
+    parser = argparse.ArgumentParser(description="Monitor TKS triggers for strategies/vaults stuck in 'true' state")
     parser.add_argument(
         "--threshold-hours",
         type=float,
