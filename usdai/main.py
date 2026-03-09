@@ -175,17 +175,19 @@ def main():
             cache_key_principal = f"{PROTOCOL}_verified_principal"
             last_principal = float(get_last_value_for_key_from_file(cache_filename, cache_key_principal))
 
-            # Check for change (allow small dust difference < $1.00)
-            if last_principal != 0 and abs(total_verified_principal - last_principal) > 1.0:
+            diff = abs(total_verified_principal - last_principal)
+
+            # Check for change (allow small dust difference < $1.00 and <1% of total loans)
+            percent_change = (diff / last_principal * 100) if last_principal > 0 else 0
+            if last_principal != 0 and diff > 1.0 and percent_change >= 1.0:
                 change_type = (
                     "increased (New Loan)" if total_verified_principal > last_principal else "reduced (Repayment)"
                 )
-                diff = abs(total_verified_principal - last_principal)
 
                 msg = (
                     f"📢 *sUSDai Loan Activity*\n\n"
                     f"Total Verified Principal has {change_type}.\n"
-                    f"Change: ${diff:,.2f}\n"
+                    f"Change: ${diff:,.2f} ({percent_change:.2f}% of Total Loans)\n"
                     f"Old Total: ${last_principal:,.2f}\n"
                     f"New Total: ${total_verified_principal:,.2f}\n"
                     f"Current Ratio: {verified_ratio:.2f}% of Supply"
