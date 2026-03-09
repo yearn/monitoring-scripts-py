@@ -18,7 +18,19 @@ REDEMPTION_TO_LIQUID_RATIO_MAX = 0.8
 FARM_RATIO_CHANGE_ALERT_THRESHOLD = 0.30
 FARM_RATIO_ACTIVATION_ALERT_THRESHOLD = 0.03
 FARM_RATIO_MIN_TVL_ALERT = 0.01
-RWA_FARM_IDENTIFIERS = ["fasanara", "falconx"]
+SAFE_FARM_IDENTIFIERS = [
+    "sentora pyusd",
+    "sgho",
+    "maple",
+    "cap",
+    "aave horizon",
+    "syrupusdc",
+    "autousd",
+    "spark susdc",
+    "fluid usdc",
+    "euler sentora usdc",
+]
+JUNIOR_RISKY_COVERAGE_MIN = 0.8
 
 # API Configuration
 API_BASE_URL = "https://api.infinifi.xyz"
@@ -303,39 +315,46 @@ def main():
                     PROTOCOL,
                 )
 
-        # Alert 7: Junior TVL below total RWA exposure
-        # Junior tranche (locked iUSD) covers potential losses from RWA farms.
+        # Alert 7: Junior TVL below risky farm exposure
+        # Junior tranche (locked iUSD) should cover at least 80% of risky farms TVL.
+        # Risky farms = all farms NOT in the safe farms whitelist.
         if junior_tvl > 0 and farms:
-            rwa_exposure = sum(
-                to_float(f.get("assetsNormalized"))
-                for f in farms
-                if any(identifier in f.get("name", "").lower() for identifier in RWA_FARM_IDENTIFIERS)
-            )
 
-            if rwa_exposure > 0:
+            def is_safe_farm(farm):
+                name = farm.get("name", "").lower()
+                label = farm.get("label", "").lower()
+                return any(identifier in name or identifier in label for identifier in SAFE_FARM_IDENTIFIERS)
+
+            risky_farms = [f for f in farms if not is_safe_farm(f)]
+            risky_exposure = sum(to_float(f.get("assetsNormalized")) for f in risky_farms)
+
+            if risky_exposure > 0:
+                min_required = risky_exposure * JUNIOR_RISKY_COVERAGE_MIN
                 logger.info("Junior TVL:      $%s", f"{junior_tvl:,.2f}")
-                logger.info("RWA Exposure:    $%s", f"{rwa_exposure:,.2f}")
+                logger.info("Risky Exposure:  $%s", f"{risky_exposure:,.2f}")
+                logger.info("Min Required:    $%s (%.0f%%)", f"{min_required:,.2f}", JUNIOR_RISKY_COVERAGE_MIN * 100)
 
-                cache_key_junior_rwa = f"{PROTOCOL}_junior_below_rwa_breach"
-                if junior_tvl < rwa_exposure:
-                    rwa_farms_detail = [
+                cache_key_junior_risky = f"{PROTOCOL}_junior_below_risky_breach"
+                if junior_tvl < min_required:
+                    risky_farms_detail = [
                         f"- {f.get('label', f.get('name', 'unknown'))}: ${to_float(f.get('assetsNormalized')):,.2f}"
-                        for f in farms
-                        if any(identifier in f.get("name", "").lower() for identifier in RWA_FARM_IDENTIFIERS)
-                        and to_float(f.get("assetsNormalized")) > 0
+                        for f in risky_farms
+                        if to_float(f.get("assetsNormalized")) > 0
                     ]
+                    coverage_pct = (junior_tvl / risky_exposure) * 100 if risky_exposure > 0 else 0
                     send_breach_alert_once(
-                        cache_key=cache_key_junior_rwa,
+                        cache_key=cache_key_junior_risky,
                         alert_message=(
-                            "🚨 *Infinifi Junior TVL Below RWA Exposure*\n\n"
+                            "🚨 *Infinifi Junior TVL Below Risky Farm Exposure*\n\n"
                             f"Junior TVL (locked iUSD): ${junior_tvl:,.2f}\n"
-                            f"Total RWA exposure: ${rwa_exposure:,.2f}\n"
-                            f"Shortfall: ${rwa_exposure - junior_tvl:,.2f}\n\n"
-                            f"RWA farms:\n" + "\n".join(rwa_farms_detail)
+                            f"Total risky farm exposure: ${risky_exposure:,.2f}\n"
+                            f"Coverage: {coverage_pct:.1f}% (min required: {JUNIOR_RISKY_COVERAGE_MIN:.0%})\n"
+                            f"Shortfall: ${min_required - junior_tvl:,.2f}\n\n"
+                            f"Risky farms:\n" + "\n".join(risky_farms_detail)
                         ),
                     )
                 else:
-                    clear_breach_state(cache_key_junior_rwa)
+                    clear_breach_state(cache_key_junior_risky)
 
     except Exception as e:
         logger.error("Error: %s", e)
