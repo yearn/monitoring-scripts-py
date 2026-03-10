@@ -26,7 +26,6 @@ jobs:
         rtoken/monitor_rtoken.py
         lrt-pegs/origin_protocol.py
         euler/markets.py
-        resolv/resolv.py
         infinifi/main.py
         silo/ur_sniff.py
         usdai/main.py
