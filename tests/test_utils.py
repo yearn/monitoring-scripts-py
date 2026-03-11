@@ -266,7 +266,7 @@ class TestDispatch(unittest.TestCase):
 
         alert = Alert(severity=AlertSeverity.HIGH, message="Reserves low", protocol="infinifi")
 
-        with patch.dict(os.environ, {"GITHUB_PAT_DISPATCH": "ghp_test_token"}):
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
             dispatch_emergency_withdrawal(alert)
 
         mock_post.assert_called_once()
@@ -307,7 +307,7 @@ class TestDispatch(unittest.TestCase):
 
         alert = Alert(severity=AlertSeverity.HIGH, message="alert", protocol="unknown_protocol")
 
-        with patch.dict(os.environ, {"GITHUB_PAT_DISPATCH": "ghp_test_token"}):
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
             dispatch_emergency_withdrawal(alert)
 
         mock_post.assert_not_called()
@@ -319,7 +319,7 @@ class TestDispatch(unittest.TestCase):
 
         alert = Alert(severity=AlertSeverity.HIGH, message="alert", protocol="infinifi")
 
-        with patch.dict(os.environ, {"GITHUB_PAT_DISPATCH": "ghp_test_token"}):
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
             dispatch_emergency_withdrawal(alert)
 
         mock_post.assert_not_called()
@@ -348,7 +348,7 @@ class TestDispatch(unittest.TestCase):
 
         alert = Alert(severity=AlertSeverity.CRITICAL, message="total failure", protocol="infinifi")
 
-        with patch.dict(os.environ, {"GITHUB_PAT_DISPATCH": "ghp_test_token"}):
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
             dispatch_emergency_withdrawal(alert)
 
         payload = mock_post.call_args[1]["json"]
@@ -364,7 +364,7 @@ class TestDispatch(unittest.TestCase):
 
         alert = Alert(severity=AlertSeverity.HIGH, message="alert", protocol="infinifi")
 
-        with patch.dict(os.environ, {"GITHUB_PAT_DISPATCH": "ghp_test_token"}):
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
             # Should not raise
             dispatch_emergency_withdrawal(alert)
 
