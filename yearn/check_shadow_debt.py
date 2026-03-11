@@ -13,7 +13,6 @@ from the default queue.
 """
 
 import argparse
-import os
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, List, Set
@@ -25,7 +24,7 @@ from web3 import Web3
 from utils.abi import load_abi
 from utils.chains import Chain
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
+from utils.telegram import send_telegram_message_with_fallback
 from utils.web3_wrapper import ChainManager
 
 load_dotenv()
@@ -470,28 +469,13 @@ def main() -> None:
 
     # Send alert
     message = build_alert_message(all_issues)
-
-    # If message is too long, send summary
-    max_length = 3000
-    if len(message) > max_length:
-        run_url = os.getenv("GITHUB_RUN_URL", "")
-        if not run_url:
-            server = os.getenv("GITHUB_SERVER_URL", "https://github.com")
-            repo = os.getenv("GITHUB_REPOSITORY", "")
-            run_id = os.getenv("GITHUB_RUN_ID", "")
-            if repo and run_id:
-                run_url = f"{server}/{repo}/actions/runs/{run_id}"
-
-        total_strategies = sum(len(issue.strategies_with_shadow_debt) for issue in all_issues)
-        message = (
-            f"🌑 *Shadow Debt Alert*\n"
-            f"Found {total_issues} vault(s) with shadow debt affecting {total_strategies} strateg(ies).\n"
-            f"Too many to list here."
-        )
-        if run_url:
-            message += f"\n[Check full logs]({run_url})"
-
-    send_telegram_message(message, PROTOCOL)
+    total_strategies = sum(len(issue.strategies_with_shadow_debt) for issue in all_issues)
+    fallback = (
+        f"🌑 *Shadow Debt Alert*\n"
+        f"Found {total_issues} vault(s) with shadow debt affecting {total_strategies} strateg(ies).\n"
+        f"Too many to list here."
+    )
+    send_telegram_message_with_fallback(message, PROTOCOL, fallback)
 
 
 if __name__ == "__main__":
