@@ -5,7 +5,7 @@ event to ``tapired/liquidity-monitoring`` with the protocol name and severity.
 The receiving repo resolves which vaults/markets to act on from its own config
 (``emergency_config.json``, ``markets_config.py``, ``forced_caps.json``).
 
-Requires the ``GITHUB_PAT_DISPATCH`` environment variable (fine-grained PAT
+Requires the ``PAT_DISPATCH`` environment variable (fine-grained PAT
 with ``actions:write`` on the target repo).
 """
 
@@ -72,9 +72,9 @@ def dispatch_emergency_withdrawal(alert: Alert) -> None:
         logger.info("Dispatch for %s is on cooldown, skipping", alert.protocol)
         return
 
-    token = os.getenv("GITHUB_PAT_DISPATCH")
+    token = os.getenv("PAT_DISPATCH")
     if not token:
-        logger.warning("GITHUB_PAT_DISPATCH not set, cannot dispatch emergency withdrawal")
+        logger.warning("PAT_DISPATCH not set, cannot dispatch emergency withdrawal")
         return
 
     payload = {
