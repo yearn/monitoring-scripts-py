@@ -26,7 +26,6 @@ jobs:
         rtoken/monitor_rtoken.py
         lrt-pegs/origin_protocol.py
         euler/markets.py
-        resolv/resolv.py
         infinifi/main.py
         silo/ur_sniff.py
         usdai/main.py
@@ -38,3 +37,12 @@ jobs:
         compound/proposals.py
         fluid/proposals.py
         maker/proposals.py
+
+  yearn-stuck-triggers:
+    uses: ./.github/workflows/_run-monitoring.yml
+    secrets: inherit
+    with:
+      cache_file: tks-trigger-cache.json
+      cache_key_prefix: tks-trigger-v1
+      scripts: |
+        yearn/check_stuck_triggers.py

@@ -101,12 +101,12 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
         with:
-          python-version: "3.10"
+          python-version: "3.12"
           cache: "pip"
 
       - name: Install uv
@@ -124,7 +124,7 @@ jobs:
       - name: Restore cache
         if: inputs.cache_file != ''
         id: cache-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ${{ inputs.cache_file }}
           key: ${{ inputs.cache_key_prefix }}-${{ hashFiles(inputs.cache_file) }}
@@ -155,7 +155,7 @@ jobs:
 
       - name: Save cache
         if: always() && inputs.cache_file != '' && steps.initial-hash.outputs.hash != steps.final-hash.outputs.hash
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ inputs.cache_file }}
           key: ${{ inputs.cache_key_prefix }}-${{ hashFiles(inputs.cache_file) }}

@@ -30,13 +30,19 @@ Monitor Lombard LBTC feed by [Redstone](https://docs.redstone.finance/docs/data/
 
 ### Origin Protocol (superOETH)
 
-Check redeem value of [wsuperOETH](https://basescan.org/address/0xDBFeFD2e8460a6Ee4955A68582F85708BAEA60A3#code) on Base chain and [OETH](https://etherscan.io/address/0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3#code) on Mainnet. The redeem value should 1e18, 1-to-1 with ETH. If the redeem value is different, the bot will send a message to Telegram. Additionaly, if the redeem value drops for wrapped OETH, the bot will send a message to Telegram. This check is run on hourly basis.
+Origin monitoring runs on both Mainnet and Base and combines 3 checks:
+
+- Wrapped share price check: reads `convertToAssets(1e18)` for wrapped OETH and alerts if it drops vs cached previous value.
+- Redeem parity check: expected redeem value is `1e18` (1:1 with ETH).
+- Vault backing check: computes `backing_ratio = totalValue / totalSupply` (scaled to `1e18`) and alerts if it drops below `1e18`.
+
+This check runs hourly.
 
 ## Governance
 
 ### Ether.fi (eETH)
 
-[eETH](https://etherscan.io/address/0x35fA164735182de50811E8e2E824cFb9B6118ac2) contract is upgradable proxy. Owner of the contract [Timelock](https://etherscan.io/address/0x35fA164735182de50811E8e2E824cFb9B6118ac2#readProxyContract#F10), address: 0x9f26d4c958fd811a1f59b01b86be7dffc9d20761. [Tenderly alert](https://dashboard.tenderly.co/yearn/sam/alerts/rules/9be6d06d-83a1-46be-bb1a-4bbaa813ef52) is set to notify when a new transaction is created, event CallScheduled emitted.
+[eETH](https://etherscan.io/address/0x35fA164735182de50811E8e2E824cFb9B6118ac2) contract is upgradable proxy. Owner of the contract [Timelock](https://etherscan.io/address/0x35fA164735182de50811E8e2E824cFb9B6118ac2#readProxyContract#F10), address: 0x9f26d4c958fd811a1f59b01b86be7dffc9d20761.
 
 ### Kelp DAO (rsETH)
 

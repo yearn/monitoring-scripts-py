@@ -5,10 +5,11 @@ import logging
 import os
 import sys
 import time
-import urllib.parse
+import urllib.error
 import urllib.request
 from decimal import Decimal, getcontext
 
+from defillama_sdk import DefiLlama
 from dotenv import load_dotenv
 
 from utils.abi import load_abi
@@ -22,10 +23,6 @@ load_dotenv()
 getcontext().prec = 40
 
 ENVIO_GRAPHQL_URL = os.getenv("ENVIO_GRAPHQL_URL")
-COINGECKO_API_KEY = os.getenv("COINGECKO_API_KEY")
-COINGECKO_MIN_SECONDS_BETWEEN_CALLS = float(os.getenv("COINGECKO_MIN_SECONDS_BETWEEN_CALLS", "1.0"))
-COINGECKO_MAX_RETRIES = int(os.getenv("COINGECKO_MAX_RETRIES", "4"))
-COINGECKO_BACKOFF_BASE_SECONDS = float(os.getenv("COINGECKO_BACKOFF_BASE_SECONDS", "1.5"))
 DEFAULT_LOG_LEVEL = os.getenv("ALERT_LARGE_FLOWS_LOG_LEVEL", "WARNING")
 IGNORED_FROM_ADDRESS = "0x283132390ea87d6ecc20255b59ba94329ee17961"
 PROTOCOL = "yearn"
@@ -97,17 +94,87 @@ VAULTS = {
         "chain_id": 8453,
         "token_address": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
     },
+    "0x989381f7efb45f97e46be9f390a69c5d94bf9e17": {
+        "symbol": "cbETH",
+        "decimals": 18,
+        "chain_id": 8453,
+        "token_address": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
+    },
+    # Arbitrum (chain_id: 42161)
+    "0x252b965400862d94bda35fecf7ee0f204a53cc36": {
+        "symbol": "USND",
+        "decimals": 18,
+        "chain_id": 42161,
+        "token_address": "0x4ecf61a6c2fab8a047ceb3b3b263b401763e9d49",
+    },
+    "0xb739ae19620f7ecb4fb84727f205453aa5bc1ad2": {
+        "symbol": "USDC",
+        "decimals": 6,
+        "chain_id": 42161,
+        "token_address": "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+    },
+    "0x9fa306b1f4a6a83fec98d8ebbabedff78c407f6b": {
+        "symbol": "USDC",
+        "decimals": 6,
+        "chain_id": 42161,
+        "token_address": "0xff970a61a04b1ca14834a43f5de4533ebddb5cc8",
+    },
+    "0x6faf8b7ffee3306efcfc2ba9fec912b4d49834c1": {
+        "symbol": "USDC",
+        "decimals": 6,
+        "chain_id": 42161,
+        "token_address": "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+    },
+    "0xc0ba9bfed28ab46da48d2b69316a3838698ef3f5": {
+        "symbol": "USDT",
+        "decimals": 6,
+        "chain_id": 42161,
+        "token_address": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+    },
+    "0x7deb119b92b76f78c212bc54fbbb34cea75f4d4a": {
+        "symbol": "ARB",
+        "decimals": 18,
+        "chain_id": 42161,
+        "token_address": "0x912ce59144191c1204e64559fe8253a0e49e6548",
+    },
+    # Katana (chain_id: 747474)
+    "0x80c34bd3a3569e126e7055831036aa7b212cb159": {
+        "symbol": "vbUSDC",
+        "decimals": 6,
+        "chain_id": 747474,
+        "token_address": "0x203a662b0bd271a6ed5a60edfbd04bfce608fd36",
+    },
+    "0xe007ca01894c863d7898045ed5a3b4abf0b18f37": {
+        "symbol": "vbETH",
+        "decimals": 18,
+        "chain_id": 747474,
+        "token_address": "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62",
+    },
+    "0x9a6bd7b6fd5c4f87eb66356441502fc7dcdd185b": {
+        "symbol": "vbUSDT",
+        "decimals": 6,
+        "chain_id": 747474,
+        "token_address": "0x2dca96907fde857dd3d816880a0df407eeb2d2f2",
+    },
+    "0xaa0362ecc584b985056e47812931270b99c91f9d": {
+        "symbol": "vbWBTC",
+        "decimals": 8,
+        "chain_id": 747474,
+        "token_address": "0x0913da6da4b42f538b445599b46bb4622342cf52",
+    },
 }
 
-COINGECKO_PLATFORM = {
+DEFILLAMA_CHAIN = {
     1: "ethereum",
     8453: "base",
+    42161: "arbitrum",
+    747474: "katana",
 }
 
 STABLES = {"USDC", "USDT", "DAI", "USDS", "CRVUSD"}
 
 _price_cache: dict[tuple[int, str], tuple[float, Decimal]] = {}
-_last_cg_call_ts = 0.0
+_dl_client = DefiLlama()
 _logger = logging.getLogger("alert_large_flows")
 
 
@@ -151,64 +218,97 @@ def format_units(value: str, decimals: int) -> Decimal:
     return Decimal(value) / (Decimal(10) ** Decimal(decimals))
 
 
-def _coingecko_get_price_usd(chain_id: int, token_address: str) -> Decimal:
-    global _last_cg_call_ts
-    platform = COINGECKO_PLATFORM.get(chain_id)
-    if not platform:
-        raise RuntimeError(f"Unsupported chain for pricing: {chain_id}")
-    _logger.info(
-        "coingecko price request chain_id=%s token=%s",
-        chain_id,
-        token_address,
-    )
+def _defillama_fetch_prices(token_keys: list[str]) -> dict[str, Decimal]:
+    """Fetch current prices for multiple tokens from DeFiLlama in a single call.
 
+    Args:
+        token_keys: List of tokens in "chain:address" format.
+
+    Returns:
+        Mapping of token key to price as Decimal.
+    """
+    _logger.info("defillama price request tokens=%s", token_keys)
+    result = _dl_client.prices.getCurrentPrices(token_keys)
+    coins = result.get("coins", {})
+    return {key: Decimal(str(data["price"])) for key, data in coins.items() if "price" in data}
+
+
+def prefetch_prices(events: list[dict]) -> None:
+    """Pre-fetch all non-stable token prices in a single DeFiLlama batch call.
+
+    Populates _price_cache for all unique non-stable tokens referenced in events,
+    so subsequent per-event lookups are served from cache without extra API calls.
+
+    Args:
+        events: List of deposit/withdraw event dicts.
+    """
+    token_keys: list[str] = []
+    key_to_cache_key: dict[str, tuple[int, str]] = {}
     now = time.time()
-    delta = now - _last_cg_call_ts
-    if delta < COINGECKO_MIN_SECONDS_BETWEEN_CALLS:
-        time.sleep(COINGECKO_MIN_SECONDS_BETWEEN_CALLS - delta)
 
-    params = {
-        "contract_addresses": token_address,
-        "vs_currencies": "usd",
-    }
-    url = f"https://api.coingecko.com/api/v3/simple/token_price/{platform}?{urllib.parse.urlencode(params)}"
-    headers = {}
-    if COINGECKO_API_KEY:
-        headers["x-cg-pro-api-key"] = COINGECKO_API_KEY
+    for event in events:
+        vault = VAULTS.get(event["vaultAddress"].lower())
+        if not vault or vault["symbol"] in STABLES:
+            continue
+        chain_id = vault["chain_id"]
+        token_address = vault["token_address"].lower()
+        chain = DEFILLAMA_CHAIN.get(chain_id)
+        if not chain:
+            continue
+        cache_key = (chain_id, token_address)
+        cached = _price_cache.get(cache_key)
+        if cached and now - cached[0] < 60:
+            continue
+        token_key = f"{chain}:{token_address}"
+        if token_key not in key_to_cache_key:
+            token_keys.append(token_key)
+            key_to_cache_key[token_key] = cache_key
 
-    data = http_json(url, headers=headers)
-    _last_cg_call_ts = time.time()
-    price = data.get(token_address.lower(), {}).get("usd")
-    if price is None:
-        raise RuntimeError(f"Missing price for {token_address} on {platform}")
-    return Decimal(str(price))
+    if not token_keys:
+        return
+
+    try:
+        prices = _defillama_fetch_prices(token_keys)
+        fetched_now = time.time()
+        for token_key, price in prices.items():
+            cache_key = key_to_cache_key.get(token_key)
+            if cache_key:
+                _price_cache[cache_key] = (fetched_now, price)
+        _logger.info("prefetched %d/%d prices from DeFiLlama", len(prices), len(token_keys))
+    except Exception as exc:
+        _logger.warning("prefetch_prices failed: %s", exc)
 
 
 def get_token_price_usd(chain_id: int, token_address: str, symbol: str) -> Decimal:
+    """Get the current USD price for a token, using cache when fresh.
+
+    Args:
+        chain_id: EVM chain ID.
+        token_address: Token contract address.
+        symbol: Token symbol (stablecoins return 1 without an API call).
+
+    Returns:
+        Price in USD as Decimal.
+    """
     if symbol in STABLES:
         return Decimal("1")
 
     cache_key = (chain_id, token_address.lower())
     cached = _price_cache.get(cache_key)
-    if cached:
-        cached_ts, cached_price = cached
-        if time.time() - cached_ts < 60:
-            return cached_price
+    if cached and time.time() - cached[0] < 60:
+        return cached[1]
 
-    for attempt in range(COINGECKO_MAX_RETRIES):
-        try:
-            price = _coingecko_get_price_usd(chain_id, token_address)
-            _price_cache[cache_key] = (time.time(), price)
-            return price
-        except urllib.error.HTTPError as exc:
-            _logger.warning("coingecko HTTPError %s", exc.code)
-            if exc.code == 429:
-                backoff = COINGECKO_BACKOFF_BASE_SECONDS * (2**attempt)
-                time.sleep(backoff)
-                continue
-            raise
+    chain = DEFILLAMA_CHAIN.get(chain_id)
+    if not chain:
+        raise RuntimeError(f"Unsupported chain for pricing: {chain_id}")
+    token_key = f"{chain}:{token_address.lower()}"
 
-    raise RuntimeError("CoinGecko rate limit exceeded; try again later or set COINGECKO_API_KEY.")
+    prices = _defillama_fetch_prices([token_key])
+    price = prices.get(token_key)
+    if price is None:
+        raise RuntimeError(f"Missing price for {token_key}")
+    _price_cache[cache_key] = (time.time(), price)
+    return price
 
 
 def load_events(limit: int, chain_ids: list[int], since_ts: int | None):
@@ -327,6 +427,7 @@ def send_large_flow_alert(
 
 def alert_on_large_flows(events: list[dict], threshold_usd: Decimal, use_cache: bool):
     _logger.info("evaluating %s events", len(events))
+    prefetch_prices(events)
     events_to_alert = filter_events_since_last_alert(events, use_cache)
     events_sorted = sorted(
         events_to_alert,
@@ -381,9 +482,10 @@ def alert_on_large_flows(events: list[dict], threshold_usd: Decimal, use_cache: 
 def main():
     parser = argparse.ArgumentParser(description="Alert on large deposit/withdraw events.")
     parser.add_argument("--limit", type=int, default=100)
-    parser.add_argument("--threshold-usd", type=Decimal, default=Decimal("5000000"))  # 5M USD
+    parser.add_argument("--threshold-usd", type=Decimal, default=Decimal("1000000"))  # 1M USD
     parser.add_argument("--since-seconds", type=int, default=7200)  # 2 hours is default
-    parser.add_argument("--chain-ids", type=str, default="1")
+    default_chain_ids = ",".join(str(c) for c in sorted({v["chain_id"] for v in VAULTS.values()}))
+    parser.add_argument("--chain-ids", type=str, default=default_chain_ids)
     parser.add_argument("--no-cache", action="store_true", help="Disable caching of last alerted tx")
     parser.add_argument(
         "--log-level",

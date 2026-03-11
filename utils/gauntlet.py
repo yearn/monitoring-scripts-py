@@ -23,6 +23,14 @@ SUPPLY_ASSETS = [
     ["rETH", 1],  # Rate rETH/WETH and chainlink WETH/USD
     ["wstETH", 1],  # Rate wstETH/WETH and chainlink WETH/USD
     ["cbBTC", 1],  # Chainlink oracle cbBTC/USD
+    [
+        "weETH",
+        1,
+    ],  # Rate weeth/WETH and chainlink WETH/USD https://www.llamarisk.com/research/risk-collateral-risk-assessment-wrapped-etherfi-eth-weeth
+    [
+        "ezETH",
+        1,  # Risk 1 is fine for ezETH/WETH market
+    ],  # Rate ezETH/WETH and chainlink WETH/USD https://www.llamarisk.com/research/risk-collateral-risk-assessment-renzo-restaked-eth-ezeth
     # Risk Tier 2
     [
         "ETHx",
@@ -35,14 +43,6 @@ SUPPLY_ASSETS = [
     ["PYUSD", 2],  # Pyth oracle PYUSD/USD and high liquidity (10M)
     ["tBTC", 2],  # Uses chainlink oracle tBTC/USD
     ["sFRAX", 2],
-    [
-        "ezETH",
-        2,
-    ],  # Rate ezETH/WETH and chainlink WETH/USD https://www.llamarisk.com/research/risk-collateral-risk-assessment-renzo-restaked-eth-ezeth
-    [
-        "weETH",
-        2,
-    ],  # Rate weeth/WETH and chainlink WETH/USD https://www.llamarisk.com/research/risk-collateral-risk-assessment-wrapped-etherfi-eth-weeth
     ["rsETH", 2],  # Rate rsETH/WETH and chainlink WETH/USD
     ["LBTC", 2],  # Uses chainlink oracle LBTC/BTC and BTC/USD
     ["wOETH", 2],  # Origin ETH
