@@ -181,19 +181,13 @@ def main() -> None:
             _breach_once(
                 f"{PROTOCOL}_usde_peg_critical",
                 usde_deviation >= USDE_PEG_CRITICAL,
-                (
-                    "🚨 USDe peg is heavily off $1.\n"
-                    f"price: ${usde_price:.4f}, deviation: {usde_deviation:.2%}"
-                ),
+                (f"🚨 USDe peg is heavily off $1.\nprice: ${usde_price:.4f}, deviation: {usde_deviation:.2%}"),
                 messages,
             )
             _breach_once(
                 f"{PROTOCOL}_usde_peg_warning",
                 USDE_PEG_WARNING <= usde_deviation < USDE_PEG_CRITICAL,
-                (
-                    "⚠️ USDe peg moved away from $1.\n"
-                    f"price: ${usde_price:.4f}, deviation: {usde_deviation:.2%}"
-                ),
+                (f"⚠️ USDe peg moved away from $1.\nprice: ${usde_price:.4f}, deviation: {usde_deviation:.2%}"),
                 messages,
             )
 
