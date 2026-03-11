@@ -89,7 +89,7 @@ ALL_SAFE_ADDRESSES = [
     #     "mainnet",
     #     "0xD6889F307BE1b83Bb355d5DA7d4478FB0d2Af547",
     #     "RESOLV contract",
-    # ],
+    # ],  # resolv disabled
     [
         "LRT",
         "mainnet",

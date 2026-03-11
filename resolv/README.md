@@ -1,5 +1,7 @@
 # RESOLV Protocol Monitoring ⚠️ DISABLED ⚠️
 
+Status: disabled in `hourly.yml`, `_run-monitoring.yml`, and `safe/main.py`.
+
 The script [resolv/resolv.py](resolv.py) runs [hourly via GitHub Actions](../.github/workflows/hourly.yml) to monitor key health indicators of the RESOLV protocol using on-chain data.
 
 ## Monitored Contracts
