@@ -25,6 +25,7 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts.
 - [RTokens - ETH+](./rtoken/README.md)
 - [Silo](./silo/README.md)
 - [Spark](./spark/README.md)
+- [Strata](./strata/README.md)
 - [Stargate](./stargate/README.md)
 - [USD0 - Usual Money](./usd0/README.md)
 - [USDAI](./usdai/README.md)
