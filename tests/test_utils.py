@@ -136,10 +136,6 @@ class TestAlert(unittest.TestCase):
         with self.assertRaises(AttributeError):
             alert.message = "changed"
 
-    def test_alert_default_metadata(self):
-        alert = Alert(severity=AlertSeverity.LOW, message="test", protocol="proto")
-        self.assertEqual(alert.metadata, {})
-
     @patch("utils.alert.send_telegram_message")
     def test_emoji_prefix_low(self, mock_send):
         alert = Alert(severity=AlertSeverity.LOW, message="info msg", protocol="test")
@@ -201,6 +197,20 @@ class TestAlert(unittest.TestCase):
         send_alert(alert, plain_text=True)
         _, args, _ = mock_send.mock_calls[0]
         self.assertTrue(args[3])
+
+    @patch("utils.alert.send_telegram_message")
+    def test_channel_routes_telegram(self, mock_send):
+        """When channel is set, Telegram message goes to channel, not protocol."""
+        alert = Alert(severity=AlertSeverity.HIGH, message="peg alert", protocol="origin", channel="pegs")
+        send_alert(alert)
+        mock_send.assert_called_once_with("🚨 peg alert", "pegs", False, False)
+
+    @patch("utils.alert.send_telegram_message")
+    def test_channel_fallback_to_protocol(self, mock_send):
+        """When channel is empty, Telegram message goes to protocol."""
+        alert = Alert(severity=AlertSeverity.HIGH, message="reserves low", protocol="infinifi")
+        send_alert(alert)
+        mock_send.assert_called_once_with("🚨 reserves low", "infinifi", False, False)
 
     @patch("utils.alert.send_telegram_message")
     def test_hook_invoked_for_high(self, mock_send):
@@ -369,6 +379,39 @@ class TestDispatch(unittest.TestCase):
             dispatch_emergency_withdrawal(alert)
 
         mock_record.assert_not_called()
+
+    @patch("utils.dispatch.requests.post")
+    @patch("utils.dispatch._record_dispatch")
+    @patch("utils.dispatch._is_on_cooldown", return_value=False)
+    def test_dispatch_uses_protocol_not_channel(self, mock_cooldown, mock_record, mock_post):
+        """Dispatch uses alert.protocol (not channel) for payload and cooldown."""
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_post.return_value = mock_response
+
+        alert = Alert(severity=AlertSeverity.HIGH, message="redeem value dropped", protocol="origin", channel="pegs")
+
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
+            dispatch_emergency_withdrawal(alert)
+
+        payload = mock_post.call_args[1]["json"]
+        self.assertEqual(payload["client_payload"]["protocol"], "origin")
+        mock_record.assert_called_once_with("origin")
+
+    @patch("utils.dispatch.requests.post")
+    @patch("utils.dispatch._is_on_cooldown", return_value=False)
+    def test_dispatch_skips_non_dispatchable_channel_protocol(self, mock_cooldown, mock_post):
+        """Protocol not in DISPATCHABLE_PROTOCOLS is skipped even with a valid channel."""
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        alert = Alert(severity=AlertSeverity.HIGH, message="peg alert", protocol="puffer", channel="pegs")
+
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
+            dispatch_emergency_withdrawal(alert)
+
+        mock_post.assert_not_called()
 
     def test_cooldown_logic(self):
         import time

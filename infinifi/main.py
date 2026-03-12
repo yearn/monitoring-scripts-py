@@ -66,11 +66,10 @@ def to_float(value, default=0.0):
         return default
 
 
-def send_breach_alert_once(cache_key, alert_message):
+def send_breach_alert_once(cache_key, alert_message, severity=AlertSeverity.HIGH):
     last_state = int(get_last_value_for_key_from_file(cache_filename, cache_key))
-
     if last_state == 0:
-        send_alert(Alert(AlertSeverity.HIGH, alert_message, PROTOCOL))
+        send_alert(Alert(severity, alert_message, PROTOCOL))
         write_last_value_to_file(cache_filename, cache_key, 1)
 
 
@@ -225,6 +224,7 @@ def main():
             if backing_per_iusd < BACKING_PER_IUSD_MIN:
                 send_breach_alert_once(
                     cache_key=cache_key_backing,
+                    severity=AlertSeverity.CRITICAL,
                     alert_message=(
                         "🚨 *Infinifi Backing Alert*\n\n"
                         f"Backing per iUSD is {backing_per_iusd:.6f}, below {BACKING_PER_IUSD_MIN:.3f}.\n"
@@ -370,7 +370,7 @@ def main():
     except Exception as e:
         logger.error("Error: %s", e)
         send_alert(
-            Alert(AlertSeverity.MEDIUM, f"Infinifi monitoring failed: {e}", PROTOCOL), silent=False, plain_text=True
+            Alert(AlertSeverity.LOW, f"Infinifi monitoring failed: {e}", PROTOCOL)
         )
 
 

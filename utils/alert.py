@@ -22,17 +22,16 @@ Severity guide:
     HIGH      — UR breaches, bad debt, peg deviations, liquidity issues (loud)
     CRITICAL  — Missing data, all-zero metrics, total system failures (loud)
 
-Override defaults with ``silent=True/False``. Attach extra context for hooks
-via ``metadata={"chain": "mainnet", ...}`` (does not affect the Telegram message).
+Override defaults with ``silent=True/False``.
 
 Hooks (optional):
     Register a callback with ``register_alert_hook(fn)`` to be invoked for
     HIGH and CRITICAL alerts. Hook exceptions are logged and swallowed.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable
+from typing import Callable
 
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
@@ -70,12 +69,17 @@ class AlertSeverity(Enum):
 
 @dataclass(frozen=True)
 class Alert:
-    """Immutable alert with severity, message, protocol, and optional metadata."""
+    """Immutable alert with severity, message, and protocol.
+
+    Args:
+        protocol: The actual protocol name (used by hooks/dispatch).
+        channel: Telegram channel for routing. Falls back to ``protocol`` if empty.
+    """
 
     severity: AlertSeverity
     message: str
     protocol: str
-    metadata: dict[str, Any] = field(default_factory=dict)
+    channel: str = ""
 
 
 def register_alert_hook(callback: Callable[[Alert], None]) -> None:
@@ -109,7 +113,7 @@ def send_alert(
     if silent is None:
         silent = _SEVERITY_SILENT_DEFAULT[alert.severity.value]
 
-    send_telegram_message(message, alert.protocol, silent, plain_text)
+    send_telegram_message(message, alert.channel or alert.protocol, silent, plain_text)
 
     # Invoke hook for HIGH and CRITICAL alerts
     if alert.severity in (AlertSeverity.HIGH, AlertSeverity.CRITICAL) and _alert_hook is not None:

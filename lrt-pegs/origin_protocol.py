@@ -1,15 +1,19 @@
 from dataclasses import dataclass
 
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, register_alert_hook, send_alert
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.chains import Chain
+from utils.dispatch import dispatch_emergency_withdrawal
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 REDEEM_VALUE = int(1e18)
-PROTOCOL = "pegs"
+PROTOCOL = "origin"
+CHANNEL = "pegs"
 logger = get_logger("lrt-pegs.origin")
+
+register_alert_hook(dispatch_emergency_withdrawal)
 
 # Load Origin Vault ABI
 ABI_ORIGIN_VAULT = load_abi("lrt-pegs/abi/OriginVault.json")
@@ -122,7 +126,7 @@ def process_origin(chain: Chain):
     )
     if metrics is None:
         logger.error("Failed to fetch metrics on %s", chain.name)
-        send_telegram_message(f"🚨 Origin Protocol Alert! Failed to fetch metrics on {chain.name}", PROTOCOL)
+        send_alert(Alert(AlertSeverity.LOW, f"🚨 Origin Protocol Alert! Failed to fetch metrics on {chain.name}", PROTOCOL, channel=CHANNEL))
         return
 
     redeem_value = metrics.redeem_value
@@ -150,15 +154,15 @@ def process_origin(chain: Chain):
             f"Previous Redeem Value: {cached_redeem_value / 1e18:.2f}\n"
             f"Difference: {cached_redeem_value - wrapped_oeth_redeem_value} ({((cached_redeem_value - wrapped_oeth_redeem_value) / cached_redeem_value) * 100:.2f}%)"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL, channel=CHANNEL))
 
     write_last_queued_id_to_file(cache_key, wrapped_oeth_redeem_value)
 
-    if redeem_value != REDEEM_VALUE:
+    if redeem_value < REDEEM_VALUE:
         message = (
-            f"🚨 Origin Protocol Alert! Redeem value for OETH on {chain.name} is different from 1e18: {redeem_value}"
+            f"🚨 Origin Protocol Alert! Redeem value for OETH on {chain.name} is less than 1e18: {redeem_value}"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL, channel=CHANNEL))
     if metrics.backing_ratio < REDEEM_VALUE:
         message = (
             f"🚨 *Origin Protocol on {chain.network_name.upper()} Alert* 🚨\n"
@@ -168,7 +172,7 @@ def process_origin(chain: Chain):
             f"Total Value: {metrics.total_value / 1e18:.6f}\n"
             f"Total Supply: {metrics.total_supply / 1e18:.6f}"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL, channel=CHANNEL))
 
 
 def main():

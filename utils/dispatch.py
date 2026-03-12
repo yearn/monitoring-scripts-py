@@ -26,7 +26,7 @@ DEFAULT_COOLDOWN_SECONDS = 3600  # 60 minutes
 
 # Protocols that have emergency withdrawal config in liquidity-monitoring.
 # Only these protocols will trigger a dispatch.
-DISPATCHABLE_PROTOCOLS = {"infinifi"}
+DISPATCHABLE_PROTOCOLS = {"infinifi", "cap", "ethena", "rtoken", "usdai", "origin"}
 
 
 def _is_on_cooldown(protocol: str, cooldown_seconds: int = DEFAULT_COOLDOWN_SECONDS) -> bool:
