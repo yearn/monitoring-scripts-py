@@ -20,6 +20,18 @@ This folder contains monitoring scripts for the Infinifi protocol.
 - **Farm Activation**: Alert if a farm previously at `0` cached ratio moves above `FARM_RATIO_ACTIVATION_ALERT_THRESHOLD` of total TVL.
 - **Junior TVL Below Risky Exposure**: Alert if junior TVL (locked iUSD) covers less than 50% of risky farm TVL. Risky farms are all farms NOT in the `SAFE_FARM_IDENTIFIERS` whitelist.
 
+### Emergency dispatch
+
+HIGH and CRITICAL alerts automatically trigger a `repository_dispatch` to
+[liquidity-monitoring](https://github.com/tapired/liquidity-monitoring) to
+zero Morpho market caps for siUSD collateral:
+
+- **CRITICAL** — caps are zeroed and reallocation runs immediately
+- **HIGH** — a PR is opened with zeroed caps for team review; after merging, trigger reallocation manually
+
+Dispatch is rate-limited to once per 60 minutes per protocol. See
+`utils/dispatch.py` and `liquidity-monitoring/hooks.md` for details.
+
 ### Alerts disabled ⚠️
 
 - **Reserve Ratio Breach**: Alert if liquid ratio falls below protocol `reserveRatio` target.
