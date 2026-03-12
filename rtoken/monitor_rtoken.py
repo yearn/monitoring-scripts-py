@@ -8,8 +8,9 @@ from utils.dispatch import dispatch_emergency_withdrawal
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "rtoken"
-logger = get_logger(PROTOCOL)
+PROTOCOL = "ethplus"
+CHANNEL = "rtoken"
+logger = get_logger(CHANNEL)
 
 register_alert_hook(dispatch_emergency_withdrawal)
 
@@ -133,13 +134,20 @@ def monitor_rtoken_on_chain(chain: Chain):
         else:
             error_message = f"[{chain.network_name}] Batch Call: Expected 4 responses, got {len(responses)}"
             logger.error("%s", error_message)
-            send_alert(Alert(AlertSeverity.LOW, error_message, PROTOCOL))
+            send_alert(Alert(AlertSeverity.LOW, error_message, PROTOCOL, channel=CHANNEL))
             return
 
     # --- RToken Coverage Check ---
     if basket_needed is not None and total_supply is not None:
         if total_supply == 0:
-            send_alert(Alert(AlertSeverity.LOW, f"⚠️ Warning: totalSupply is zero on {chain.network_name}.", PROTOCOL))
+            send_alert(
+                Alert(
+                    AlertSeverity.LOW,
+                    f"⚠️ Warning: totalSupply is zero on {chain.network_name}.",
+                    PROTOCOL,
+                    channel=CHANNEL,
+                )
+            )
         else:
             coverage = basket_needed / total_supply
             logger.info("[%s] RToken Coverage: %s", chain.network_name, f"{coverage:.4f}")
@@ -152,13 +160,14 @@ def monitor_rtoken_on_chain(chain: Chain):
                     f"Total Supply: {total_supply / 1e18:.4f}\\n"
                     f"Basket Needed: {basket_needed / 1e18:.4f}"
                 )
-                send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL))
+                send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL, channel=CHANNEL))
     else:
         send_alert(
             Alert(
                 AlertSeverity.LOW,
                 f"Skipping RToken coverage check due to invalid data from batch on {chain.network_name}.",
                 PROTOCOL,
+                channel=CHANNEL,
             )
         )
 
@@ -177,7 +186,7 @@ def monitor_rtoken_on_chain(chain: Chain):
                 f"Current Rate: {current_rate}\\n"
                 f"Initial Rate (from cache): {initial_rate}"
             )
-            send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL))
+            send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL, channel=CHANNEL))
         write_last_queued_id_to_file(cache_key, current_rate)
     else:
         send_alert(
@@ -185,6 +194,7 @@ def monitor_rtoken_on_chain(chain: Chain):
                 AlertSeverity.LOW,
                 f"Skipping StRSR exchange rate check due to invalid data from batch on {chain.network_name}.",
                 PROTOCOL,
+                channel=CHANNEL,
             )
         )
 
@@ -200,13 +210,14 @@ def monitor_rtoken_on_chain(chain: Chain):
                 f"Redemption Available: {redemption_available / 1e18:.4f} ETH\\n"
                 f"Threshold: {threshold_eth:.0f} ETH\\n"
             )
-            send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
+            send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL, channel=CHANNEL))
     else:
         send_alert(
             Alert(
                 AlertSeverity.LOW,
                 f"Skipping RToken redemptionAvailable check due to invalid data from batch on {chain.network_name}.",
                 PROTOCOL,
+                channel=CHANNEL,
             )
         )
 
@@ -224,7 +235,7 @@ def main():
         except Exception as e:
             error_message = f"Critical error monitoring on {chain.network_name}. Check the logs."
             logger.error("%s\n%s", error_message, e)
-            send_alert(Alert(AlertSeverity.LOW, error_message, PROTOCOL))
+            send_alert(Alert(AlertSeverity.LOW, error_message, PROTOCOL, channel=CHANNEL))
 
 
 if __name__ == "__main__":
