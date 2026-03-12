@@ -64,6 +64,10 @@ def dispatch_emergency_withdrawal(alert: Alert) -> None:
     if alert.severity not in (AlertSeverity.HIGH, AlertSeverity.CRITICAL):
         return
 
+    if os.getenv("LOG_LEVEL", "INFO").upper() == "DEBUG":
+        logger.debug("Skipping dispatch (LOG_LEVEL=DEBUG)")
+        return
+
     if alert.protocol not in DISPATCHABLE_PROTOCOLS:
         logger.debug("Protocol %s not in DISPATCHABLE_PROTOCOLS, skipping dispatch", alert.protocol)
         return

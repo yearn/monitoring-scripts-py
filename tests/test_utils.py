@@ -276,7 +276,7 @@ class TestDispatch(unittest.TestCase):
 
         alert = Alert(severity=AlertSeverity.HIGH, message="Reserves low", protocol="infinifi")
 
-        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token", "LOG_LEVEL": "INFO"}):
             dispatch_emergency_withdrawal(alert)
 
         mock_post.assert_called_once()
@@ -358,7 +358,7 @@ class TestDispatch(unittest.TestCase):
 
         alert = Alert(severity=AlertSeverity.CRITICAL, message="total failure", protocol="infinifi")
 
-        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token", "LOG_LEVEL": "INFO"}):
             dispatch_emergency_withdrawal(alert)
 
         payload = mock_post.call_args[1]["json"]
@@ -374,7 +374,7 @@ class TestDispatch(unittest.TestCase):
 
         alert = Alert(severity=AlertSeverity.HIGH, message="alert", protocol="infinifi")
 
-        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token", "LOG_LEVEL": "INFO"}):
             # Should not raise
             dispatch_emergency_withdrawal(alert)
 
@@ -393,7 +393,7 @@ class TestDispatch(unittest.TestCase):
 
         alert = Alert(severity=AlertSeverity.HIGH, message="redeem value dropped", protocol="origin", channel="pegs")
 
-        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token", "LOG_LEVEL": "INFO"}):
             dispatch_emergency_withdrawal(alert)
 
         payload = mock_post.call_args[1]["json"]
@@ -409,6 +409,17 @@ class TestDispatch(unittest.TestCase):
         alert = Alert(severity=AlertSeverity.HIGH, message="peg alert", protocol="puffer", channel="pegs")
 
         with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token"}):
+            dispatch_emergency_withdrawal(alert)
+
+        mock_post.assert_not_called()
+
+    @patch("utils.dispatch.requests.post")
+    def test_dispatch_skips_in_debug_mode(self, mock_post):
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        alert = Alert(severity=AlertSeverity.HIGH, message="alert", protocol="infinifi")
+
+        with patch.dict(os.environ, {"PAT_DISPATCH": "ghp_test_token", "LOG_LEVEL": "DEBUG"}):
             dispatch_emergency_withdrawal(alert)
 
         mock_post.assert_not_called()
