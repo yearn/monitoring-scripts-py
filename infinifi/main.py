@@ -369,9 +369,7 @@ def main():
 
     except Exception as e:
         logger.error("Error: %s", e)
-        send_alert(
-            Alert(AlertSeverity.LOW, f"Infinifi monitoring failed: {e}", PROTOCOL)
-        )
+        send_alert(Alert(AlertSeverity.LOW, f"Infinifi monitoring failed: {e}", PROTOCOL))
 
 
 if __name__ == "__main__":

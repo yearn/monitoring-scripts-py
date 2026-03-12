@@ -131,14 +131,26 @@ def get_llamarisk_data() -> LlamaRiskData | None:
 
     hours_ago = 12
     if is_stale_timestamp(timestamp_collateral, hours_ago):
-        send_alert(Alert(AlertSeverity.LOW, f"⚠️ Collateral data is older than {hours_ago} hours. Timestamp: {timestamp_collateral}", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"⚠️ Collateral data is older than {hours_ago} hours. Timestamp: {timestamp_collateral}",
+                PROTOCOL,
+            )
+        )
 
     if is_stale_timestamp(timestamp_chain, hours_ago):
         # NOTE: don't send telegram message because there is a problem with the API
         logger.warning("Chain data is older than %s hours. Timestamp: %s", hours_ago, timestamp_chain)
 
     if is_stale_timestamp(timestamp_reserve, hours_ago):
-        send_alert(Alert(AlertSeverity.LOW, f"⚠️ Reserve data is older than {hours_ago} hours. Timestamp: {timestamp_reserve}", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"⚠️ Reserve data is older than {hours_ago} hours. Timestamp: {timestamp_reserve}",
+                PROTOCOL,
+            )
+        )
 
     # sum all collateral values
     collateral_metrics = collateral_metrics["latest"]["data"]["collateral"]
@@ -219,11 +231,23 @@ def llama_risk_check():
     collateral = llama_risk.collateral_value
     value_diff_trigger = 0.001  # 0.1%
     if abs(supply - llama_risk.chain_metrics.total_usde_supply) / supply > value_diff_trigger:
-        send_alert(Alert(AlertSeverity.MEDIUM, f"⚠️ USDe: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.MEDIUM,
+                f"⚠️ USDe: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}",
+                PROTOCOL,
+            )
+        )
         return
 
     if abs(collateral - llama_risk.collateral_value) / collateral > value_diff_trigger:
-        send_alert(Alert(AlertSeverity.MEDIUM, f"⚠️ USDe: collateral values are not similar: ethena {collateral} != llama_risk {llama_risk.collateral_value}", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.MEDIUM,
+                f"⚠️ USDe: collateral values are not similar: ethena {collateral} != llama_risk {llama_risk.collateral_value}",
+                PROTOCOL,
+            )
+        )
         return
 
     # NOTE: don't check on-chain data if llama_risk data is old because it will be out of sync
@@ -240,9 +264,21 @@ def llama_risk_check():
 
     error_messages = []
     if ratio < 1:
-        send_alert(Alert(AlertSeverity.CRITICAL, f"🚨 USDe is not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.CRITICAL,
+                f"🚨 USDe is not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}",
+                PROTOCOL,
+            )
+        )
     elif ratio < COLLATERAL_RATIO_TRIGGER:
-        send_alert(Alert(AlertSeverity.HIGH, f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.HIGH,
+                f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}",
+                PROTOCOL,
+            )
+        )
 
     # Validate LlamaRisk data with on-chain data
     usde_supply, susde_supply = get_tokens_supply()
@@ -323,10 +359,22 @@ def chaos_labs_check():
     # Check if USDe is fully backed
     backing_ratio = attestation.backing_assets_usd_value / attestation.total_supply
     if not attestation.backing_assets_exceeds_usde_supply:
-        send_alert(Alert(AlertSeverity.CRITICAL, f"🚨 USDe NOT FULLY BACKED!\nBacking Assets: ${attestation.backing_assets_usd_value:,.2f}\nTotal Supply: ${attestation.total_supply:,.2f}\nBacking Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.CRITICAL,
+                f"🚨 USDe NOT FULLY BACKED!\nBacking Assets: ${attestation.backing_assets_usd_value:,.2f}\nTotal Supply: ${attestation.total_supply:,.2f}\nBacking Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)",
+                PROTOCOL,
+            )
+        )
     # Cross-check with Chaos Labs flag (for data consistency)
     if not attestation.backing_assets_exceeds_usde_supply and backing_ratio >= 1:
-        send_alert(Alert(AlertSeverity.HIGH, f"⚠️ Data inconsistency: Chaos Labs flag says not backed but ratio shows backed. Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.HIGH,
+                f"⚠️ Data inconsistency: Chaos Labs flag says not backed but ratio shows backed. Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)",
+                PROTOCOL,
+            )
+        )
 
     # Check if only approved assets are used
     if not attestation.approved_assets_only:
@@ -338,7 +386,9 @@ def chaos_labs_check():
 
     # Check signature validity (missing signature could indicate issues)
     if attestation.signature is None:
-        send_alert(Alert(AlertSeverity.MEDIUM, "⚠️ Attestation signature missing - verification may be incomplete", PROTOCOL))
+        send_alert(
+            Alert(AlertSeverity.MEDIUM, "⚠️ Attestation signature missing - verification may be incomplete", PROTOCOL)
+        )
     # Calculate and report backing metrics for transparency
     backing_ratio = attestation.backing_assets_usd_value / attestation.total_supply
     reserve_buffer = attestation.backing_assets_and_reserve_fund_usd_value - attestation.total_supply

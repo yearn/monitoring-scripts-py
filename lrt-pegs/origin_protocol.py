@@ -126,7 +126,14 @@ def process_origin(chain: Chain):
     )
     if metrics is None:
         logger.error("Failed to fetch metrics on %s", chain.name)
-        send_alert(Alert(AlertSeverity.LOW, f"🚨 Origin Protocol Alert! Failed to fetch metrics on {chain.name}", PROTOCOL, channel=CHANNEL))
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"🚨 Origin Protocol Alert! Failed to fetch metrics on {chain.name}",
+                PROTOCOL,
+                channel=CHANNEL,
+            )
+        )
         return
 
     redeem_value = metrics.redeem_value
@@ -159,9 +166,7 @@ def process_origin(chain: Chain):
     write_last_queued_id_to_file(cache_key, wrapped_oeth_redeem_value)
 
     if redeem_value < REDEEM_VALUE:
-        message = (
-            f"🚨 Origin Protocol Alert! Redeem value for OETH on {chain.name} is less than 1e18: {redeem_value}"
-        )
+        message = f"🚨 Origin Protocol Alert! Redeem value for OETH on {chain.name} is less than 1e18: {redeem_value}"
         send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL, channel=CHANNEL))
     if metrics.backing_ratio < REDEEM_VALUE:
         message = (

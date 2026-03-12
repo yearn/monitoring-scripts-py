@@ -154,7 +154,13 @@ def monitor_rtoken_on_chain(chain: Chain):
                 )
                 send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL))
     else:
-        send_alert(Alert(AlertSeverity.LOW, f"Skipping RToken coverage check due to invalid data from batch on {chain.network_name}.", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"Skipping RToken coverage check due to invalid data from batch on {chain.network_name}.",
+                PROTOCOL,
+            )
+        )
 
     # --- StRSR Exchange Rate Check ---
     if current_rate is not None:
@@ -174,7 +180,13 @@ def monitor_rtoken_on_chain(chain: Chain):
             send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL))
         write_last_queued_id_to_file(cache_key, current_rate)
     else:
-        send_alert(Alert(AlertSeverity.LOW, f"Skipping StRSR exchange rate check due to invalid data from batch on {chain.network_name}.", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"Skipping StRSR exchange rate check due to invalid data from batch on {chain.network_name}.",
+                PROTOCOL,
+            )
+        )
 
     # --- RToken Redemption Available Check ---
     if redemption_available is not None:
@@ -190,7 +202,13 @@ def monitor_rtoken_on_chain(chain: Chain):
             )
             send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
     else:
-        send_alert(Alert(AlertSeverity.LOW, f"Skipping RToken redemptionAvailable check due to invalid data from batch on {chain.network_name}.", PROTOCOL))
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"Skipping RToken redemptionAvailable check due to invalid data from batch on {chain.network_name}.",
+                PROTOCOL,
+            )
+        )
 
 
 def main():
