@@ -6,8 +6,6 @@ Works with any provider that implements the OpenAI chat completions API:
 - Together AI, Groq, Ollama, etc.
 """
 
-from openai import OpenAI
-
 from utils.llm.base import LLMError, LLMProvider
 from utils.logging import get_logger
 
@@ -25,6 +23,10 @@ class OpenAICompatProvider(LLMProvider):
             base_url: Base URL for the API (e.g. https://api.venice.ai/api/v1).
             model: Model identifier (e.g. llama-3.3-70b, gpt-4o-mini).
         """
+        try:
+            from openai import OpenAI
+        except ImportError:
+            raise LLMError("openai package not installed. Install with: uv pip install 'monitoring-scripts-py[ai]'")
         self._model = model
         self._client = OpenAI(api_key=api_key, base_url=base_url)
         logger.info("Initialized OpenAI-compatible provider: base_url=%s model=%s", base_url, model)

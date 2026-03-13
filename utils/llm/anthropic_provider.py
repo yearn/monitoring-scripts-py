@@ -4,8 +4,6 @@ Uses the native Anthropic API which has a different format from
 the OpenAI chat completions API.
 """
 
-from anthropic import Anthropic
-
 from utils.llm.base import LLMError, LLMProvider
 from utils.logging import get_logger
 
@@ -22,6 +20,10 @@ class AnthropicProvider(LLMProvider):
             api_key: Anthropic API key.
             model: Model identifier (e.g. claude-haiku-4-5-20251001).
         """
+        try:
+            from anthropic import Anthropic
+        except ImportError:
+            raise LLMError("anthropic package not installed. Install with: uv pip install 'monitoring-scripts-py[ai]'")
         self._model = model
         self._client = Anthropic(api_key=api_key)
         logger.info("Initialized Anthropic provider: model=%s", model)
