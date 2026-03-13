@@ -9,6 +9,7 @@ from timelock.calldata_decoder import DecodedCall, decode_calldata
 from utils.llm import get_llm_provider
 from utils.llm.base import LLMError
 from utils.logging import get_logger
+from utils.proxy import build_diff_url, detect_proxy_upgrade, get_current_implementation
 from utils.tenderly.simulation import SimulationResult, simulate_transaction
 
 logger = get_logger("utils.ai_explainer")
@@ -17,6 +18,25 @@ SYSTEM_PROMPT = """You are a DeFi risk analyst explaining governance transaction
 Given the decoded calldata and simulation results, write a concise 1-3 sentence explanation.
 Focus on: what the transaction does, what assets/parameters change, and any risk implications.
 Be specific about amounts, addresses, and parameter values. No fluff or preamble."""
+
+
+def _get_proxy_upgrade_info(calldata: str, target: str, chain_id: int) -> str:
+    """Detect proxy upgrade and return context string for the LLM prompt."""
+    new_impl = detect_proxy_upgrade(calldata)
+    if not new_impl:
+        return ""
+
+    old_impl = get_current_implementation(target, chain_id)
+    if old_impl:
+        info = (
+            f"This is a PROXY UPGRADE on {target}.\nCurrent implementation: {old_impl}\nNew implementation: {new_impl}"
+        )
+        diff_url = build_diff_url(old_impl, new_impl, chain_id)
+        if diff_url:
+            info += f"\nDiff: {diff_url}"
+        return info
+
+    return f"This is a PROXY UPGRADE on {target}.\nNew implementation: {new_impl}"
 
 
 def _format_decoded_calls(calls: list[DecodedCall]) -> str:
@@ -72,6 +92,7 @@ def _build_prompt(
     simulation: SimulationResult | None,
     protocol: str = "",
     label: str = "",
+    proxy_upgrade_info: str = "",
 ) -> str:
     """Build the full prompt for the LLM."""
     parts: list[str] = [SYSTEM_PROMPT, ""]
@@ -85,6 +106,9 @@ def _build_prompt(
         parts.append(f"ETH Value: {value / 1e18:.6f} ETH")
 
     parts.append(f"\n--- Decoded Calldata ---\n{_format_decoded_calls(decoded_calls)}")
+
+    if proxy_upgrade_info:
+        parts.append(f"\n--- Proxy Upgrade ---\n{proxy_upgrade_info}")
 
     if simulation:
         parts.append(f"\n--- Simulation Results ---\n{_format_simulation_context(simulation)}")
@@ -129,7 +153,10 @@ def explain_transaction(
 
     decoded_calls = [decoded]
 
-    # Step 2: Simulate via Tenderly (best-effort)
+    # Step 2: Detect proxy upgrade (best-effort)
+    proxy_upgrade_info = _get_proxy_upgrade_info(calldata, target, chain_id)
+
+    # Step 3: Simulate via Tenderly (best-effort)
     simulation = simulate_transaction(
         target=target,
         calldata=calldata,
@@ -142,7 +169,7 @@ def explain_transaction(
     else:
         logger.info("Simulation unavailable, proceeding with decoded calldata only")
 
-    # Step 3: Build prompt and call LLM
+    # Step 4: Build prompt and call LLM
     prompt = _build_prompt(
         target=target,
         value=value,
@@ -150,6 +177,7 @@ def explain_transaction(
         simulation=simulation,
         protocol=protocol,
         label=label,
+        proxy_upgrade_info=proxy_upgrade_info,
     )
 
     try:
@@ -211,6 +239,14 @@ def explain_batch_transaction(
     # Use the first successful simulation for context, or None
     simulation = next((s for s in simulations if s is not None), None)
 
+    # Detect proxy upgrades across all calls
+    upgrade_parts: list[str] = []
+    for call in calls:
+        info = _get_proxy_upgrade_info(call.get("data", "0x"), call.get("target", ""), chain_id)
+        if info:
+            upgrade_parts.append(info)
+    proxy_upgrade_info = "\n".join(upgrade_parts)
+
     # For batch, show all targets
     targets = ", ".join(c.get("target", "?") for c in calls)
     total_value = sum(int(c.get("value", "0")) for c in calls)
@@ -222,6 +258,7 @@ def explain_batch_transaction(
         simulation=simulation,
         protocol=protocol,
         label=label,
+        proxy_upgrade_info=proxy_upgrade_info,
     )
 
     try:
