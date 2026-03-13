@@ -1,0 +1,177 @@
+"""Tests for utils/llm/ package."""
+
+import os
+import unittest
+from unittest.mock import MagicMock, patch
+
+from utils.llm.base import LLMError, LLMProvider
+from utils.llm.factory import _PROVIDER_DEFAULTS, get_llm_provider, reset_provider
+from utils.llm.openai_compat import OpenAICompatProvider
+
+
+class TestLLMProviderBase(unittest.TestCase):
+    """Tests for the LLMProvider abstract base class."""
+
+    def test_cannot_instantiate_abstract(self) -> None:
+        with self.assertRaises(TypeError):
+            LLMProvider()  # type: ignore[abstract]
+
+
+class TestOpenAICompatProvider(unittest.TestCase):
+    """Tests for OpenAICompatProvider."""
+
+    @patch("utils.llm.openai_compat.OpenAI")
+    def test_complete_success(self, mock_openai_cls: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "This transaction updates the collateral factor."
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_client.chat.completions.create.return_value = mock_response
+
+        provider = OpenAICompatProvider(api_key="test-key", base_url="https://api.test.ai/v1", model="test-model")
+
+        result = provider.complete("Explain this tx", max_tokens=200)
+
+        self.assertEqual(result, "This transaction updates the collateral factor.")
+        mock_client.chat.completions.create.assert_called_once_with(
+            model="test-model",
+            max_tokens=200,
+            messages=[{"role": "user", "content": "Explain this tx"}],
+        )
+
+    @patch("utils.llm.openai_compat.OpenAI")
+    def test_complete_empty_response_raises(self, mock_openai_cls: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = None
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_client.chat.completions.create.return_value = mock_response
+
+        provider = OpenAICompatProvider(api_key="test-key", base_url="https://api.test.ai/v1", model="test-model")
+
+        with self.assertRaises(LLMError):
+            provider.complete("Explain this tx")
+
+    @patch("utils.llm.openai_compat.OpenAI")
+    def test_complete_api_error_raises(self, mock_openai_cls: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+        mock_client.chat.completions.create.side_effect = Exception("Connection timeout")
+
+        provider = OpenAICompatProvider(api_key="test-key", base_url="https://api.test.ai/v1", model="test-model")
+
+        with self.assertRaises(LLMError) as ctx:
+            provider.complete("Explain this tx")
+        self.assertIn("Connection timeout", str(ctx.exception))
+
+    @patch("utils.llm.openai_compat.OpenAI")
+    def test_model_name_property(self, mock_openai_cls: MagicMock) -> None:
+        provider = OpenAICompatProvider(api_key="key", base_url="https://api.test.ai/v1", model="llama-3.3-70b")
+        self.assertEqual(provider.model_name, "llama-3.3-70b")
+
+    @patch("utils.llm.openai_compat.OpenAI")
+    def test_strips_whitespace_from_response(self, mock_openai_cls: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_openai_cls.return_value = mock_client
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "  Some explanation with spaces  \n"
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_client.chat.completions.create.return_value = mock_response
+
+        provider = OpenAICompatProvider(api_key="key", base_url="https://api.test.ai/v1", model="model")
+        result = provider.complete("prompt")
+        self.assertEqual(result, "Some explanation with spaces")
+
+
+class TestFactory(unittest.TestCase):
+    """Tests for the LLM provider factory."""
+
+    def setUp(self) -> None:
+        reset_provider()
+
+    def tearDown(self) -> None:
+        reset_provider()
+
+    def test_missing_api_key_raises(self) -> None:
+        env = {"LLM_PROVIDER": "venice"}
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(LLMError) as ctx:
+                get_llm_provider()
+            self.assertIn("LLM_API_KEY", str(ctx.exception))
+
+    @patch("utils.llm.factory.OpenAICompatProvider")
+    def test_venice_defaults(self, mock_provider_cls: MagicMock) -> None:
+        mock_provider_cls.return_value = MagicMock(spec=LLMProvider)
+        env = {"LLM_PROVIDER": "venice", "LLM_API_KEY": "test-key"}
+        with patch.dict(os.environ, env, clear=True):
+            get_llm_provider()
+            mock_provider_cls.assert_called_once_with(
+                api_key="test-key",
+                base_url="https://api.venice.ai/api/v1",
+                model="llama-3.3-70b",
+            )
+
+    @patch("utils.llm.factory.OpenAICompatProvider")
+    def test_openai_defaults(self, mock_provider_cls: MagicMock) -> None:
+        mock_provider_cls.return_value = MagicMock(spec=LLMProvider)
+        env = {"LLM_PROVIDER": "openai", "LLM_API_KEY": "sk-test"}
+        with patch.dict(os.environ, env, clear=True):
+            get_llm_provider()
+            mock_provider_cls.assert_called_once_with(
+                api_key="sk-test",
+                base_url="https://api.openai.com/v1",
+                model="gpt-4o-mini",
+            )
+
+    @patch("utils.llm.factory.OpenAICompatProvider")
+    def test_custom_overrides(self, mock_provider_cls: MagicMock) -> None:
+        mock_provider_cls.return_value = MagicMock(spec=LLMProvider)
+        env = {
+            "LLM_PROVIDER": "venice",
+            "LLM_API_KEY": "test-key",
+            "LLM_BASE_URL": "https://custom.api/v1",
+            "LLM_MODEL": "custom-model",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            get_llm_provider()
+            mock_provider_cls.assert_called_once_with(
+                api_key="test-key",
+                base_url="https://custom.api/v1",
+                model="custom-model",
+            )
+
+    @patch("utils.llm.factory.OpenAICompatProvider")
+    def test_singleton_caching(self, mock_provider_cls: MagicMock) -> None:
+        mock_instance = MagicMock(spec=LLMProvider)
+        mock_provider_cls.return_value = mock_instance
+        env = {"LLM_PROVIDER": "venice", "LLM_API_KEY": "test-key"}
+        with patch.dict(os.environ, env, clear=True):
+            p1 = get_llm_provider()
+            p2 = get_llm_provider()
+            self.assertIs(p1, p2)
+            # Only called once due to caching
+            mock_provider_cls.assert_called_once()
+
+    def test_unknown_provider_without_url_raises(self) -> None:
+        env = {"LLM_PROVIDER": "unknown-provider", "LLM_API_KEY": "test-key"}
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(LLMError) as ctx:
+                get_llm_provider()
+            self.assertIn("LLM_BASE_URL", str(ctx.exception))
+
+    def test_provider_defaults_contain_expected_keys(self) -> None:
+        for name, defaults in _PROVIDER_DEFAULTS.items():
+            self.assertIn("base_url", defaults, f"Missing base_url for {name}")
+            self.assertIn("model", defaults, f"Missing model for {name}")
+
+
+if __name__ == "__main__":
+    unittest.main()

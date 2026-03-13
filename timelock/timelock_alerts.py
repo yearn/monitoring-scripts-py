@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 
 from timelock.calldata_decoder import format_call_lines
+from utils.ai_explainer import explain_batch_transaction, explain_transaction, format_explanation_line
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import EXPLORER_URLS, Chain
 from utils.logging import get_logger
@@ -208,6 +209,39 @@ def _build_call_info(event: dict, explorer: str | None, show_index: bool) -> lis
     return lines
 
 
+def _get_ai_explanation(events: list[dict], timelock_info: TimelockConfig, chain_id: int) -> str | None:
+    """Generate AI explanation for timelock events. Returns None on any failure."""
+    try:
+        calls_with_data = [e for e in events if e.get("target") and e.get("data") and len(e.get("data", "")) >= 10]
+        if not calls_with_data:
+            return None
+
+        if len(calls_with_data) == 1:
+            event = calls_with_data[0]
+            return explain_transaction(
+                target=event["target"],
+                calldata=event["data"],
+                chain_id=chain_id,
+                value=int(event.get("value", 0)),
+                protocol=timelock_info.protocol,
+                label=timelock_info.label,
+                from_address=timelock_info.address,
+            )
+
+        # Batch transaction
+        calls = [{"target": e["target"], "data": e["data"], "value": str(e.get("value", 0))} for e in calls_with_data]
+        return explain_batch_transaction(
+            calls=calls,
+            chain_id=chain_id,
+            protocol=timelock_info.protocol,
+            label=timelock_info.label,
+            from_address=timelock_info.address,
+        )
+    except Exception:
+        _logger.debug("AI explanation failed", exc_info=True)
+        return None
+
+
 def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> str:
     """Build a Telegram alert message for a group of TimelockEvent events (same operationId)."""
     first = events[0]
@@ -263,6 +297,11 @@ def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> st
     else:
         # Unknown type - show operationId at minimum
         lines.append(f"🆔 Operation: {first.get('operationId') or ''}")
+
+    # AI explanation (best-effort, non-blocking)
+    explanation = _get_ai_explanation(events, timelock_info, chain_id)
+    if explanation:
+        lines.append(format_explanation_line(explanation))
 
     # Footer
     if explorer:

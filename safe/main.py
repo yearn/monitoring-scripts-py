@@ -5,6 +5,7 @@ import requests
 from dotenv import load_dotenv
 
 from safe.specific import handle_pendle
+from utils.ai_explainer import explain_transaction, format_explanation_line
 from utils.cache import (
     get_last_executed_nonce_from_file,
     write_last_executed_nonce_to_file,
@@ -35,6 +36,15 @@ safe_apis = {
     "polygon-main": "https://api.safe.global/tx-service/pol",
     "base-main": "https://api.safe.global/tx-service/base",
     # "optim-yearn": "https://safe-transaction-optimism.safe.global",
+}
+
+# Network name -> chain ID mapping for Tenderly simulation
+NETWORK_CHAIN_IDS: dict[str, int] = {
+    "mainnet": 1,
+    "arbitrum-main": 42161,
+    "optimism-main": 10,
+    "polygon-main": 137,
+    "base-main": 8453,
 }
 
 PROXY_UPGRADE_SIGNATURES = [
@@ -301,6 +311,25 @@ def check_for_pending_transactions(safe_address: str, network_name: str, protoco
                         message += handle_pendle(provider_url_arb, hex_data)
                 except Exception as e:
                     logger.error("Cannot decode Pendle aggregate calls: %s", e)
+
+            # AI explanation (best-effort, non-blocking)
+            hex_data = tx.get("data", "0x")
+            if hex_data and len(hex_data) >= 10:
+                chain_id = NETWORK_CHAIN_IDS.get(network_name, 0)
+                try:
+                    explanation = explain_transaction(
+                        target=target_contract,
+                        calldata=hex_data,
+                        chain_id=chain_id,
+                        value=int(tx.get("value", 0)),
+                        protocol=protocol,
+                        label=additional_info or "",
+                        from_address=safe_address,
+                    )
+                    if explanation:
+                        message += format_explanation_line(explanation)
+                except Exception:
+                    logger.debug("AI explanation failed for Safe tx nonce=%s", nonce, exc_info=True)
 
             send_telegram_message(message, protocol, False)  # explicitly enable notification
             # write the last executed nonce to file
