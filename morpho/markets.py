@@ -29,17 +29,17 @@ VAULTS_BY_CHAIN = {
     Chain.MAINNET: [
         # name, address, risk level
         ["Steakhouse USDC", "0xBEEF01735c132Ada46AA9aA4c54623cAA92A64CB", 1],
-        ["Steakhouse USDT", "0xbEef047a543E45807105E51A8BBEFCc5950fcfBa", 3],
+        ["Steakhouse USDT", "0xbEef047a543E45807105E51A8BBEFCc5950fcfBa", 1],
         ["Gauntlet WETH Prime", "0x2371e134e3455e0593363cBF89d3b6cf53740618", 1],
         ["Gauntlet USDC Prime", "0xdd0f28e19C1780eb6396170735D45153D261490d", 1],
         ["Gauntlet USDT Prime", "0x8CB3649114051cA5119141a34C200D65dc0Faa73", 1],
         ["Gauntlet DAI Core", "0x500331c9fF24D9d11aee6B07734Aa72343EA74a5", 2],
         ["Yearn OG WETH", "0xE89371eAaAC6D46d4C3ED23453241987916224FC", 2],
-        ["Yearn OG USDC", "0xF9bdDd4A9b3A45f980e11fDDE96e16364dDBEc49", 2],
+        ["Yearn OG USDC", "0xF9bdDd4A9b3A45f980e11fDDE96e16364dDBEc49", 3],
         # these vaults are not used by yVaults
         ["Gauntlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2", 3],
         ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658", 3],
-        ["Gauntlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458", 4],
+        ["Gauntlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458", 3],
         ["MEV Capital USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D", 4],
         # Vault Bridge for Katana Chain
         ["Vault Bridge USDC", "0xBEefb9f61CC44895d8AEc381373555a64191A9c4", 1],
@@ -244,6 +244,7 @@ MARKETS_RISK_2 = {
         "0x702b7ec7628de2622e51e1bb34a7e6ad9e95f3a25a2ed361e4ce621f23f5e642",  # PT-cUSD-23JUL2026/USDC -> lltv 91.5%, oracle: OjoPTFeed oracle for cUSD. RedStone Price Feed for cUSD_FUNDAMENTAL and Redstone USDC/USD v2.
         "0x729badf297ee9f2f6b3f717b96fd355fc6ec00422284ce1968e76647b258cf44",  # syrupUSDC/USDC -> lltv 91.5%, oracle: syrupUSDC MaplePool vault rate. Oracle is using convertToAssets() to get the price but maple pool returns different amount, it should use convertToExitAssets() instead.
         "0x61765602144e91e5ac9f9e98b8584eae308f9951596fd7f5e0f59f21cd2bf664",  # weETH/USDC -> lltv 91.5%, oracle: redstone weETH/usdc exchange rate
+        "0xb7843fe78e7e7fd3106a1b939645367967d1f986c2e45edb8932ad1896450877",  # XAUT/USDT -> lltv 77%, oracle: Chainlink XAUT/USD and Chainlink USDT/USD.
     ],
     Chain.BASE: [
         "0x6aa81f51dfc955df598e18006deae56ce907ac02b0b5358705f1a28fcea23cc0",  # wstETH/WETH -> lltv 96.5%, oracle: Chainlink wstETH-stETH Exchange Rate
@@ -336,7 +337,7 @@ MARKETS_RISK_4 = {
         "0xe1b65304edd8ceaea9b629df4c3c926a37d1216e27900505c04f14b2ed279f33",  # RLP/USDC -> lltv 86%, oracle: RLP oracle where the price is set manually, but must be in bounds. Owner of the proxy is multisig.
         "0x8b1bc4d682b04a16309a8adf77b35de0c42063a7944016cfc37a79ccac0007b6",  # slvlUSD/USDC -> lltv 91.5%, oracle: slvlUSD vault rate. lvlUSD = USDC
         "0x95c28d447950ca6c8bbfd25fc05b80b1fd7a1cdd17a3610b4b3f1ffc8dc2e2ed",  # mHYPER / USDC -> lltv 86%, oracle: MHyperCustomAggregatorFeed
-        "0xeb17955ea422baeddbfb0b8d8c9086c5be7a9cfdefb292119a102e981a30062e",  # stcUSD/USDC -> lltv 91.5%, oracle: Ojo Yield Risk Engine stcUSD/cUSD Exchange Rate and RedStone Price Feed for cUSD_FUNDAMENTAL and Chainlink USDC/USD.
+        "0x27b9a0a5bfee98a31eb51e3850250d103a9f8e41673c782defc66aa943af0e65",  # PT-srUSDe-2APR2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) srUSDe. USDC = 1 using dummy oracle.
     ],
     Chain.BASE: [
         "0xff0f2bd52ca786a4f8149f96622885e880222d8bed12bbbf5950296be8d03f89",  # USR/USDC -> lltv 91.5%, oracle: pyth USR/USD and qoute pyth USDC/USD
