@@ -10,6 +10,7 @@ from utils.cache import (
     get_last_executed_nonce_from_file,
     write_last_executed_nonce_to_file,
 )
+from utils.chains import safe_network_to_chain_id
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
@@ -36,15 +37,6 @@ safe_apis = {
     "polygon-main": "https://api.safe.global/tx-service/pol",
     "base-main": "https://api.safe.global/tx-service/base",
     # "optim-yearn": "https://safe-transaction-optimism.safe.global",
-}
-
-# Network name -> chain ID mapping for Tenderly simulation
-NETWORK_CHAIN_IDS: dict[str, int] = {
-    "mainnet": 1,
-    "arbitrum-main": 42161,
-    "optimism-main": 10,
-    "polygon-main": 137,
-    "base-main": 8453,
 }
 
 PROXY_UPGRADE_SIGNATURES = [
@@ -315,7 +307,7 @@ def check_for_pending_transactions(safe_address: str, network_name: str, protoco
             # AI explanation (best-effort, non-blocking)
             hex_data = tx.get("data", "0x")
             if hex_data and len(hex_data) >= 10:
-                chain_id = NETWORK_CHAIN_IDS.get(network_name, 0)
+                chain_id = safe_network_to_chain_id(network_name)
                 try:
                     explanation = explain_transaction(
                         target=target_contract,
