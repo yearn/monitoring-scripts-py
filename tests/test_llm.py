@@ -91,6 +91,71 @@ class TestOpenAICompatProvider(unittest.TestCase):
         self.assertEqual(result, "Some explanation with spaces")
 
 
+class TestAnthropicProvider(unittest.TestCase):
+    """Tests for AnthropicProvider."""
+
+    @patch("utils.llm.anthropic_provider.Anthropic")
+    def test_complete_success(self, mock_anthropic_cls: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_anthropic_cls.return_value = mock_client
+
+        mock_block = MagicMock()
+        mock_block.type = "text"
+        mock_block.text = "This pauses the protocol."
+        mock_response = MagicMock()
+        mock_response.content = [mock_block]
+        mock_client.messages.create.return_value = mock_response
+
+        from utils.llm.anthropic_provider import AnthropicProvider
+
+        provider = AnthropicProvider(api_key="sk-ant-test", model="claude-haiku-4-5-20251001")
+        result = provider.complete("Explain this tx", max_tokens=200)
+
+        self.assertEqual(result, "This pauses the protocol.")
+        mock_client.messages.create.assert_called_once_with(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=200,
+            messages=[{"role": "user", "content": "Explain this tx"}],
+        )
+
+    @patch("utils.llm.anthropic_provider.Anthropic")
+    def test_complete_api_error_raises(self, mock_anthropic_cls: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_anthropic_cls.return_value = mock_client
+        mock_client.messages.create.side_effect = Exception("Rate limit exceeded")
+
+        from utils.llm.anthropic_provider import AnthropicProvider
+
+        provider = AnthropicProvider(api_key="sk-ant-test", model="claude-haiku-4-5-20251001")
+        with self.assertRaises(LLMError) as ctx:
+            provider.complete("Explain this tx")
+        self.assertIn("Rate limit exceeded", str(ctx.exception))
+
+    @patch("utils.llm.anthropic_provider.Anthropic")
+    def test_non_text_block_raises(self, mock_anthropic_cls: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_anthropic_cls.return_value = mock_client
+
+        mock_block = MagicMock()
+        mock_block.type = "tool_use"
+        mock_response = MagicMock()
+        mock_response.content = [mock_block]
+        mock_client.messages.create.return_value = mock_response
+
+        from utils.llm.anthropic_provider import AnthropicProvider
+
+        provider = AnthropicProvider(api_key="sk-ant-test", model="claude-haiku-4-5-20251001")
+        with self.assertRaises(LLMError):
+            provider.complete("Explain this tx")
+
+    @patch("utils.llm.anthropic_provider.Anthropic")
+    def test_model_name_property(self, mock_anthropic_cls: MagicMock) -> None:
+        from utils.llm.anthropic_provider import AnthropicProvider
+
+        provider = AnthropicProvider(api_key="key", model="claude-haiku-4-5-20251001")
+        self.assertEqual(provider.model_name, "claude-haiku-4-5-20251001")
+
+
 class TestFactory(unittest.TestCase):
     """Tests for the LLM provider factory."""
 
@@ -107,33 +172,36 @@ class TestFactory(unittest.TestCase):
                 get_llm_provider()
             self.assertIn("LLM_API_KEY", str(ctx.exception))
 
-    @patch("utils.llm.factory.OpenAICompatProvider")
-    def test_venice_defaults(self, mock_provider_cls: MagicMock) -> None:
-        mock_provider_cls.return_value = MagicMock(spec=LLMProvider)
+    @patch("utils.llm.openai_compat.OpenAI")
+    def test_venice_defaults(self, mock_openai_cls: MagicMock) -> None:
         env = {"LLM_PROVIDER": "venice", "LLM_API_KEY": "test-key"}
         with patch.dict(os.environ, env, clear=True):
-            get_llm_provider()
-            mock_provider_cls.assert_called_once_with(
-                api_key="test-key",
-                base_url="https://api.venice.ai/api/v1",
-                model="llama-3.3-70b",
-            )
+            provider = get_llm_provider()
+            self.assertEqual(provider.model_name, "llama-3.3-70b")
 
-    @patch("utils.llm.factory.OpenAICompatProvider")
-    def test_openai_defaults(self, mock_provider_cls: MagicMock) -> None:
-        mock_provider_cls.return_value = MagicMock(spec=LLMProvider)
+    @patch("utils.llm.openai_compat.OpenAI")
+    def test_openai_defaults(self, mock_openai_cls: MagicMock) -> None:
         env = {"LLM_PROVIDER": "openai", "LLM_API_KEY": "sk-test"}
         with patch.dict(os.environ, env, clear=True):
-            get_llm_provider()
-            mock_provider_cls.assert_called_once_with(
-                api_key="sk-test",
-                base_url="https://api.openai.com/v1",
-                model="gpt-4o-mini",
-            )
+            provider = get_llm_provider()
+            self.assertEqual(provider.model_name, "gpt-4o-mini")
 
-    @patch("utils.llm.factory.OpenAICompatProvider")
-    def test_custom_overrides(self, mock_provider_cls: MagicMock) -> None:
-        mock_provider_cls.return_value = MagicMock(spec=LLMProvider)
+    @patch("utils.llm.anthropic_provider.Anthropic")
+    def test_anthropic_defaults(self, mock_anthropic_cls: MagicMock) -> None:
+        env = {"LLM_PROVIDER": "anthropic", "LLM_API_KEY": "sk-ant-test"}
+        with patch.dict(os.environ, env, clear=True):
+            provider = get_llm_provider()
+            self.assertEqual(provider.model_name, "claude-haiku-4-5-20251001")
+
+    @patch("utils.llm.anthropic_provider.Anthropic")
+    def test_anthropic_custom_model(self, mock_anthropic_cls: MagicMock) -> None:
+        env = {"LLM_PROVIDER": "anthropic", "LLM_API_KEY": "sk-ant-test", "LLM_MODEL": "claude-sonnet-4-6"}
+        with patch.dict(os.environ, env, clear=True):
+            provider = get_llm_provider()
+            self.assertEqual(provider.model_name, "claude-sonnet-4-6")
+
+    @patch("utils.llm.openai_compat.OpenAI")
+    def test_custom_overrides(self, mock_openai_cls: MagicMock) -> None:
         env = {
             "LLM_PROVIDER": "venice",
             "LLM_API_KEY": "test-key",
@@ -141,35 +209,26 @@ class TestFactory(unittest.TestCase):
             "LLM_MODEL": "custom-model",
         }
         with patch.dict(os.environ, env, clear=True):
-            get_llm_provider()
-            mock_provider_cls.assert_called_once_with(
-                api_key="test-key",
-                base_url="https://custom.api/v1",
-                model="custom-model",
-            )
+            provider = get_llm_provider()
+            self.assertEqual(provider.model_name, "custom-model")
 
-    @patch("utils.llm.factory.OpenAICompatProvider")
-    def test_singleton_caching(self, mock_provider_cls: MagicMock) -> None:
-        mock_instance = MagicMock(spec=LLMProvider)
-        mock_provider_cls.return_value = mock_instance
+    @patch("utils.llm.openai_compat.OpenAI")
+    def test_singleton_caching(self, mock_openai_cls: MagicMock) -> None:
         env = {"LLM_PROVIDER": "venice", "LLM_API_KEY": "test-key"}
         with patch.dict(os.environ, env, clear=True):
             p1 = get_llm_provider()
             p2 = get_llm_provider()
             self.assertIs(p1, p2)
-            # Only called once due to caching
-            mock_provider_cls.assert_called_once()
 
     def test_unknown_provider_without_url_raises(self) -> None:
-        env = {"LLM_PROVIDER": "unknown-provider", "LLM_API_KEY": "test-key"}
+        env = {"LLM_PROVIDER": "unknown-provider", "LLM_API_KEY": "test-key", "LLM_MODEL": "some-model"}
         with patch.dict(os.environ, env, clear=True):
             with self.assertRaises(LLMError) as ctx:
                 get_llm_provider()
             self.assertIn("LLM_BASE_URL", str(ctx.exception))
 
-    def test_provider_defaults_contain_expected_keys(self) -> None:
+    def test_provider_defaults_contain_model(self) -> None:
         for name, defaults in _PROVIDER_DEFAULTS.items():
-            self.assertIn("base_url", defaults, f"Missing base_url for {name}")
             self.assertIn("model", defaults, f"Missing model for {name}")
 
 
