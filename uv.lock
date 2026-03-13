@@ -1043,7 +1043,6 @@ dependencies = [
     { name = "aiohttp" },
     { name = "aiosignal" },
     { name = "annotated-types" },
-    { name = "anthropic" },
     { name = "async-timeout" },
     { name = "attrs" },
     { name = "bitarray" },
@@ -1070,7 +1069,6 @@ dependencies = [
     { name = "marshmallow" },
     { name = "multidict" },
     { name = "ndjson" },
-    { name = "openai" },
     { name = "packaging" },
     { name = "parsimonious" },
     { name = "propcache" },
@@ -1095,7 +1093,12 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+ai = [
+    { name = "anthropic" },
+    { name = "openai" },
+]
 dev = [
+    { name = "anthropic" },
     { name = "black" },
     { name = "iniconfig" },
     { name = "markdown-it-py" },
@@ -1104,6 +1107,7 @@ dev = [
     { name = "mdurl" },
     { name = "mypy" },
     { name = "mypy-extensions" },
+    { name = "openai" },
     { name = "pathspec" },
     { name = "platformdirs" },
     { name = "pluggy" },
@@ -1125,7 +1129,8 @@ requires-dist = [
     { name = "aiohttp", specifier = "==3.13.3" },
     { name = "aiosignal", specifier = "==1.4.0" },
     { name = "annotated-types", specifier = "==0.7.0" },
-    { name = "anthropic", specifier = ">=0.40.0" },
+    { name = "anthropic", marker = "extra == 'ai'", specifier = ">=0.40.0" },
+    { name = "anthropic", marker = "extra == 'dev'", specifier = ">=0.40.0" },
     { name = "async-timeout", specifier = "==5.0.1" },
     { name = "attrs", specifier = "==25.4.0" },
     { name = "bitarray", specifier = "==3.8.0" },
@@ -1160,7 +1165,8 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = "==1.19.1" },
     { name = "mypy-extensions", marker = "extra == 'dev'", specifier = "==1.1.0" },
     { name = "ndjson", specifier = "==0.3.1" },
-    { name = "openai", specifier = ">=1.0.0" },
+    { name = "openai", marker = "extra == 'ai'", specifier = ">=1.0.0" },
+    { name = "openai", marker = "extra == 'dev'", specifier = ">=1.0.0" },
     { name = "packaging", specifier = "==26.0" },
     { name = "parsimonious", specifier = "==0.10.0" },
     { name = "pathspec", marker = "extra == 'dev'", specifier = "==1.0.4" },
@@ -1196,7 +1202,7 @@ requires-dist = [
     { name = "wrapt", specifier = "==2.1.1" },
     { name = "yarl", specifier = ">=1.23.0" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["ai", "dev"]
 
 [[package]]
 name = "multidict"
