@@ -103,15 +103,37 @@ State changes (2 total, showing 2):
 
 The full prompt is logged at INFO level for debugging. When running in GitHub Actions, the Telegram alert includes a "Full details" link to the CI logs.
 
-### 5. Output Formatting
+### 5. Dual-Output Parsing
 
-`format_explanation_line()` wraps the LLM response for Telegram:
+The LLM is asked to return two sections in a single response:
+
+```
+TLDR: Upgrades the AAVE pool implementation to 0xNew...
+
+DETAIL:
+This transaction calls upgradeTo(address) on the AAVE pool proxy...
+Current implementation: 0xOld...
+New implementation: 0xNew...
+Risk: MEDIUM — verify new implementation is audited.
+```
+
+`_parse_explanation()` splits this into an `Explanation` dataclass:
+- `summary` (from TLDR) — short, goes to Telegram
+- `detail` (from DETAIL) — thorough analysis, logged at INFO level (visible in GH Actions)
+
+If the LLM doesn't follow the format, the full response is used as the summary (backward compatible).
+
+### 6. Output Formatting
+
+`format_explanation_line()` uses only the summary for the Telegram message:
 
 ```
 🤖 *AI Summary:*
-This transaction upgrades the AAVE pool implementation...
+Upgrades the AAVE pool implementation to 0xNew...
 [Full details](https://github.com/.../actions/runs/123)
 ```
+
+The "Full details" link points to GitHub Actions logs where the detailed analysis, full prompt, and simulation data are all logged.
 
 ## Configuration
 

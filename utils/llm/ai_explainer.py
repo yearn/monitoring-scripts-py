@@ -5,6 +5,8 @@ them to an LLM to produce human-readable explanations for governance
 transactions (timelocks and Safe multisigs).
 """
 
+from dataclasses import dataclass
+
 from timelock.calldata_decoder import DecodedCall, decode_calldata
 from utils.llm import get_llm_provider
 from utils.llm.base import LLMError
@@ -16,9 +18,31 @@ from utils.tenderly.simulation import SimulationResult, simulate_transaction
 logger = get_logger("utils.llm.ai_explainer")
 
 SYSTEM_PROMPT = """You are a DeFi risk analyst explaining governance transactions to a monitoring team.
-Given the decoded calldata and simulation results, write a concise sentence explanation, max 5 sentences.
-Always try to find the last change that happens in the transaction.
-Focus on: what the transaction does, what assets/parameters change, and any risk implications."""
+Given the decoded calldata and simulation results, provide two sections:
+
+TLDR: A short summary in 1-3 sentences. Focus on what the transaction does and any risk implications.
+
+DETAIL: A thorough analysis covering:
+- What each call does and why
+- Parameter values and their significance
+- Asset/token flow changes
+- State changes and their impact
+- Risk assessment (LOW/MEDIUM/HIGH/CRITICAL)
+- Any concerns or notable observations
+
+Format your response exactly as:
+TLDR: <your short summary>
+
+DETAIL:
+<your detailed analysis>"""
+
+
+@dataclass(frozen=True)
+class Explanation:
+    """AI-generated transaction explanation with short and detailed versions."""
+
+    summary: str
+    detail: str
 
 
 def _get_proxy_upgrade_info(calldata: str, target: str, chain_id: int) -> str:
@@ -117,6 +141,44 @@ def _build_prompt(
     return "\n".join(parts)
 
 
+def _parse_explanation(raw: str) -> Explanation:
+    """Parse LLM response into summary and detail sections.
+
+    Expected format:
+        TLDR: <short summary>
+
+        DETAIL:
+        <detailed analysis>
+
+    Falls back gracefully if the LLM doesn't follow the format exactly.
+    """
+    # Try to split on DETAIL: marker
+    upper = raw.upper()
+    detail_idx = upper.find("DETAIL:")
+    tldr_idx = upper.find("TLDR:")
+
+    if tldr_idx != -1 and detail_idx != -1:
+        # Both markers found — extract each section
+        tldr_start = tldr_idx + len("TLDR:")
+        summary = raw[tldr_start:detail_idx].strip()
+        detail = raw[detail_idx + len("DETAIL:") :].strip()
+        return Explanation(summary=summary, detail=detail)
+
+    if tldr_idx != -1:
+        # Only TLDR found — everything after it is the summary, no detail
+        summary = raw[tldr_idx + len("TLDR:") :].strip()
+        return Explanation(summary=summary, detail="")
+
+    if detail_idx != -1:
+        # Only DETAIL found — everything before is summary
+        summary = raw[:detail_idx].strip()
+        detail = raw[detail_idx + len("DETAIL:") :].strip()
+        return Explanation(summary=summary, detail=detail)
+
+    # No markers — use full response as summary (backward compatible)
+    return Explanation(summary=raw.strip(), detail="")
+
+
 def explain_transaction(
     target: str,
     calldata: str,
@@ -125,7 +187,7 @@ def explain_transaction(
     protocol: str = "",
     label: str = "",
     from_address: str = "0x0000000000000000000000000000000000000000",
-) -> str | None:
+) -> Explanation | None:
     """Generate an AI explanation for a governance transaction.
 
     Decodes calldata, simulates via Tenderly, and sends context to the LLM.
@@ -141,7 +203,7 @@ def explain_transaction(
         from_address: Sender address for simulation.
 
     Returns:
-        AI-generated explanation string, or None on failure.
+        Explanation with summary and detail, or None on failure.
     """
     if not calldata or len(calldata) < 10:
         return None
@@ -184,8 +246,11 @@ def explain_transaction(
 
     try:
         provider = get_llm_provider()
-        explanation = provider.complete(prompt)
-        logger.info("AI explanation generated using %s:\n%s", provider.model_name, explanation)
+        raw = provider.complete(prompt)
+        explanation = _parse_explanation(raw)
+        logger.info("AI summary using %s:\n%s", provider.model_name, explanation.summary)
+        if explanation.detail:
+            logger.info("AI detail:\n%s", explanation.detail)
         return explanation
     except LLMError as e:
         logger.error("Failed to generate AI explanation: %s", e)
@@ -198,7 +263,7 @@ def explain_batch_transaction(
     protocol: str = "",
     label: str = "",
     from_address: str = "0x0000000000000000000000000000000000000000",
-) -> str | None:
+) -> Explanation | None:
     """Generate an AI explanation for a batch/multicall governance transaction.
 
     Args:
@@ -209,7 +274,7 @@ def explain_batch_transaction(
         from_address: Sender address for simulations.
 
     Returns:
-        AI-generated explanation string, or None on failure.
+        Explanation with summary and detail, or None on failure.
     """
     if not calls:
         return None
@@ -266,21 +331,26 @@ def explain_batch_transaction(
 
     try:
         provider = get_llm_provider()
-        explanation = provider.complete(prompt)
-        logger.info("Batch AI explanation generated using %s:\n%s", provider.model_name, explanation)
+        raw = provider.complete(prompt)
+        explanation = _parse_explanation(raw)
+        logger.info("Batch AI summary using %s:\n%s", provider.model_name, explanation.summary)
+        if explanation.detail:
+            logger.info("Batch AI detail:\n%s", explanation.detail)
         return explanation
     except LLMError as e:
         logger.error("Failed to generate batch AI explanation: %s", e)
         return None
 
 
-def format_explanation_line(explanation: str) -> str:
+def format_explanation_line(explanation: Explanation) -> str:
     """Format the AI explanation for inclusion in a Telegram alert message.
 
-    Includes a link to GitHub Actions logs when running in CI,
-    where the full decoded calldata, simulation results, and prompt are logged.
+    Uses the short summary for the Telegram message. The detailed analysis
+    is logged at INFO level and visible in GitHub Actions logs.
+
+    Includes a link to GH Actions logs when running in CI.
     """
-    line = f"\n🤖 *AI Summary:*\n{explanation}"
+    line = f"\n🤖 *AI Summary:*\n{explanation.summary}"
     run_url = get_github_run_url()
     if run_url:
         line += f"\n[Full details]({run_url})"

@@ -5,9 +5,11 @@ from unittest.mock import MagicMock, patch
 
 from timelock.calldata_decoder import DecodedCall
 from utils.llm.ai_explainer import (
+    Explanation,
     _build_prompt,
     _format_decoded_calls,
     _format_simulation_context,
+    _parse_explanation,
     explain_transaction,
     format_explanation_line,
 )
@@ -169,7 +171,7 @@ class TestExplainTransaction(unittest.TestCase):
         mock_decode.return_value = DecodedCall(function_name="pause", signature="pause()")
         mock_simulate.return_value = SimulationResult(success=True, gas_used=50000)
         mock_provider = MagicMock()
-        mock_provider.complete.return_value = "This pauses the protocol."
+        mock_provider.complete.return_value = "TLDR: This pauses the protocol.\n\nDETAIL:\nPauses all operations."
         mock_provider.model_name = "test-model"
         mock_get_provider.return_value = mock_provider
 
@@ -180,7 +182,9 @@ class TestExplainTransaction(unittest.TestCase):
             protocol="AAVE",
         )
 
-        self.assertEqual(result, "This pauses the protocol.")
+        self.assertIsNotNone(result)
+        self.assertEqual(result.summary, "This pauses the protocol.")
+        self.assertEqual(result.detail, "Pauses all operations.")
         mock_simulate.assert_called_once()
         mock_provider.complete.assert_called_once()
 
@@ -221,21 +225,59 @@ class TestExplainTransaction(unittest.TestCase):
         mock_decode.return_value = DecodedCall(function_name="pause", signature="pause()")
         mock_simulate.return_value = None  # Simulation failed
         mock_provider = MagicMock()
-        mock_provider.complete.return_value = "This pauses the protocol."
+        mock_provider.complete.return_value = "TLDR: This pauses the protocol."
         mock_provider.model_name = "test-model"
         mock_get_provider.return_value = mock_provider
 
         result = explain_transaction(target="0xTarget", calldata="0x8456cb59", chain_id=1)
-        self.assertEqual(result, "This pauses the protocol.")
+        self.assertIsNotNone(result)
+        self.assertEqual(result.summary, "This pauses the protocol.")
+
+
+class TestParseExplanation(unittest.TestCase):
+    """Tests for _parse_explanation."""
+
+    def test_both_sections(self) -> None:
+        raw = "TLDR: Short summary here.\n\nDETAIL:\nDetailed analysis here."
+        result = _parse_explanation(raw)
+        self.assertEqual(result.summary, "Short summary here.")
+        self.assertEqual(result.detail, "Detailed analysis here.")
+
+    def test_tldr_only(self) -> None:
+        raw = "TLDR: Just a summary, no detail."
+        result = _parse_explanation(raw)
+        self.assertEqual(result.summary, "Just a summary, no detail.")
+        self.assertEqual(result.detail, "")
+
+    def test_no_markers_fallback(self) -> None:
+        raw = "This is a plain response without markers."
+        result = _parse_explanation(raw)
+        self.assertEqual(result.summary, "This is a plain response without markers.")
+        self.assertEqual(result.detail, "")
+
+    def test_case_insensitive(self) -> None:
+        raw = "tldr: Lower case markers.\n\ndetail:\nLower case detail."
+        result = _parse_explanation(raw)
+        self.assertEqual(result.summary, "Lower case markers.")
+        self.assertEqual(result.detail, "Lower case detail.")
+
+    def test_multiline_detail(self) -> None:
+        raw = "TLDR: Summary.\n\nDETAIL:\nLine 1.\nLine 2.\n- Risk: HIGH"
+        result = _parse_explanation(raw)
+        self.assertEqual(result.summary, "Summary.")
+        self.assertIn("Line 1.", result.detail)
+        self.assertIn("Risk: HIGH", result.detail)
 
 
 class TestFormatExplanationLine(unittest.TestCase):
     """Tests for format_explanation_line."""
 
     def test_format(self) -> None:
-        result = format_explanation_line("This pauses the protocol.")
+        explanation = Explanation(summary="This pauses the protocol.", detail="Full detail here.")
+        result = format_explanation_line(explanation)
         self.assertIn("AI Summary", result)
         self.assertIn("This pauses the protocol.", result)
+        self.assertNotIn("Full detail here.", result)
 
 
 if __name__ == "__main__":
