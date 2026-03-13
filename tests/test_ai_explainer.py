@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from timelock.calldata_decoder import DecodedCall
-from utils.ai_explainer import (
+from utils.llm.ai_explainer import (
     _build_prompt,
     _format_decoded_calls,
     _format_simulation_context,
@@ -157,9 +157,9 @@ class TestExplainTransaction(unittest.TestCase):
         result = explain_transaction(target="0xTarget", calldata="0x1234", chain_id=1)
         self.assertIsNone(result)
 
-    @patch("utils.ai_explainer.get_llm_provider")
-    @patch("utils.ai_explainer.simulate_transaction")
-    @patch("utils.ai_explainer.decode_calldata")
+    @patch("utils.llm.ai_explainer.get_llm_provider")
+    @patch("utils.llm.ai_explainer.simulate_transaction")
+    @patch("utils.llm.ai_explainer.decode_calldata")
     def test_successful_explanation(
         self,
         mock_decode: MagicMock,
@@ -184,9 +184,9 @@ class TestExplainTransaction(unittest.TestCase):
         mock_simulate.assert_called_once()
         mock_provider.complete.assert_called_once()
 
-    @patch("utils.ai_explainer.get_llm_provider")
-    @patch("utils.ai_explainer.simulate_transaction")
-    @patch("utils.ai_explainer.decode_calldata")
+    @patch("utils.llm.ai_explainer.get_llm_provider")
+    @patch("utils.llm.ai_explainer.simulate_transaction")
+    @patch("utils.llm.ai_explainer.decode_calldata")
     def test_llm_error_returns_none(
         self,
         mock_decode: MagicMock,
@@ -202,15 +202,15 @@ class TestExplainTransaction(unittest.TestCase):
         result = explain_transaction(target="0xTarget", calldata="0x8456cb59", chain_id=1)
         self.assertIsNone(result)
 
-    @patch("utils.ai_explainer.decode_calldata")
+    @patch("utils.llm.ai_explainer.decode_calldata")
     def test_undecoded_calldata_returns_none(self, mock_decode: MagicMock) -> None:
         mock_decode.return_value = None
         result = explain_transaction(target="0xTarget", calldata="0x11223344", chain_id=1)
         self.assertIsNone(result)
 
-    @patch("utils.ai_explainer.get_llm_provider")
-    @patch("utils.ai_explainer.simulate_transaction")
-    @patch("utils.ai_explainer.decode_calldata")
+    @patch("utils.llm.ai_explainer.get_llm_provider")
+    @patch("utils.llm.ai_explainer.simulate_transaction")
+    @patch("utils.llm.ai_explainer.decode_calldata")
     def test_simulation_failure_still_explains(
         self,
         mock_decode: MagicMock,

@@ -13,9 +13,9 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 
 from timelock.calldata_decoder import format_call_lines
-from utils.ai_explainer import explain_batch_transaction, explain_transaction, format_explanation_line
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import EXPLORER_URLS, Chain
+from utils.llm.ai_explainer import explain_batch_transaction, explain_transaction, format_explanation_line
 from utils.logging import get_logger
 from utils.proxy import build_diff_url, detect_proxy_upgrade, get_current_implementation
 from utils.telegram import MAX_MESSAGE_LENGTH, send_telegram_message
