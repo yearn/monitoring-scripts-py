@@ -33,12 +33,11 @@ class TestOpenAICompatProvider(unittest.TestCase):
 
         provider = OpenAICompatProvider(api_key="test-key", base_url="https://api.test.ai/v1", model="test-model")
 
-        result = provider.complete("Explain this tx", max_tokens=200)
+        result = provider.complete("Explain this tx")
 
         self.assertEqual(result, "This transaction updates the collateral factor.")
         mock_client.chat.completions.create.assert_called_once_with(
             model="test-model",
-            max_tokens=200,
             messages=[{"role": "user", "content": "Explain this tx"}],
         )
 
@@ -109,12 +108,12 @@ class TestAnthropicProvider(unittest.TestCase):
         from utils.llm.anthropic_provider import AnthropicProvider
 
         provider = AnthropicProvider(api_key="sk-ant-test", model="claude-haiku-4-5-20251001")
-        result = provider.complete("Explain this tx", max_tokens=200)
+        result = provider.complete("Explain this tx")
 
         self.assertEqual(result, "This pauses the protocol.")
         mock_client.messages.create.assert_called_once_with(
             model="claude-haiku-4-5-20251001",
-            max_tokens=200,
+            max_tokens=10000,
             messages=[{"role": "user", "content": "Explain this tx"}],
         )
 
@@ -177,7 +176,7 @@ class TestFactory(unittest.TestCase):
         env = {"LLM_PROVIDER": "venice", "LLM_API_KEY": "test-key"}
         with patch.dict(os.environ, env, clear=True):
             provider = get_llm_provider()
-            self.assertEqual(provider.model_name, "llama-3.3-70b")
+            self.assertEqual(provider.model_name, "grok-41-fast")
 
     @patch("utils.llm.openai_compat.OpenAI")
     def test_openai_defaults(self, mock_openai_cls: MagicMock) -> None:

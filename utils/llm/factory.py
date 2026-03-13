@@ -24,7 +24,7 @@ logger = get_logger("utils.llm.factory")
 _PROVIDER_DEFAULTS: dict[str, dict[str, str]] = {
     "venice": {
         "base_url": "https://api.venice.ai/api/v1",
-        "model": "llama-3.3-70b",
+        "model": "grok-41-fast",
     },
     "openai": {
         "base_url": "https://api.openai.com/v1",

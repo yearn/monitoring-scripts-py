@@ -26,12 +26,12 @@ class AnthropicProvider(LLMProvider):
         self._client = Anthropic(api_key=api_key)
         logger.info("Initialized Anthropic provider: model=%s", model)
 
-    def complete(self, prompt: str, max_tokens: int = 300) -> str:
+    def complete(self, prompt: str) -> str:
         """Generate a completion using the Anthropic messages API."""
         try:
             response = self._client.messages.create(
                 model=self._model,
-                max_tokens=max_tokens,
+                max_tokens=10000,
                 messages=[{"role": "user", "content": prompt}],
             )
             block = response.content[0]

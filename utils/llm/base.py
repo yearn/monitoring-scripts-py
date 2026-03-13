@@ -7,12 +7,11 @@ class LLMProvider(ABC):
     """Interface for LLM providers used to generate transaction explanations."""
 
     @abstractmethod
-    def complete(self, prompt: str, max_tokens: int = 300) -> str:
+    def complete(self, prompt: str) -> str:
         """Generate a completion for the given prompt.
 
         Args:
             prompt: The prompt to send to the LLM.
-            max_tokens: Maximum tokens in the response.
 
         Returns:
             The generated text response.

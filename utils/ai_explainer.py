@@ -154,7 +154,7 @@ def explain_transaction(
 
     try:
         provider = get_llm_provider()
-        explanation = provider.complete(prompt, max_tokens=300)
+        explanation = provider.complete(prompt)
         logger.info("AI explanation generated using %s", provider.model_name)
         return explanation
     except LLMError as e:
@@ -226,7 +226,7 @@ def explain_batch_transaction(
 
     try:
         provider = get_llm_provider()
-        explanation = provider.complete(prompt, max_tokens=400)
+        explanation = provider.complete(prompt)
         logger.info("Batch AI explanation generated using %s", provider.model_name)
         return explanation
     except LLMError as e:
