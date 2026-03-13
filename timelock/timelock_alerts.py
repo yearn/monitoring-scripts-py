@@ -15,7 +15,9 @@ from dotenv import load_dotenv
 from timelock.calldata_decoder import format_call_lines
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import EXPLORER_URLS, Chain
+from utils.llm.ai_explainer import explain_batch_transaction, explain_transaction, format_explanation_line
 from utils.logging import get_logger
+from utils.proxy import build_diff_url, detect_proxy_upgrade, get_current_implementation
 from utils.telegram import MAX_MESSAGE_LENGTH, send_telegram_message
 
 load_dotenv()
@@ -189,7 +191,7 @@ def _format_delay_info(delay: int | None, timelock_type: str) -> str | None:
     return f"⏳ Delay: {format_delay(delay_val)}"
 
 
-def _build_call_info(event: dict, explorer: str | None, show_index: bool) -> list[str]:
+def _build_call_info(event: dict, explorer: str | None, show_index: bool, chain_id: int = 0) -> list[str]:
     """Build call info lines for TimelockController/Compound/Puffer events."""
     lines: list[str] = []
     target = event.get("target")
@@ -209,12 +211,58 @@ def _build_call_info(event: dict, explorer: str | None, show_index: bool) -> lis
     elif len(data_hex) >= 10:
         lines.extend(format_call_lines(data_hex))
 
+    # Proxy upgrade detection: show diff link between old and new implementation
+    if len(data_hex) >= 10:
+        new_impl = detect_proxy_upgrade(data_hex)
+        if new_impl and chain_id:
+            old_impl = get_current_implementation(target, chain_id)
+            if old_impl:
+                lines.append(f"🔄 Upgrade: `{old_impl}` → `{new_impl}`")
+                diff_url = build_diff_url(old_impl, new_impl, chain_id)
+                if diff_url:
+                    lines.append(f"📊 [Diff]({diff_url})")
+            else:
+                lines.append(f"🔄 New impl: `{new_impl}`")
+
     # Value only for types that have it (not Puffer)
     value = event.get("value")
     if value and int(value) > 0:
         lines.append(f"💰 Value: {int(value) / 1e18:.4f} ETH")
 
     return lines
+
+
+def _get_ai_explanation(events: list[dict], timelock_info: TimelockConfig, chain_id: int) -> str | None:
+    """Generate AI explanation for timelock events. Returns None on any failure."""
+    try:
+        calls_with_data = [e for e in events if e.get("target") and e.get("data") and len(e.get("data", "")) >= 10]
+        if not calls_with_data:
+            return None
+
+        if len(calls_with_data) == 1:
+            event = calls_with_data[0]
+            return explain_transaction(
+                target=event["target"],
+                calldata=event["data"],
+                chain_id=chain_id,
+                value=int(event.get("value", 0)),
+                protocol=timelock_info.protocol,
+                label=timelock_info.label,
+                from_address=timelock_info.address,
+            )
+
+        # Batch transaction
+        calls = [{"target": e["target"], "data": e["data"], "value": str(e.get("value", 0))} for e in calls_with_data]
+        return explain_batch_transaction(
+            calls=calls,
+            chain_id=chain_id,
+            protocol=timelock_info.protocol,
+            label=timelock_info.label,
+            from_address=timelock_info.address,
+        )
+    except Exception:
+        _logger.debug("AI explanation failed", exc_info=True)
+        return None
 
 
 def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> str:
@@ -267,11 +315,16 @@ def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> st
 
     elif timelock_type in ("TimelockController", "Compound", "Puffer"):
         for event in events:
-            lines.extend(_build_call_info(event, explorer, len(events) > 1))
+            lines.extend(_build_call_info(event, explorer, len(events) > 1, chain_id))
 
     else:
         # Unknown type - show operationId at minimum
         lines.append(f"🆔 Operation: {first.get('operationId') or ''}")
+
+    # AI explanation (best-effort, non-blocking)
+    explanation = _get_ai_explanation(events, timelock_info, chain_id)
+    if explanation:
+        lines.append(format_explanation_line(explanation))
 
     # Footer
     if explorer:

@@ -61,7 +61,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+ai = [
+    "anthropic>=0.40.0",
+    "openai>=1.0.0",
+]
 dev = [
+    "anthropic>=0.40.0",
+    "openai>=1.0.0",
     "black==26.1.0",
     "iniconfig==2.3.0",
     "markdown-it-py==4.0.0",

@@ -42,3 +42,29 @@ class Chain(Enum):
             if chain.network_name == name:
                 return chain
         raise ValueError(f"Unknown chain name: {name}")
+
+
+# Safe API uses network names like "arbitrum-main", "base-main", etc.
+_SAFE_NETWORK_ALIASES: dict[str, str] = {
+    "arbitrum-main": "arbitrum",
+    "optimism-main": "optimism",
+    "polygon-main": "polygon",
+    "base-main": "base",
+    "optim-yearn": "optimism",
+}
+
+
+def safe_network_to_chain_id(safe_network: str) -> int:
+    """Convert a Safe API network name to a chain ID.
+
+    Args:
+        safe_network: Safe network name (e.g. "mainnet", "arbitrum-main").
+
+    Returns:
+        Chain ID (e.g. 1, 42161), or 0 if unknown.
+    """
+    canonical = _SAFE_NETWORK_ALIASES.get(safe_network, safe_network)
+    try:
+        return Chain.from_name(canonical).chain_id
+    except ValueError:
+        return 0
