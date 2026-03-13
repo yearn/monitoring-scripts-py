@@ -94,24 +94,24 @@ ALL_SAFE_ADDRESSES = [
         "0x84258B3C495d8e9b10D0d4A7867392F149Da4274",
         "Morpho eUSDe predeposit vault owner",
     ],  # eUSDe predeposit vault owner, token used by DAI vault on morpho
-    [
-        "RESOLV",
-        "mainnet",
-        "0xD6889F307BE1b83Bb355d5DA7d4478FB0d2Af547",
-        "RESOLV timelock contract",
-    ],  # timelock contract
+    # [
+    #     "RESOLV",
+    #     "mainnet",
+    #     "0xD6889F307BE1b83Bb355d5DA7d4478FB0d2Af547",
+    #     "RESOLV contract",
+    # ],
     [
         "LRT",
         "mainnet",
         "0xb7cB7131FFc18f87eEc66991BECD18f2FF70d2af",
         "LBTC boring vault big boss",
     ],  # LBTC boring vault big boss
-    [
-        "LRT",
-        "base-main",
-        "0x92A19381444A001d62cE67BaFF066fA1111d7202",
-        "Origin admin multisig. Markets used on Base",
-    ],  # origin admin
+    # [
+    #     "LRT",
+    #     "base-main",
+    #     "0x92A19381444A001d62cE67BaFF066fA1111d7202",
+    #     "Origin admin multisig. Markets used on Base",
+    # ],  # origin admin
     [
         "LRT",
         "mainnet",
