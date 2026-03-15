@@ -7,6 +7,7 @@ Monitors:
 - Unrealized losses on loan managers — alerts on any non-zero value
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
 - Withdrawal queue vs liquid funds — alerts when pending withdrawals >= 20% of liquid funds (Aave + Sky)
+- Pool liquidity — cash balance, cash ratio, queue depth, locked vs available liquidity
 - Loan collateral risk — weighted risk score based on collateral asset types
 - Collateralization ratio (via syrupGlobals) — alerts when combined ratio drops below 150%
 - Pool Delegate Cover — alerts when delegate cover balance drops to zero
@@ -65,6 +66,9 @@ ABI_ERC20_BALANCE = [
 # --- Thresholds ---
 TVL_CHANGE_THRESHOLD = 0.15  # 15% TVL change alert
 WITHDRAWAL_QUEUE_THRESHOLD = 0.20  # 20% of liquid funds
+POOL_CASH_THRESHOLD = 1_000_000  # $1M minimum cash balance
+CASH_RATIO_THRESHOLD = 0.005  # 0.5% of TVL
+QUEUE_DEPTH_THRESHOLD = 50  # Max pending withdrawal requests
 
 
 def get_cache_value(key: str) -> float:
@@ -223,6 +227,84 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
         send_telegram_message(message, PROTOCOL)
 
 
+def check_pool_liquidity(client, tvl: float) -> None:
+    """Check pool cash balance, cash ratio, withdrawal queue depth, and locked liquidity.
+
+    Args:
+        client: Web3 client for Ethereum mainnet.
+        tvl: Current pool TVL in USD (used for cash ratio calculation).
+    """
+    usdc = client.eth.contract(address=USDC_ADDRESS, abi=ABI_ERC20_BALANCE)
+    wm = client.eth.contract(address=WITHDRAWAL_MANAGER, abi=ABI_WITHDRAWAL_MANAGER)
+
+    with client.batch_requests() as batch:
+        batch.add(usdc.functions.balanceOf(SYRUP_USDC_POOL))
+        batch.add(wm.functions.lockedLiquidity())
+        batch.add(wm.functions.queue())
+
+        responses = client.execute_batch(batch)
+        if len(responses) != 3:
+            raise ValueError(f"Expected 3 responses, got {len(responses)}")
+
+    cash_balance = responses[0] / ONE_SHARE
+    locked_liquidity = responses[1] / ONE_SHARE
+    next_request_id, last_request_id = responses[2]
+    pending_requests = max(0, last_request_id - next_request_id + 1) if last_request_id >= next_request_id else 0
+
+    cash_ratio = cash_balance / tvl if tvl > 0 else 0.0
+
+    logger.info(
+        "Pool liquidity — Cash: %s (%.3f%% of TVL), Locked: %s, Queue depth: %d pending",
+        format_usd(cash_balance),
+        cash_ratio * 100,
+        format_usd(locked_liquidity),
+        pending_requests,
+    )
+
+    # Critical: locked liquidity exceeds available cash
+    if locked_liquidity > cash_balance and locked_liquidity > 0:
+        shortfall = locked_liquidity - cash_balance
+        message = (
+            f"🚨 *Maple syrupUSDC Locked Liquidity Exceeds Cash*\n"
+            f"🔒 Locked: {format_usd(locked_liquidity)}\n"
+            f"💵 Cash: {format_usd(cash_balance)}\n"
+            f"📊 Shortfall: {format_usd(shortfall)}\n"
+            f"⚠️ More USDC is committed to withdrawals than is available in the pool\n"
+            f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
+        )
+        send_telegram_message(message, PROTOCOL)
+
+    # Warning: low cash balance
+    if cash_balance < POOL_CASH_THRESHOLD:
+        message = (
+            f"⚠️ *Maple syrupUSDC Low Pool Cash*\n"
+            f"💵 Cash: {format_usd(cash_balance)} (threshold: {format_usd(POOL_CASH_THRESHOLD)})\n"
+            f"📊 Cash ratio: {cash_ratio:.3%} of {format_usd(tvl)} TVL\n"
+            f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
+        )
+        send_telegram_message(message, PROTOCOL)
+
+    # Warning: low cash ratio
+    elif tvl > 0 and cash_ratio < CASH_RATIO_THRESHOLD:
+        message = (
+            f"⚠️ *Maple syrupUSDC Low Cash Ratio*\n"
+            f"📊 Cash ratio: {cash_ratio:.3%} (threshold: {CASH_RATIO_THRESHOLD:.1%})\n"
+            f"💵 Cash: {format_usd(cash_balance)} / TVL: {format_usd(tvl)}\n"
+            f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
+        )
+        send_telegram_message(message, PROTOCOL)
+
+    # Warning: high queue depth
+    if pending_requests > QUEUE_DEPTH_THRESHOLD:
+        message = (
+            f"⚠️ *Maple syrupUSDC High Withdrawal Queue Depth*\n"
+            f"📊 Pending requests: {pending_requests} (threshold: {QUEUE_DEPTH_THRESHOLD})\n"
+            f"💵 Cash: {format_usd(cash_balance)} | Locked: {format_usd(locked_liquidity)}\n"
+            f"🔗 [WithdrawalManager](https://etherscan.io/address/{WITHDRAWAL_MANAGER})"
+        )
+        send_telegram_message(message, PROTOCOL)
+
+
 def check_delegate_cover(client) -> None:
     """Check Pool Delegate Cover USDC balance and alert on changes.
 
@@ -271,6 +353,7 @@ def main() -> None:
         tvl = check_tvl(client, pool)
         check_unrealized_losses(client)
         check_strategy_and_withdrawal_queue(client, pool)
+        check_pool_liquidity(client, tvl)
         check_collateral_risk()
         check_delegate_cover(client)
 
