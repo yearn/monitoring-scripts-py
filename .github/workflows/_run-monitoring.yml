@@ -96,6 +96,9 @@ env:
   COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
   TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
   SAFE_API_KEY: ${{ secrets.SAFE_API_KEY }}
+  LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+  LLM_MODEL: ${{ secrets.LLM_MODEL }}
+  LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
 
 jobs:
   run:
