@@ -64,7 +64,9 @@ def get_current_implementation(proxy_address: str, chain_id: int) -> str | None:
         from utils.web3_wrapper import ChainManager
 
         client = ChainManager.get_client(chain)
-        raw = client.eth.get_storage_at(proxy_address, EIP1967_IMPL_SLOT)
+        from web3 import Web3
+
+        raw = client.eth.get_storage_at(Web3.to_checksum_address(proxy_address), EIP1967_IMPL_SLOT)
 
         # get_storage_at returns HexBytes (32 bytes), address is last 20 bytes
         hex_str = raw.hex() if isinstance(raw, bytes) else str(raw)
