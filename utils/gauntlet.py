@@ -28,6 +28,7 @@ SUPPLY_ASSETS = [
         "ETHx",
         2,
     ],  # Rate ETHx/WETH and chainlink WETH/USD https://www.llamarisk.com/research/risk-addendum-to-collateral-risk-assessment-stader-ethx
+    ["USDe", 2],  # Chainlink USDe/USD
     ["sUSDe", 2],  # Rate sUSDe/USDe and chainlink USDe/USD
     ["PT-USDe-27MAR2025", 2],  # Pendle PT to USDe and chainlink USDe/USD
     ["PT-sUSDE-27MAR2025", 2],  # Pendle PT to USDe and chainlink USDe/USD
@@ -58,6 +59,9 @@ SUPPLY_ASSETS = [
     ["UNI", 3],
     ["LINK", 3],
     ["syrupUSDC", 3],
+    ["COMP", 3],
+    ["XAUt", 3],  # Tether Gold
+    ["rswETH", 3],  # Swell rswETH
     # Risk Tier 4
     [
         "wUSDM",
