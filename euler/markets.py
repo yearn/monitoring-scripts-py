@@ -1,6 +1,6 @@
+from utils.assets import DEBT_SUPPLY_RATIO
 from utils.formatting import format_usd
 from utils.gauntlet import (
-    DEBT_SUPPLY_RATIO,
     fetch_borrow_metrics_from_gauntlet,
     get_markets_for_protocol,
     get_timestamp_before,
