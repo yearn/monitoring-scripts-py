@@ -4,9 +4,11 @@ import requests
 from web3 import Web3
 
 from utils.abi import load_abi
+from utils.alert import register_alert_hook
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.config import Config
+from utils.dispatch import dispatch_emergency_withdrawal
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
@@ -14,6 +16,8 @@ from utils.web3_wrapper import ChainManager
 # Constants
 PROTOCOL = "usdai"
 logger = get_logger(PROTOCOL)
+
+register_alert_hook(dispatch_emergency_withdrawal)
 VAULT_ADDR = Web3.to_checksum_address("0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF")
 WM_TOKEN = Web3.to_checksum_address("0x437cc33344a0b27a429f795ff6b469c72698b291")
 SUSDAI_ADDR = Web3.to_checksum_address("0x0B2b2B2076d95dda7817e785989fE353fe955ef9")
@@ -175,17 +179,19 @@ def main():
             cache_key_principal = f"{PROTOCOL}_verified_principal"
             last_principal = float(get_last_value_for_key_from_file(cache_filename, cache_key_principal))
 
-            # Check for change (allow small dust difference < $1.00)
-            if last_principal != 0 and abs(total_verified_principal - last_principal) > 1.0:
+            diff = abs(total_verified_principal - last_principal)
+
+            # Check for change (allow small dust difference < $1.00 and <1% of total loans)
+            percent_change = (diff / last_principal * 100) if last_principal > 0 else 0
+            if last_principal != 0 and diff > 1.0 and percent_change >= 1.0:
                 change_type = (
                     "increased (New Loan)" if total_verified_principal > last_principal else "reduced (Repayment)"
                 )
-                diff = abs(total_verified_principal - last_principal)
 
                 msg = (
                     f"📢 *sUSDai Loan Activity*\n\n"
                     f"Total Verified Principal has {change_type}.\n"
-                    f"Change: ${diff:,.2f}\n"
+                    f"Change: ${diff:,.2f} ({percent_change:.2f}% of Total Loans)\n"
                     f"Old Total: ${last_principal:,.2f}\n"
                     f"New Total: ${total_verified_principal:,.2f}\n"
                     f"Current Ratio: {verified_ratio:.2f}% of Supply"
