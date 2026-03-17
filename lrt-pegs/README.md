@@ -42,7 +42,7 @@ This check runs hourly.
 
 ### Ether.fi (eETH)
 
-[eETH](https://etherscan.io/address/0x35fA164735182de50811E8e2E824cFb9B6118ac2) contract is upgradable proxy. Owner of the contract [Timelock](https://etherscan.io/address/0x35fA164735182de50811E8e2E824cFb9B6118ac2#readProxyContract#F10), address: 0x9f26d4c958fd811a1f59b01b86be7dffc9d20761. [Tenderly alert](https://dashboard.tenderly.co/yearn/sam/alerts/rules/9be6d06d-83a1-46be-bb1a-4bbaa813ef52) is set to notify when a new transaction is created, event CallScheduled emitted.
+[eETH](https://etherscan.io/address/0x35fA164735182de50811E8e2E824cFb9B6118ac2) contract is upgradable proxy. Owner of the contract [Timelock](https://etherscan.io/address/0x35fA164735182de50811E8e2E824cFb9B6118ac2#readProxyContract#F10), address: 0x9f26d4c958fd811a1f59b01b86be7dffc9d20761.
 
 ### Kelp DAO (rsETH)
 

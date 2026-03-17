@@ -1,15 +1,19 @@
 from dataclasses import dataclass
 
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, register_alert_hook, send_alert
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.chains import Chain
+from utils.dispatch import dispatch_emergency_withdrawal
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 REDEEM_VALUE = int(1e18)
-PROTOCOL = "pegs"
+PROTOCOL = "origin"
+CHANNEL = "pegs"
 logger = get_logger("lrt-pegs.origin")
+
+register_alert_hook(dispatch_emergency_withdrawal)
 
 # Load Origin Vault ABI
 ABI_ORIGIN_VAULT = load_abi("lrt-pegs/abi/OriginVault.json")
@@ -25,7 +29,6 @@ ORIGIN_CONFIGS = {
     },
     Chain.MAINNET: {
         "vault_address": "0x39254033945AA2E4809Cc2977E7087BEE48bd7Ab",
-        "eth_address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
         "oeth_address": "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3",
         "wrapped_oeth_address": "0xDcEe70654261AF21C44c093C300eD3Bb97b78192",
     },
@@ -76,25 +79,25 @@ def _fetch_base_metrics(client, chain: Chain, config: dict, wrapped_oeth):
 
 
 def _fetch_mainnet_metrics(client, chain: Chain, config: dict, wrapped_oeth):
+    # NOTE: priceUnitRedeem was removed from the mainnet vault contract.
+    # Use the same approach as Base: fixed 1e18 redeem value + backing ratio.
     vault = client.eth.contract(address=config["vault_address"], abi=ABI_ORIGIN_VAULT)
     o_token = client.eth.contract(address=config["oeth_address"], abi=ABI_ERC20)
     with client.batch_requests() as batch:
         batch.add(vault.functions.totalValue())
-        batch.add(vault.functions.priceUnitRedeem(config["eth_address"]))
         batch.add(wrapped_oeth.functions.convertToAssets(REDEEM_VALUE))
         batch.add(o_token.functions.totalSupply())
         responses = client.execute_batch(batch)
-        if not len(responses) == 4:
+        if not len(responses) == 3:
             logger.error("Failed to fetch metrics on %s", chain.name)
             return None
         total_value = responses[0]
-        redeem_value = responses[1]
-        wrapped_oeth_redeem_value = responses[2]
-        total_supply = responses[3]
+        wrapped_oeth_redeem_value = responses[1]
+        total_supply = responses[2]
 
     backing_ratio = REDEEM_VALUE if total_supply == 0 else (total_value * REDEEM_VALUE) // total_supply
     return OriginMetrics(
-        redeem_value=redeem_value,
+        redeem_value=REDEEM_VALUE,
         wrapped_oeth_redeem_value=wrapped_oeth_redeem_value,
         backing_ratio=backing_ratio,
         total_value=total_value,
@@ -122,7 +125,14 @@ def process_origin(chain: Chain):
     )
     if metrics is None:
         logger.error("Failed to fetch metrics on %s", chain.name)
-        send_telegram_message(f"🚨 Origin Protocol Alert! Failed to fetch metrics on {chain.name}", PROTOCOL)
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"🚨 Origin Protocol Alert! Failed to fetch metrics on {chain.name}",
+                PROTOCOL,
+                channel=CHANNEL,
+            )
+        )
         return
 
     redeem_value = metrics.redeem_value
@@ -150,15 +160,10 @@ def process_origin(chain: Chain):
             f"Previous Redeem Value: {cached_redeem_value / 1e18:.2f}\n"
             f"Difference: {cached_redeem_value - wrapped_oeth_redeem_value} ({((cached_redeem_value - wrapped_oeth_redeem_value) / cached_redeem_value) * 100:.2f}%)"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL, channel=CHANNEL))
 
     write_last_queued_id_to_file(cache_key, wrapped_oeth_redeem_value)
 
-    if redeem_value != REDEEM_VALUE:
-        message = (
-            f"🚨 Origin Protocol Alert! Redeem value for OETH on {chain.name} is different from 1e18: {redeem_value}"
-        )
-        send_telegram_message(message, PROTOCOL)
     if metrics.backing_ratio < REDEEM_VALUE:
         message = (
             f"🚨 *Origin Protocol on {chain.network_name.upper()} Alert* 🚨\n"
@@ -168,7 +173,7 @@ def process_origin(chain: Chain):
             f"Total Value: {metrics.total_value / 1e18:.6f}\n"
             f"Total Supply: {metrics.total_supply / 1e18:.6f}"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL, channel=CHANNEL))
 
 
 def main():

@@ -9,6 +9,8 @@ from utils.cache import (
     get_last_executed_nonce_from_file,
     write_last_executed_nonce_to_file,
 )
+from utils.chains import safe_network_to_chain_id
+from utils.llm.ai_explainer import explain_transaction, format_explanation_line
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
@@ -84,24 +86,24 @@ ALL_SAFE_ADDRESSES = [
         "0x84258B3C495d8e9b10D0d4A7867392F149Da4274",
         "Morpho eUSDe predeposit vault owner",
     ],  # eUSDe predeposit vault owner, token used by DAI vault on morpho
-    [
-        "RESOLV",
-        "mainnet",
-        "0xD6889F307BE1b83Bb355d5DA7d4478FB0d2Af547",
-        "RESOLV timelock contract",
-    ],  # timelock contract
+    # [
+    #     "RESOLV",
+    #     "mainnet",
+    #     "0xD6889F307BE1b83Bb355d5DA7d4478FB0d2Af547",
+    #     "RESOLV contract",
+    # ],
     [
         "LRT",
         "mainnet",
         "0xb7cB7131FFc18f87eEc66991BECD18f2FF70d2af",
         "LBTC boring vault big boss",
     ],  # LBTC boring vault big boss
-    [
-        "LRT",
-        "base-main",
-        "0x92A19381444A001d62cE67BaFF066fA1111d7202",
-        "Origin admin multisig. Markets used on Base",
-    ],  # origin admin
+    # [
+    #     "LRT",
+    #     "base-main",
+    #     "0x92A19381444A001d62cE67BaFF066fA1111d7202",
+    #     "Origin admin multisig. Markets used on Base",
+    # ],  # origin admin
     [
         "LRT",
         "mainnet",
@@ -301,6 +303,25 @@ def check_for_pending_transactions(safe_address: str, network_name: str, protoco
                         message += handle_pendle(provider_url_arb, hex_data)
                 except Exception as e:
                     logger.error("Cannot decode Pendle aggregate calls: %s", e)
+
+            # AI explanation (best-effort, non-blocking)
+            hex_data = tx.get("data", "0x")
+            if hex_data and len(hex_data) >= 10:
+                chain_id = safe_network_to_chain_id(network_name)
+                try:
+                    explanation = explain_transaction(
+                        target=target_contract,
+                        calldata=hex_data,
+                        chain_id=chain_id,
+                        value=int(tx.get("value", 0)),
+                        protocol=protocol,
+                        label=additional_info or "",
+                        from_address=safe_address,
+                    )
+                    if explanation:
+                        message += format_explanation_line(explanation)
+                except Exception:
+                    logger.debug("AI explanation failed for Safe tx nonce=%s", nonce, exc_info=True)
 
             send_telegram_message(message, protocol, False)  # explicitly enable notification
             # write the last executed nonce to file
