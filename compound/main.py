@@ -1,6 +1,6 @@
+from compound.collateral import check_collateral_risk
 from utils.abi import load_abi
 from utils.chains import Chain
-from utils.gauntlet import fetch_borrow_metrics_from_gauntlet
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
@@ -20,18 +20,6 @@ ADDRESSES_BY_CHAIN = {
         ("0xA17581A9E3356d9A858b789D68B4d866e593aE94", "cWETHv3"),
     ],
 }
-COMPOUND_VAULTS_KEYS = [
-    # Gauntlet tag, Risk level
-    ["v3-ethereum-usdc", 1],
-    ["v3-ethereum-usdt", 1],
-    ["v3-ethereum-weth", 1],
-    # ["v3-ethereum-wbtc", 1],
-    # ["v3-ethereum-wsteth", 1],
-    ["v3-ethereum-usds", 2],
-    # NOTE: polygon data can be stale, so we don't monitor it
-    # ["v3-polygon-usdc", 1],
-    # ["v3-polygon-usdt", 1],
-]
 
 
 def print_stuff(chain_name: str, token_name: str, ur: float) -> None:
@@ -62,21 +50,11 @@ def process_assets(chain: Chain) -> None:
         print_stuff(chain.name, ctoken_name, ur)
 
 
-def analyze_compound_market_allocation(market_key, vault_risk_level=1):
-    """Analyze Compound market allocation using Gauntlet and send alerts if needed"""
-    alerts = fetch_borrow_metrics_from_gauntlet("compound", market_key, vault_risk_level)
-    if alerts:
-        message = "\n\n".join(alerts)
-        send_telegram_message(message, PROTOCOL)
-
-
 def main():
     for chain in [Chain.MAINNET]:
         logger.info("Processing %s assets...", chain.name)
         process_assets(chain)
-
-    for market_key, vault_risk_level in COMPOUND_VAULTS_KEYS:
-        analyze_compound_market_allocation(market_key, vault_risk_level)
+        check_collateral_risk(chain)
 
 
 if __name__ == "__main__":
