@@ -19,7 +19,6 @@ jobs:
       scripts: |
         morpho/markets.py
         aave/main.py
-        compound/main.py
         lido/steth/main.py
         lrt-pegs/curve/main.py
         lrt-pegs/fluid/main.py

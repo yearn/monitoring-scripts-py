@@ -14,18 +14,11 @@ Additionally, Github actions bot runs every hour and fetches queued proposals us
 
 ## On-Chain Collateral Risk Monitoring
 
-The script [collateral.py](./collateral.py) reads collateral data directly from Compound V3 Comet contracts on-chain. This replaces the previous Gauntlet dashboard dependency which could have stale data (36h+).
+The script [collateral.py](./collateral.py) reads collateral data directly from Compound V3 Comet contracts on-chain. It is run daily by Github actions.
 
 ### Monitored Markets
 
-Markets are configured in [`MARKETS_BY_CHAIN`](./collateral.py) with their risk levels:
-
-| Market | Address | Risk Level |
-|--------|---------|------------|
-| cUSDCv3 | `0xc3d688B66703497DAA19211EEdff47f25384cdc3` | 1 |
-| cUSDTv3 | `0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840` | 1 |
-| cWETHv3 | `0xA17581A9E3356d9A858b789D68B4d866e593aE94` | 1 |
-| cUSDSv3 | `0x5D409e56D886231aDAf00c8775665AD0f9897b56` | 2 |
+Markets are configured in [`MARKETS_BY_CHAIN`](./collateral.py) with their risk levels. Risk level defines the risk of Yearn strategy that is depositing into the market.
 
 ### What is Monitored
 
