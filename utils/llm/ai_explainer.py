@@ -103,7 +103,7 @@ def _format_simulation_context(sim: SimulationResult) -> str:
         parts.append(f"\nEvents emitted ({len(sim.logs)} total, showing {len(shown_logs)}):")
         for log_entry in shown_logs:
             name = log_entry.get("name", "Unknown")
-            inputs = log_entry.get("inputs", [])
+            inputs = log_entry.get("inputs") or []
             input_strs = [f"{inp.get('soltype', {}).get('name', '?')}={inp.get('value', '?')}" for inp in inputs]
             parts.append(f"  {name}({', '.join(input_strs)})")
 
