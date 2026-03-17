@@ -16,15 +16,15 @@ Sends Telegram alerts when thresholds are exceeded.
 from dataclasses import dataclass
 
 from utils.abi import load_abi
-from utils.chains import Chain
-from utils.formatting import format_usd
-from utils.gauntlet import (
+from utils.assets import (
     ALLOCATION_TIERS,
     DEBT_SUPPLY_RATIO,
     MAX_RISK_THRESHOLDS,
     SUPPLY_ASSETS_DICT,
     get_market_allocation_threshold,
 )
+from utils.chains import Chain
+from utils.formatting import format_usd
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
@@ -307,7 +307,7 @@ def _analyze_market(market: MarketData) -> list[str]:
     if unknown_assets:
         alerts.append(
             f"⚠️ Unknown collateral assets in market {market.name}: {', '.join(unknown_assets)}\n"
-            "Please update SUPPLY\\_ASSETS in utils/gauntlet.py"
+            "Please update SUPPLY\\_ASSETS in utils/assets.py"
         )
 
     logger.info("Total risk level: %s", f"{total_risk_level:.1%}")
