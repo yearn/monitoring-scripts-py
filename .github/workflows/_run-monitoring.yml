@@ -118,7 +118,7 @@ jobs:
           pip install uv
 
       - name: Install dependencies
-        run: uv pip install --system .
+        run: uv pip install --system '.[ai]'
 
       - name: Set extra environment variables
         if: inputs.extra_env != ''
