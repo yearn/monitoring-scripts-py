@@ -38,13 +38,13 @@ ABI_COMET = load_abi("compound/abi/CTokenV3.json")
 ABI_ERC20 = load_abi("common-abi/ERC20.json")
 
 # (address, name, risk_level) per chain
-# Risk levels match the Gauntlet vault risk levels used in ALLOCATION_TIERS
+# Risk levels matches strategy risk level
 MARKETS_BY_CHAIN: dict[Chain, list[tuple[str, str, int]]] = {
     Chain.MAINNET: [
         ("0xc3d688B66703497DAA19211EEdff47f25384cdc3", "cUSDCv3", 1),
-        ("0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840", "cUSDTv3", 1),
+        ("0x3Afdc9BCA9213A35503b077a6072F3D0d5AB0840", "cUSDTv3", 2),
         ("0xA17581A9E3356d9A858b789D68B4d866e593aE94", "cWETHv3", 1),
-        ("0x5D409e56D886231aDAf00c8775665AD0f9897b56", "cUSDSv3", 2),
+        ("0x5D409e56D886231aDAf00c8775665AD0f9897b56", "cUSDSv3", 1),
     ],
 }
 
