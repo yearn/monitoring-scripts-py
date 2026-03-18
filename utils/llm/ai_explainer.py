@@ -11,8 +11,8 @@ from timelock.calldata_decoder import DecodedCall, decode_calldata
 from utils.llm import get_llm_provider
 from utils.llm.base import LLMError
 from utils.logging import get_logger
+from utils.paste import upload_to_paste
 from utils.proxy import build_diff_url, detect_proxy_upgrade, get_current_implementation
-from utils.telegram import get_github_run_url
 from utils.tenderly.simulation import SimulationResult, simulate_transaction
 
 logger = get_logger("utils.llm.ai_explainer")
@@ -346,12 +346,11 @@ def format_explanation_line(explanation: Explanation) -> str:
     """Format the AI explanation for inclusion in a Telegram alert message.
 
     Uses the short summary for the Telegram message. The detailed analysis
-    is logged at INFO level and visible in GitHub Actions logs.
-
-    Includes a link to GH Actions logs when running in CI.
+    is uploaded to a paste service (dpaste.org) for easy access.
     """
     line = f"\n🤖 *AI Summary:*\n{explanation.summary}"
-    run_url = get_github_run_url()
-    if run_url:
-        line += f"\n[Full details]({run_url})"
+    if explanation.detail:
+        paste_url = upload_to_paste(explanation.detail, title="AI Transaction Analysis")
+        if paste_url:
+            line += f"\n[Full details]({paste_url})"
     return line
