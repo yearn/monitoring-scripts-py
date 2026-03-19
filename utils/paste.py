@@ -1,6 +1,6 @@
 """Upload text to a paste service for temporary sharing.
 
-Uses dpaste.org by default, with configurable expiry (default 7 days).
+Uses dpaste.com with configurable expiry (default 7 days).
 """
 
 import requests
@@ -9,12 +9,12 @@ from utils.logging import get_logger
 
 logger = get_logger("utils.paste")
 
-DPASTE_API_URL = "https://dpaste.org/api/"
+DPASTE_API_URL = "https://dpaste.com/api/"
 DEFAULT_EXPIRY_DAYS = 7
 
 
 def upload_to_paste(content: str, title: str = "", expiry_days: int = DEFAULT_EXPIRY_DAYS) -> str:
-    """Upload text content to dpaste.org and return the URL.
+    """Upload text content to dpaste.com and return the URL.
 
     Args:
         content: The text content to upload.

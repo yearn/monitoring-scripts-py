@@ -272,14 +272,14 @@ class TestParseExplanation(unittest.TestCase):
 class TestFormatExplanationLine(unittest.TestCase):
     """Tests for format_explanation_line."""
 
-    @patch("utils.llm.ai_explainer.upload_to_paste", return_value="https://dpaste.org/abc123")
+    @patch("utils.llm.ai_explainer.upload_to_paste", return_value="https://dpaste.com/abc123")
     def test_format_with_detail(self, mock_paste: MagicMock) -> None:
         explanation = Explanation(summary="This pauses the protocol.", detail="Full detail here.")
         result = format_explanation_line(explanation)
         self.assertIn("AI Summary", result)
         self.assertIn("This pauses the protocol.", result)
         self.assertNotIn("Full detail here.", result)
-        self.assertIn("https://dpaste.org/abc123", result)
+        self.assertIn("https://dpaste.com/abc123", result)
         self.assertIn("Full details", result)
         mock_paste.assert_called_once_with("Full detail here.", title="AI Transaction Analysis")
 
