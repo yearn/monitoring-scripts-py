@@ -59,12 +59,13 @@ def send_telegram_message(
         return
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    payload = {
+    payload: dict[str, object] = {
         "chat_id": chat_id,
         "text": message,
-        "parse_mode": "Markdown" if not plain_text else None,
         "disable_notification": disable_notification,
     }
+    if not plain_text:
+        payload["parse_mode"] = "Markdown"
 
     try:
         response = requests.post(url, json=payload, timeout=10)
