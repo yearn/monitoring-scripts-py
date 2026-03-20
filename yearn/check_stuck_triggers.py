@@ -374,10 +374,10 @@ def build_alert_message(stuck_triggers: List[StuckTrigger], threshold_hours: flo
             explorer_url = chain.explorer_url
             if trigger.vault_address:
                 vault_url = f"{explorer_url}/address/{trigger.vault_address}"
-                lines.append(f"    Vault: [{trigger.vault_address[:10]}...]({vault_url})")
+                lines.append(f"    Vault: [{trigger.vault_address}]({vault_url})")
 
             strategy_url = f"{explorer_url}/address/{trigger.strategy_address}"
-            lines.append(f"    Strategy: [{trigger.strategy_address[:10]}...]({strategy_url})")
+            lines.append(f"    Strategy: [{trigger.strategy_address}]({strategy_url})")
 
             if trigger.reason:
                 lines.append(f"    Reason: `{trigger.reason}`")
