@@ -219,8 +219,7 @@ def _check_susde_vault(messages: list[str], client, susde_vault) -> None:
         previous_cooldown = _cache_int(cooldown_cache_key)
         if previous_cooldown is not None and cooldown_duration != previous_cooldown:
             messages.append(
-                "🚨 sUSDe cooldown duration changed.\n"
-                f"previous: {previous_cooldown}s current: {cooldown_duration}s"
+                f"🚨 sUSDe cooldown duration changed.\nprevious: {previous_cooldown}s current: {cooldown_duration}s"
             )
         write_last_value_to_file(cache_filename, cooldown_cache_key, cooldown_duration)
     except Exception as e:
