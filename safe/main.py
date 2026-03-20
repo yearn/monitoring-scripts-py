@@ -144,12 +144,6 @@ ALL_SAFE_ADDRESSES = [
         "0xA27cA9292268ee0f0258B749f1D5740c9Bb68B50",
         "Strata Admin Multisig (3/4)",
     ],
-    [
-        "STRATA",
-        "mainnet",
-        "0x4be3749a0F6557b8fd98F3967e859DbD7C694eF4",
-        "Strata Operational Multisig (2/3)",
-    ],
     # NOTE: Moonwell multisig monitoring is disabled for now
     # [
     #     "MOONWELL",

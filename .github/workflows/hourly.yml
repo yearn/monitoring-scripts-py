@@ -27,12 +27,11 @@ jobs:
         lrt-pegs/origin_protocol.py
         euler/markets.py
         infinifi/main.py
-        strata/main.py
+        strata/main.py --profile hourly
         silo/ur_sniff.py
         usdai/main.py
         yearn/alert_large_flows.py
         maple/main.py
-        timelock/timelock_alerts.py
         # always run proposals after timelock alerts
         aave/proposals.py
         compound/proposals.py

@@ -1,3 +1,7 @@
+import argparse
+import os
+import time
+
 import requests
 from web3 import Web3
 
@@ -13,20 +17,36 @@ logger = get_logger(PROTOCOL)
 
 SRUSDE = Web3.to_checksum_address("0x3d7d6fdf07EE548B939A80edbc9B2256d0cdc003")
 JRUSDE = Web3.to_checksum_address("0xC58D044404d8B14e953C115E67823784dEA53d8F")
+STRATA_CDO = Web3.to_checksum_address("0x908B3921aaE4fC17191D382BB61020f2Ee6C0e20")
+SUSDE = Web3.to_checksum_address("0x9D39A5DE30E57443BfF2A8307A4256c8797A3497")
+SUSDE_STRATEGY = Web3.to_checksum_address("0xdbf4FB6C310C1C85D0b41B5DbCA06096F2E7099F")
 USDE_COIN_KEY = "ethereum:0x4c9edd5852cd905f086c759e8383e09bff1e68b3"
+ENVIO_GRAPHQL_URL = os.getenv("ENVIO_GRAPHQL_URL")
 
 WEI = 10**18
 REQUEST_TIMEOUT = 15
 
-# Core thresholds
-JR_TO_SR_WARNING_MIN = 0.10
-JR_TO_SR_CRITICAL_MIN = 0.05
-JR_ASSETS_DROP_ALERT_RATIO = 0.15
-JR_RATE_DROP_ALERT_RATIO = 0.02
+COVERAGE_MIN = 1.05
 USDE_PEG_WARNING = 0.005
 USDE_PEG_CRITICAL = 0.02
+LARGE_FLOW_ALERT_USD = 1_000_000
+WHALE_FLOW_ALERT_USD = 5_000_000
+FLOW_LOOKBACK_SECONDS = 6 * 60 * 60
+STRATEGY_RATIO_DROP_ALERT = 0.20
+TVL_CHANGE_ALERT_RATIO = 0.15
+JR_DRAIN_ALERT_RATIO = 0.15
 
 ERC4626_ABI = load_abi("common-abi/YearnV3Vault.json")
+ERC20_ABI = load_abi("common-abi/ERC20.json")
+SUSDE_COOLDOWN_ABI = [
+    {
+        "inputs": [],
+        "name": "cooldownDuration",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+]
 
 
 def _cache_float(key: str) -> float | None:
@@ -35,6 +55,16 @@ def _cache_float(key: str) -> float | None:
         return None
     try:
         return float(value)
+    except ValueError:
+        return None
+
+
+def _cache_int(key: str) -> int | None:
+    value = get_last_value_for_key_from_file(cache_filename, key)
+    if value == 0:
+        return None
+    try:
+        return int(float(value))
     except ValueError:
         return None
 
@@ -70,126 +100,267 @@ def _fetch_usde_price() -> float | None:
         return None
 
 
-def main() -> None:
+def _load_sr_flow_events(since_ts: int) -> tuple[list[dict], int] | None:
+    if not ENVIO_GRAPHQL_URL:
+        logger.warning("ENVIO_GRAPHQL_URL is not set; skipping srUSDe Deposit/Withdraw monitoring.")
+        return None
+
+    query = """
+    query GetStrataFlows($sinceTs: Int!, $vaultAddress: String!, $chainId: Int!) {
+      deposits: Deposit(
+        where: {
+          vaultAddress: { _eq: $vaultAddress }
+          chainId: { _eq: $chainId }
+          blockTimestamp: { _gt: $sinceTs }
+        }
+        order_by: { blockTimestamp: asc, blockNumber: asc, logIndex: asc }
+        limit: 200
+      ) {
+        assets
+        blockTimestamp
+        transactionHash
+        transactionFrom
+      }
+      withdrawals: Withdraw(
+        where: {
+          vaultAddress: { _eq: $vaultAddress }
+          chainId: { _eq: $chainId }
+          blockTimestamp: { _gt: $sinceTs }
+        }
+        order_by: { blockTimestamp: asc, blockNumber: asc, logIndex: asc }
+        limit: 200
+      ) {
+        assets
+        blockTimestamp
+        transactionHash
+        transactionFrom
+      }
+    }
+    """
+    variables = {"sinceTs": since_ts, "vaultAddress": SRUSDE.lower(), "chainId": 1}
+
+    try:
+        response = requests.post(
+            ENVIO_GRAPHQL_URL,
+            json={"query": query, "variables": variables},
+            timeout=REQUEST_TIMEOUT,
+        )
+        if response.status_code != 200:
+            logger.warning("Envio flow query failed: HTTP %s", response.status_code)
+            return None
+        body = response.json()
+        if body.get("errors"):
+            logger.warning("Envio flow query returned errors: %s", body["errors"])
+            return None
+
+        events = []
+        for event in body.get("data", {}).get("deposits", []):
+            event["flowType"] = "Deposit"
+            events.append(event)
+        for event in body.get("data", {}).get("withdrawals", []):
+            event["flowType"] = "Withdraw"
+            events.append(event)
+
+        events.sort(key=lambda event: int(event.get("blockTimestamp", 0)))
+        max_ts = since_ts
+        for event in events:
+            max_ts = max(max_ts, int(event.get("blockTimestamp", since_ts)))
+        return events, max_ts
+    except Exception as e:
+        logger.warning("Envio flow query failed: %s", e)
+        return None
+
+
+def _check_large_flows(messages: list[str], since_ts: int, usde_price: float | None) -> int | None:
+    flow_data = _load_sr_flow_events(since_ts)
+    if flow_data is None:
+        return None
+
+    events, max_ts = flow_data
+    usde_reference_price = usde_price if usde_price is not None else 1.0
+    for event in events:
+        assets = float(event["assets"]) / WEI
+        usd_value = assets * usde_reference_price
+        if usd_value < LARGE_FLOW_ALERT_USD:
+            continue
+
+        prefix = "🚨 Whale" if usd_value >= WHALE_FLOW_ALERT_USD else "⚠️ Large"
+        message = (
+            f"{prefix} srUSDe {event['flowType']} detected.\n"
+            f"Amount: {assets:,.2f} USDe (~${usd_value:,.2f})\n"
+            f"Tx: {event.get('transactionHash', 'n/a')}"
+        )
+        tx_from = event.get("transactionFrom")
+        if tx_from:
+            message += f"\nFrom: {tx_from}"
+        messages.append(message)
+
+    return max_ts
+
+
+def _check_susde_vault(messages: list[str], client, susde_vault) -> None:
+    susde_rate_raw = susde_vault.functions.convertToAssets(WEI).call()
+    susde_rate = float(susde_rate_raw) / WEI
+
+    susde_rate_cache_key = f"{PROTOCOL}_susde_rate"
+    previous_susde_rate = _cache_float(susde_rate_cache_key)
+    if previous_susde_rate is not None and susde_rate < previous_susde_rate:
+        drop_bps = ((previous_susde_rate - susde_rate) / previous_susde_rate) * 10_000
+        messages.append(
+            "🚨 sUSDe vault share value decreased.\n"
+            f"previous: {previous_susde_rate:.8f} current: {susde_rate:.8f} ({drop_bps:.2f} bps drop)"
+        )
+    _set_cache_float(susde_rate_cache_key, susde_rate)
+
+    try:
+        cooldown_contract = client.get_contract(SUSDE, SUSDE_COOLDOWN_ABI)
+        cooldown_duration = int(cooldown_contract.functions.cooldownDuration().call())
+        cooldown_cache_key = f"{PROTOCOL}_susde_cooldown_duration"
+        previous_cooldown = _cache_int(cooldown_cache_key)
+        if previous_cooldown is not None and cooldown_duration != previous_cooldown:
+            messages.append(
+                "🚨 sUSDe cooldown duration changed.\n"
+                f"previous: {previous_cooldown}s current: {cooldown_duration}s"
+            )
+        write_last_value_to_file(cache_filename, cooldown_cache_key, cooldown_duration)
+    except Exception as e:
+        logger.warning("Could not read sUSDe cooldownDuration: %s", e)
+
+
+def _check_daily_tvl(messages: list[str], total_deposits: float) -> None:
+    tvl_cache_key = f"{PROTOCOL}_total_deposits"
+    previous_total_deposits = _cache_float(tvl_cache_key)
+    if previous_total_deposits is not None and previous_total_deposits > 0:
+        tvl_change = (total_deposits - previous_total_deposits) / previous_total_deposits
+        if abs(tvl_change) >= TVL_CHANGE_ALERT_RATIO:
+            messages.append(
+                "⚠️ Strata total TVL changed significantly.\n"
+                f"previous: ${previous_total_deposits:,.2f} current: ${total_deposits:,.2f} ({tvl_change:.2%})"
+            )
+    _set_cache_float(tvl_cache_key, total_deposits)
+
+
+def _check_jr_drain(messages: list[str], jr_assets: float) -> None:
+    jr_assets_cache_key = f"{PROTOCOL}_jr_assets"
+    previous_jr_assets = _cache_float(jr_assets_cache_key)
+    if previous_jr_assets is not None and previous_jr_assets > 0:
+        jr_change = (jr_assets - previous_jr_assets) / previous_jr_assets
+        if jr_change <= -JR_DRAIN_ALERT_RATIO:
+            messages.append(
+                "⚠️ jrUSDe totalAssets dropped quickly (junior side draining).\n"
+                f"previous: ${previous_jr_assets:,.2f} current: ${jr_assets:,.2f} ({jr_change:.2%})"
+            )
+    _set_cache_float(jr_assets_cache_key, jr_assets)
+
+
+def main(profile: str) -> None:
     client = ChainManager.get_client(Chain.MAINNET)
 
     sr = client.get_contract(SRUSDE, ERC4626_ABI)
     jr = client.get_contract(JRUSDE, ERC4626_ABI)
+    susde = client.get_contract(SUSDE, ERC20_ABI)
+    susde_vault = client.get_contract(SUSDE, ERC4626_ABI)
 
     try:
         with client.batch_requests() as batch:
             batch.add(sr.functions.totalAssets())
-            batch.add(sr.functions.totalSupply())
             batch.add(sr.functions.convertToAssets(WEI))
             batch.add(jr.functions.totalAssets())
-            batch.add(jr.functions.totalSupply())
-            batch.add(jr.functions.convertToAssets(WEI))
-
+            batch.add(susde.functions.balanceOf(SUSDE_STRATEGY))
             responses = client.execute_batch(batch)
 
-        if len(responses) != 6:
-            raise ValueError(f"Batch call expected 6 responses, got {len(responses)}")
+        if len(responses) != 4:
+            raise ValueError(f"Batch call expected 4 responses, got {len(responses)}")
 
-        sr_total_assets, sr_total_supply, sr_rate_raw, jr_total_assets, jr_total_supply, jr_rate_raw = responses
+        sr_total_assets, sr_rate_raw, jr_total_assets, strategy_raw = responses
 
         sr_assets = float(sr_total_assets) / WEI
-        jr_assets = float(jr_total_assets) / WEI
-        sr_supply = float(sr_total_supply) / WEI
-        jr_supply = float(jr_total_supply) / WEI
         sr_rate = float(sr_rate_raw) / WEI
-        jr_rate = float(jr_rate_raw) / WEI
+        jr_assets = float(jr_total_assets) / WEI
+        strategy_susde_balance = float(strategy_raw) / WEI
 
-        jr_to_sr_ratio = (jr_assets / sr_assets) if sr_assets > 0 else 0.0
-        coverage_ratio = 1.0 + jr_to_sr_ratio
+        coverage_ratio = (sr_assets + jr_assets) / sr_assets if sr_assets > 0 else 0.0
+        total_deposits = sr_assets + jr_assets
+        strategy_ratio = (strategy_susde_balance / total_deposits) if total_deposits > 0 else 0.0
 
         logger.info(
-            "sr_assets=%s sr_supply=%s sr_rate=%s jr_assets=%s jr_supply=%s jr_rate=%s jr_to_sr_ratio=%s coverage_ratio=%s",
+            "strata_cdo=%s sr_assets=%s sr_rate=%s jr_assets=%s strategy_susde_balance=%s strategy_ratio=%s coverage_ratio=%s",
+            STRATA_CDO,
             f"{sr_assets:,.2f}",
-            f"{sr_supply:,.2f}",
             f"{sr_rate:.6f}",
             f"{jr_assets:,.2f}",
-            f"{jr_supply:,.2f}",
-            f"{jr_rate:.6f}",
-            f"{jr_to_sr_ratio:.4%}",
+            f"{strategy_susde_balance:,.2f}",
+            f"{strategy_ratio:.2%}",
             f"{coverage_ratio:.4f}",
         )
 
         messages: list[str] = []
 
-        if sr_assets <= 0:
-            messages.append("🚨 Strata srUSDe totalAssets is zero or invalid.")
-
-        # Coverage guardrail proxy: coverage ~= 1 + (jr_assets / sr_assets)
-        _breach_once(
-            f"{PROTOCOL}_coverage_critical",
-            jr_to_sr_ratio < JR_TO_SR_CRITICAL_MIN,
-            (
-                "🚨 Strata junior buffer is critically low.\n"
-                f"jr/sr ratio: {jr_to_sr_ratio:.2%} (critical < {JR_TO_SR_CRITICAL_MIN:.0%}).\n"
-                f"Implied coverage ratio: {coverage_ratio:.4f}"
-            ),
-            messages,
-        )
-        _breach_once(
-            f"{PROTOCOL}_coverage_warning",
-            JR_TO_SR_CRITICAL_MIN <= jr_to_sr_ratio < JR_TO_SR_WARNING_MIN,
-            (
-                "⚠️ Strata junior buffer is getting thin.\n"
-                f"jr/sr ratio: {jr_to_sr_ratio:.2%} (warning < {JR_TO_SR_WARNING_MIN:.0%}).\n"
-                f"Implied coverage ratio: {coverage_ratio:.4f}"
-            ),
-            messages,
-        )
-
-        # srUSDe share value should not decrease.
-        sr_rate_cache_key = f"{PROTOCOL}_sr_rate"
-        prev_sr_rate = _cache_float(sr_rate_cache_key)
-        if prev_sr_rate is not None and sr_rate < prev_sr_rate:
-            drop_bps = ((prev_sr_rate - sr_rate) / prev_sr_rate) * 10_000
-            messages.append(
-                "🚨 srUSDe share value decreased.\n"
-                f"previous: {prev_sr_rate:.8f} current: {sr_rate:.8f} ({drop_bps:.2f} bps drop)"
-            )
-        _set_cache_float(sr_rate_cache_key, sr_rate)
-
-        # jrUSDe drawdowns are expected in stress, but big drops should alert.
-        jr_rate_cache_key = f"{PROTOCOL}_jr_rate"
-        prev_jr_rate = _cache_float(jr_rate_cache_key)
-        if prev_jr_rate is not None and prev_jr_rate > 0:
-            jr_rate_change = (jr_rate - prev_jr_rate) / prev_jr_rate
-            if jr_rate_change <= -JR_RATE_DROP_ALERT_RATIO:
-                messages.append(
-                    "⚠️ jrUSDe share value dropped quickly.\n"
-                    f"previous: {prev_jr_rate:.8f} current: {jr_rate:.8f} ({jr_rate_change:.2%})"
-                )
-        _set_cache_float(jr_rate_cache_key, jr_rate)
-
-        jr_assets_cache_key = f"{PROTOCOL}_jr_assets"
-        prev_jr_assets = _cache_float(jr_assets_cache_key)
-        if prev_jr_assets is not None and prev_jr_assets > 0:
-            jr_assets_change = (jr_assets - prev_jr_assets) / prev_jr_assets
-            if jr_assets_change <= -JR_ASSETS_DROP_ALERT_RATIO:
-                messages.append(
-                    "⚠️ jrUSDe TVL dropped quickly.\n"
-                    f"previous: ${prev_jr_assets:,.2f} current: ${jr_assets:,.2f} ({jr_assets_change:.2%})"
-                )
-        _set_cache_float(jr_assets_cache_key, jr_assets)
-
-        usde_price = _fetch_usde_price()
-        if usde_price is not None:
-            usde_deviation = abs(usde_price - 1.0)
+        if profile in ("all", "daily"):
             _breach_once(
-                f"{PROTOCOL}_usde_peg_critical",
-                usde_deviation >= USDE_PEG_CRITICAL,
-                (f"🚨 USDe peg is heavily off $1.\nprice: ${usde_price:.4f}, deviation: {usde_deviation:.2%}"),
+                f"{PROTOCOL}_coverage_below_105",
+                coverage_ratio < COVERAGE_MIN,
+                (
+                    "🚨 Strata senior coverage ratio below 105%.\n"
+                    f"coverage ratio: {coverage_ratio:.4f} (min {COVERAGE_MIN:.2f})\n"
+                    f"StrataCDO: {STRATA_CDO}"
+                ),
                 messages,
             )
-            _breach_once(
-                f"{PROTOCOL}_usde_peg_warning",
-                USDE_PEG_WARNING <= usde_deviation < USDE_PEG_CRITICAL,
-                (f"⚠️ USDe peg moved away from $1.\nprice: ${usde_price:.4f}, deviation: {usde_deviation:.2%}"),
-                messages,
-            )
+
+            sr_rate_cache_key = f"{PROTOCOL}_sr_rate"
+            previous_sr_rate = _cache_float(sr_rate_cache_key)
+            if previous_sr_rate is not None and sr_rate < previous_sr_rate:
+                drop_bps = ((previous_sr_rate - sr_rate) / previous_sr_rate) * 10_000
+                messages.append(
+                    "🚨 srUSDe share value decreased.\n"
+                    f"previous: {previous_sr_rate:.8f} current: {sr_rate:.8f} ({drop_bps:.2f} bps drop)"
+                )
+            _set_cache_float(sr_rate_cache_key, sr_rate)
+
+        if profile in ("all", "hourly"):
+            usde_price = _fetch_usde_price()
+            if usde_price is not None:
+                usde_deviation = abs(usde_price - 1.0)
+                _breach_once(
+                    f"{PROTOCOL}_usde_peg_critical",
+                    usde_deviation >= USDE_PEG_CRITICAL,
+                    f"🚨 USDe peg is heavily off $1.\nprice: ${usde_price:.4f}, deviation: {usde_deviation:.2%}",
+                    messages,
+                )
+                _breach_once(
+                    f"{PROTOCOL}_usde_peg_warning",
+                    USDE_PEG_WARNING <= usde_deviation < USDE_PEG_CRITICAL,
+                    f"⚠️ USDe peg moved away from $1.\nprice: ${usde_price:.4f}, deviation: {usde_deviation:.2%}",
+                    messages,
+                )
+        else:
+            usde_price = None
+
+        if profile in ("all", "daily"):
+            strategy_ratio_cache_key = f"{PROTOCOL}_strategy_ratio"
+            previous_strategy_ratio = _cache_float(strategy_ratio_cache_key)
+            if previous_strategy_ratio is not None and previous_strategy_ratio > 0:
+                strategy_ratio_drop = (previous_strategy_ratio - strategy_ratio) / previous_strategy_ratio
+                if strategy_ratio_drop >= STRATEGY_RATIO_DROP_ALERT:
+                    messages.append(
+                        "⚠️ sUSDe strategy balance dropped relative to total deposits.\n"
+                        f"previous ratio: {previous_strategy_ratio:.2%} current ratio: {strategy_ratio:.2%} "
+                        f"({strategy_ratio_drop:.2%} drop)"
+                    )
+            _set_cache_float(strategy_ratio_cache_key, strategy_ratio)
+            _check_daily_tvl(messages, total_deposits)
+            _check_jr_drain(messages, jr_assets)
+            _check_susde_vault(messages, client, susde_vault)
+
+        if profile in ("all", "daily"):
+            flow_last_ts_cache_key = f"{PROTOCOL}_last_flow_ts"
+            flow_since_ts = _cache_int(flow_last_ts_cache_key)
+            if flow_since_ts is None:
+                flow_since_ts = int(time.time()) - FLOW_LOOKBACK_SECONDS
+            flow_max_ts = _check_large_flows(messages, flow_since_ts, usde_price)
+            if flow_max_ts is not None:
+                write_last_value_to_file(cache_filename, flow_last_ts_cache_key, flow_max_ts)
 
         if messages:
             send_telegram_message("\n\n".join(messages), PROTOCOL)
@@ -200,4 +371,12 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Strata monitoring")
+    parser.add_argument(
+        "--profile",
+        default="all",
+        choices=["all", "hourly", "daily"],
+        help="Monitoring profile by cadence.",
+    )
+    args = parser.parse_args()
+    main(args.profile)

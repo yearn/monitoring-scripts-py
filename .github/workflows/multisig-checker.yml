@@ -16,5 +16,9 @@ jobs:
     with:
       cache_file: nonces.txt
       cache_key_prefix: nonces-v3
+      extra_env: |
+        CACHE_FILENAME=nonces.txt
+        NONCE_FILENAME=nonces.txt
       scripts: |
         safe/main.py
+        timelock/timelock_alerts.py
