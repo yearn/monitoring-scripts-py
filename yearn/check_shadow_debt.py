@@ -340,7 +340,7 @@ def build_alert_message(issues: List[ShadowDebtIssue]) -> str:
             )
 
             explorer_url = chain.explorer_url
-            vault_link = f"[{issue.vault_address[:10]}...]({explorer_url}/address/{issue.vault_address})"
+            vault_link = f"[{issue.vault_address}]({explorer_url}/address/{issue.vault_address})"
 
             lines.append(
                 f"  • {vault_link} ({issue.vault_symbol}): "
@@ -351,7 +351,7 @@ def build_alert_message(issues: List[ShadowDebtIssue]) -> str:
 
             # List each strategy
             for strategy in issue.strategies_with_shadow_debt:
-                strategy_link = f"[{strategy.address[:10]}...]({explorer_url}/address/{strategy.address})"
+                strategy_link = f"[{strategy.address}]({explorer_url}/address/{strategy.address})"
                 lines.append(f"    - {strategy_link}: {format_amount(strategy.current_debt, issue.vault_decimals)}")
 
         lines.append("")

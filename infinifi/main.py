@@ -295,7 +295,7 @@ def main():
                 moved_farms.sort(key=lambda x: x["change_pct"], reverse=True)
                 moved_lines = [
                     (f"- {f['label']}: {f['last_ratio']:.2%} -> {f['new_ratio']:.2%} ({f['change_pct']:.2%} change)")
-                    for f in moved_farms[:10]
+                    for f in moved_farms
                 ]
                 more_count = len(moved_farms) - 10
                 if more_count > 0:
@@ -312,7 +312,7 @@ def main():
 
             if activated_farms:
                 activated_farms.sort(key=lambda x: x["new_ratio"], reverse=True)
-                activated_lines = [f"- {f['label']}: {f['new_ratio']:.2%}" for f in activated_farms[:10]]
+                activated_lines = [f"- {f['label']}: {f['new_ratio']:.2%}" for f in activated_farms]
                 more_count = len(activated_farms) - 10
                 if more_count > 0:
                     activated_lines.append(f"- ...and {more_count} more farms")
