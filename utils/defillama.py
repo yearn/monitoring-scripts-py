@@ -48,5 +48,5 @@ def check_stablecoin_prices(
 
     if depegged:
         lines = [f"*{name}*: ${price}" for name, price in depegged]
-        message = f"🚨 Stablecoin Depeg Alert (below ${threshold}):\n" + "\n".join(lines)
+        message = f"🚨 CRITICAL: Stablecoin Depeg (below ${threshold}):\n" + "\n".join(lines)
         send_telegram_message(message, protocol)
