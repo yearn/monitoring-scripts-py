@@ -4,8 +4,8 @@ from decimal import Decimal, getcontext
 
 from defillama_sdk import DefiLlama
 
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 
 getcontext().prec = 18
 
@@ -48,5 +48,5 @@ def check_stablecoin_prices(
 
     if depegged:
         lines = [f"*{name}*: ${price}" for name, price in depegged]
-        message = f"🚨 CRITICAL: Stablecoin Depeg (below ${threshold}):\n" + "\n".join(lines)
-        send_telegram_message(message, protocol)
+        message = f"Stablecoin Depeg (below ${threshold}):\n" + "\n".join(lines)
+        send_alert(Alert(AlertSeverity.CRITICAL, message, protocol))
