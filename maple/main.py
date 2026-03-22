@@ -16,6 +16,7 @@ from maple.collateral import check_collateral_risk
 from utils.abi import load_abi
 from utils.cache import get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
+from utils.defillama import check_stablecoin_prices
 from utils.formatting import format_usd
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
@@ -65,6 +66,12 @@ ABI_ERC20_BALANCE = [
 # --- Thresholds ---
 TVL_CHANGE_THRESHOLD = 0.15  # 15% TVL change alert
 WITHDRAWAL_QUEUE_THRESHOLD = 0.20  # 20% of liquid funds
+
+# --- Stablecoin price monitoring ---
+STABLECOIN_TOKENS: list[tuple[str, str]] = [
+    ("syrupUSDC", "ethereum:0x80ac24aA929eaF5013f6436cdA2a7ba190f5Cc0b"),
+    ("syrupUSDT", "ethereum:0x8a4f85BeC4fC7340907e6e86C7721DC3B0506A4C"),
+]
 
 
 def get_cache_value(key: str) -> float:
@@ -267,6 +274,7 @@ def main() -> None:
     pool = client.eth.contract(address=SYRUP_USDC_POOL, abi=ABI_POOL)
 
     try:
+        check_stablecoin_prices(STABLECOIN_TOKENS, PROTOCOL)
         pps = check_pps(client, pool)
         tvl = check_tvl(client, pool)
         check_unrealized_losses(client)
