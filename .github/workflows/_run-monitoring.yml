@@ -82,6 +82,9 @@ env:
   TELEGRAM_CHAT_ID_USDAI: ${{ secrets.TELEGRAM_CHAT_ID_USDAI }}
   TELEGRAM_CHAT_ID_YEARN: ${{ secrets.TELEGRAM_CHAT_ID_YEARN }}
 
+  # ── GitHub PAT (dispatch) ──
+  PAT_DISPATCH: ${{ secrets.PAT_DISPATCH }}
+
   # ── API Keys ──
   GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
   TALLY_API_KEY: ${{ secrets.TALLY_API_KEY }}
@@ -93,26 +96,26 @@ env:
   COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
   TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
   SAFE_API_KEY: ${{ secrets.SAFE_API_KEY }}
+  LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+  LLM_MODEL: ${{ secrets.LLM_MODEL }}
+  LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
 
 jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-          cache: "pip"
+      - uses: actions/checkout@v6
 
       - name: Install uv
-        run: |
-          python -m pip install --upgrade pip
-          pip install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
 
       - name: Install dependencies
-        run: uv pip install --system .
+        run: uv sync --locked --extra ai
 
       - name: Set extra environment variables
         if: inputs.extra_env != ''
@@ -121,7 +124,7 @@ jobs:
       - name: Restore cache
         if: inputs.cache_file != ''
         id: cache-restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ${{ inputs.cache_file }}
           key: ${{ inputs.cache_key_prefix }}-${{ hashFiles(inputs.cache_file) }}
@@ -152,7 +155,7 @@ jobs:
 
       - name: Save cache
         if: always() && inputs.cache_file != '' && steps.initial-hash.outputs.hash != steps.final-hash.outputs.hash
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ inputs.cache_file }}
           key: ${{ inputs.cache_key_prefix }}-${{ hashFiles(inputs.cache_file) }}
