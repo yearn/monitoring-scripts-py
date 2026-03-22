@@ -20,6 +20,7 @@
 - Fix fixable lint issues: `uv run ruff check --fix .`
 - Type checking: `uv run mypy .`
 - use .env file to load API keys and other environment variables
+- Always pull latest main branch
 
 ## Code Style Guidelines
 - **Imports**: Use ruff for organizing imports (stdlib, third-party, local)
