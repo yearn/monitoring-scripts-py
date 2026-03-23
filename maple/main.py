@@ -12,7 +12,7 @@ Monitors:
 - Pool Delegate Cover — alerts when delegate cover balance drops to zero
 """
 
-from maple.collateral import check_collateral_risk
+from maple.collateral import SYRUP_USDT_POOL_ID, check_collateral_risk
 from utils.abi import load_abi
 from utils.cache import get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
@@ -67,10 +67,11 @@ ABI_ERC20_BALANCE = [
 TVL_CHANGE_THRESHOLD = 0.15  # 15% TVL change alert
 WITHDRAWAL_QUEUE_THRESHOLD = 0.20  # 20% of liquid funds
 
-# --- Stablecoin price monitoring ---
+# --- Stablecoin price monitoring (DeFiLlama coins API keys; must be indexed tokens) ---
 STABLECOIN_TOKENS: list[tuple[str, str]] = [
-    ("syrupUSDC", "ethereum:0x80ac24aA929eaF5013f6436cdA2a7ba190f5Cc0b"),
-    ("syrupUSDT", "ethereum:0x8a4f85BeC4fC7340907e6e86C7721DC3B0506A4C"),
+    ("syrupUSDC", f"ethereum:{SYRUP_USDC_POOL.lower()}"),
+    # Subgraph pool id — listed on coins.llama.fi; 0x8a4f85… is not indexed.
+    ("syrupUSDT", f"ethereum:{SYRUP_USDT_POOL_ID}"),
 ]
 
 

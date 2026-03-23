@@ -25,8 +25,10 @@ Severity guide:
 Override defaults with ``silent=True/False``.
 
 Hooks (optional):
-    Register a callback with ``register_alert_hook(fn)`` to be invoked for
-    HIGH and CRITICAL alerts. Hook exceptions are logged and swallowed.
+    On import, ``utils.alert`` registers ``utils.dispatch.dispatch_emergency_withdrawal``
+    if no hook is set yet (lazy import at end of module avoids cycles with ``dispatch``).
+    Override with ``register_alert_hook(fn)``, or ``None`` to clear (tests). Hook
+    exceptions are logged and swallowed.
 """
 
 from dataclasses import dataclass
@@ -82,6 +84,19 @@ class Alert:
     channel: str = ""
 
 
+def _ensure_default_dispatch_hook() -> None:
+    """Install emergency dispatch hook if nothing registered (production default)."""
+    global _alert_hook
+    if _alert_hook is not None:
+        return
+    try:
+        from utils.dispatch import dispatch_emergency_withdrawal
+
+        _alert_hook = dispatch_emergency_withdrawal
+    except ImportError:
+        logger.debug("utils.dispatch not available, skipping default hook")
+
+
 def register_alert_hook(callback: Callable[[Alert], None]) -> None:
     """Register a hook callback invoked for HIGH and CRITICAL alerts.
 
@@ -121,3 +136,7 @@ def send_alert(
             _alert_hook(alert)
         except Exception:
             logger.exception("Alert hook failed for %s alert", alert.severity.value)
+
+
+# After AlertSeverity / Alert exist so utils.dispatch can import this module safely.
+_ensure_default_dispatch_hook()

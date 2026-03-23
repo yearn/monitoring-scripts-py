@@ -1,7 +1,9 @@
+from decimal import Decimal
+
 from utils.abi import load_abi
-from utils.alert import Alert, AlertSeverity, register_alert_hook, send_alert
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.chains import Chain
-from utils.dispatch import dispatch_emergency_withdrawal
+from utils.defillama import check_stablecoin_prices
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
 
@@ -9,11 +11,21 @@ CUSD = "0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC"
 PROTOCOL = "cap"
 logger = get_logger(PROTOCOL)
 
-register_alert_hook(dispatch_emergency_withdrawal)
 ALERT_THRESHOLD = 60_000_000  # 60M
+
+STABLECOIN_TOKENS: list[tuple[str, str]] = [
+    ("cUSD", f"ethereum:{CUSD.lower()}"),
+]
+
+# DeFiLlama cUSD/USD often prints far below utils.defillama.DEPEG_THRESHOLD (e.g. ~0.97) without
+# a real on-chain peg break; tight peg monitoring is RedStone/Tenderly (cap/README). Loosen here
+# to avoid constant CRITICAL + dispatch; raise toward 0.995 if Llama aligns with fundamentals.
+CUSD_LLAMA_DEPEG_THRESHOLD = Decimal("0.93")
 
 
 def main():
+    check_stablecoin_prices(STABLECOIN_TOKENS, PROTOCOL, CUSD_LLAMA_DEPEG_THRESHOLD)
+
     client = ChainManager.get_client(Chain.MAINNET)
     ctoken = client.eth.contract(address=CUSD, abi=load_abi("cap/abi/CToken.json"))  # aka cusd
 
