@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import requests
 
 from utils.assets import (
-    DEBT_SUPPLY_RATIO,
     MAX_RISK_THRESHOLDS,
     SUPPLY_ASSETS_DICT,
     get_market_allocation_threshold,
@@ -112,10 +111,19 @@ def get_timestamp_before(hours: int):
     return one_hour_ago.strftime("%Y-%m-%dT%H:00:00.000Z")
 
 
-def fetch_borrow_metrics_from_gauntlet(protocol, market_key, vault_risk_level) -> list[str]:
-    """
-    Fetch and analyze market allocation metrics from Gauntlet.
-    Returns a list of alert messages if any thresholds are exceeded.
+def fetch_borrow_metrics_from_gauntlet(
+    protocol: str, market_key: str, vault_risk_level: int, debt_supply_ratio: float
+) -> list[str]:
+    """Fetch and analyze market allocation metrics from Gauntlet.
+
+    Args:
+        protocol: Gauntlet protocol slug.
+        market_key: Market identifier within the protocol.
+        vault_risk_level: Risk level used for allocation and max-risk thresholds.
+        debt_supply_ratio: Alert when total_borrow / total_supply exceeds this value.
+
+    Returns:
+        Alert messages if any thresholds are exceeded.
     """
     alerts = []
     charts = get_charts_for_protocol_market(protocol, market_key)
@@ -184,7 +192,7 @@ def fetch_borrow_metrics_from_gauntlet(protocol, market_key, vault_risk_level) -
             f"💰 Total assets: {format_usd(total_supply)}"
         )
 
-    if total_borrow / total_supply > DEBT_SUPPLY_RATIO:
+    if total_borrow / total_supply > debt_supply_ratio:
         alerts.append(
             f"🔺 High borrow/supply ratio detected in market {market_key}:\n"
             f"📊 Total borrow/supply ratio: {total_borrow / total_supply:.1%}\n"

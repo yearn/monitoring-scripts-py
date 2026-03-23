@@ -10,7 +10,7 @@ The script [markets.py](markets.py) is run hourly by Github actions. It fetches 
 
 ### Debt Supply Ratio
 
-The script fetches the data from [Gauntlet dashboard](https://dashboards.gauntlet.xyz/protocols/euler) and sends alerts if the debt supply ratio is greater than 60%.
+The script fetches the data from [Gauntlet dashboard](https://dashboards.gauntlet.xyz/protocols/euler) and sends alerts if the debt supply ratio is greater than 60% (`DEBT_SUPPLY_RATIO` in [markets.py](./markets.py)).
 
 ## Vaults & Markets
 

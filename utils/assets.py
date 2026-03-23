@@ -110,9 +110,6 @@ MAX_RISK_THRESHOLDS: dict[int, float] = {
     5: 5.00,  # Risk tier 5 max total risk
 }
 
-# Common debt/supply ratio threshold
-DEBT_SUPPLY_RATIO: float = 0.80  # 80%
-
 
 def get_market_allocation_threshold(market_risk_level: int, vault_risk_level: int) -> float:
     """Get allocation threshold based on market and vault risk levels.
