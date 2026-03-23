@@ -28,6 +28,7 @@ SAFE_FARM_IDENTIFIERS = [
     "maple",
     "cap",
     "aave horizon",
+    "aave usdc",
     "syrupusdc",
     "autousd",
     "spark susdc",
