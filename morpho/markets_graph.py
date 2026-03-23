@@ -318,16 +318,12 @@ def check_graph_data_for_chain(chain: Chain):
 
     data = response.json()
     if "errors" in data:
-        error_msg = data["errors"][0]["message"] if data["errors"] else "Unknown GraphQL error"
-        if "indexing_error" in error_msg:
-            logger.error("GraphQL indexing error when fetching Morpho data: %s", error_msg)
-        else:
-            send_telegram_message(
-                f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨",
-                PROTOCOL,
-                True,
-                True,
-            )
+        send_telegram_message(
+            f"🚨 GraphQL error when fetching Morpho data. Response code: {response.status_code} 🚨",
+            PROTOCOL,
+            True,
+            True,
+        )
         return
 
     vaults_data = data.get("data", {}).get("metaMorphos", {})

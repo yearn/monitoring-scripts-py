@@ -855,9 +855,8 @@ def main() -> None:
 
     data = response.json()
     if "errors" in data:
-        error_msg = data["errors"][0]["message"] if data["errors"] else "Unknown GraphQL error"
         send_telegram_message(
-            f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨",
+            f"🚨 GraphQL error when fetching Morpho data. Response code: {response.status_code} 🚨",
             PROTOCOL,
             True,
             True,
