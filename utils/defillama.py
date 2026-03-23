@@ -11,7 +11,7 @@ getcontext().prec = 18
 
 logger = get_logger("defillama")
 
-DEPEG_THRESHOLD = Decimal("0.995")
+DEPEG_THRESHOLD = Decimal("0.97")
 
 _dl_client = DefiLlama()
 
