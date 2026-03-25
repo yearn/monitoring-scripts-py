@@ -46,6 +46,19 @@ CHAINS = [Chain.MAINNET, Chain.POLYGON, Chain.BASE, Chain.ARBITRUM, Chain.KATANA
 # This will be scaled per vault based on decimals
 MIN_DEBT_THRESHOLD_TOKENS = Decimal("1")  # 1 token, regardless of decimals
 
+# Strategies allowed to have shadow debt for specific vaults (keyed by chain_id -> vault_address -> set of strategy addresses)
+# These strategies intentionally operate outside the default queue and should not trigger alerts
+SHADOW_DEBT_WHITELIST: Dict[int, Dict[str, Set[str]]] = {
+    Chain.MAINNET.chain_id: {
+        "0x696d02db93291651ed510704c9b286841d506987": {  # yvUSD
+            "0xf28dc8b6ded7e45f8cf84b9972487c8e1857a442",  # syrupUSDC/USDC Morpho Looper
+            "0xb73a2f9f57aaa125ade3a11a1e661d28a919c66d",  # PT siUSD March 25 Morpho Looper
+            "0x2f56d106c6df739bdbb777c2fee79ffaed88d179",  # Arbitrum syrupUSDC/USDC Morpho Looper
+            "0x7bf1d269bf2cb79e628f51b93763b342fd059d1d",  # PT stcUSD Jul 23 Morpho Looper
+        },
+    },
+}
+
 
 @dataclass
 class StrategyInfo:
@@ -201,6 +214,9 @@ def detect_shadow_debt(
     # Scale threshold to vault's decimal precision
     threshold_in_wei = min_debt_threshold * Decimal(10) ** vault_decimals
 
+    # Get whitelisted strategies for this vault
+    whitelisted_strategies = SHADOW_DEBT_WHITELIST.get(chain.chain_id, {}).get(vault_address, set())
+
     for strategy_info in strategies_info.values():
         # Only count activated strategies
         if strategy_info.activation == 0:
@@ -210,6 +226,16 @@ def detect_shadow_debt(
 
         # Check if strategy has debt but is not in default queue
         if strategy_info.current_debt > 0 and not strategy_info.in_default_queue:
+            # Skip strategies that are whitelisted for shadow debt
+            if strategy_info.address in whitelisted_strategies:
+                logger.debug(
+                    "Skipping whitelisted shadow debt: vault=%s strategy=%s debt=%d",
+                    vault_address,
+                    strategy_info.address,
+                    strategy_info.current_debt,
+                )
+                continue
+
             # Apply minimum threshold to avoid alerting on dust
             if Decimal(strategy_info.current_debt) >= threshold_in_wei:
                 strategies_with_shadow_debt.append(strategy_info)
