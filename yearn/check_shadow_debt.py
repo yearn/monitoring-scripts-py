@@ -50,11 +50,11 @@ MIN_DEBT_THRESHOLD_TOKENS = Decimal("1")  # 1 token, regardless of decimals
 # These strategies intentionally operate outside the default queue and should not trigger alerts
 SHADOW_DEBT_WHITELIST: Dict[int, Dict[str, Set[str]]] = {
     Chain.MAINNET.chain_id: {
-        "0x696d02db93291651ed510704c9b286841d506987": { # yvUSD
-            "0xf28dc8b6ded7e45f8cf84b9972487c8e1857a442", # syrupUSDC/USDC Morpho Looper
-            "0xb73a2f9f57aaa125ade3a11a1e661d28a919c66d", # PT siUSD March 25 Morpho Looper
-            "0x2f56d106c6df739bdbb777c2fee79ffaed88d179", # Arbitrum syrupUSDC/USDC Morpho Looper
-            "0x7bf1d269bf2cb79e628f51b93763b342fd059d1d", # PT stcUSD Jul 23 Morpho Looper
+        "0x696d02db93291651ed510704c9b286841d506987": {  # yvUSD
+            "0xf28dc8b6ded7e45f8cf84b9972487c8e1857a442",  # syrupUSDC/USDC Morpho Looper
+            "0xb73a2f9f57aaa125ade3a11a1e661d28a919c66d",  # PT siUSD March 25 Morpho Looper
+            "0x2f56d106c6df739bdbb777c2fee79ffaed88d179",  # Arbitrum syrupUSDC/USDC Morpho Looper
+            "0x7bf1d269bf2cb79e628f51b93763b342fd059d1d",  # PT stcUSD Jul 23 Morpho Looper
         },
     },
 }
