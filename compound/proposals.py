@@ -19,6 +19,22 @@ logger = get_logger(PROTOCOL)
 max_length_summary = 450
 
 
+def extract_title_from_metadata(raw_title: str) -> str:
+    """Extract the actual title from Tally metadata title field.
+
+    Tally sometimes returns the full markdown description in the title field.
+    This extracts just the first heading as the actual title.
+    """
+    if not raw_title:
+        return ""
+    # Tally may return literal "\n" (escaped) or actual newlines
+    first_line = raw_title.strip().split("\\n")[0].split("\n")[0].strip()
+    # Remove markdown heading prefix
+    if first_line.startswith("#"):
+        first_line = first_line.lstrip("#").strip()
+    return first_line
+
+
 def extract_summary_from_description(description):
     # Extract the summary part
     summary_start = description.find("# Summary")
@@ -109,8 +125,7 @@ def get_proposals():
             message += f"🔗 Link to Proposal: {link}\n"
 
             metadata = proposal["metadata"]
-            title = metadata["title"]
-            # description = metadata["description"]
+            title = extract_title_from_metadata(metadata["title"])
             if title:
                 message += f"📝 Title: {title}\n"
             # if description:
