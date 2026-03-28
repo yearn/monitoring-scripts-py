@@ -10,7 +10,7 @@ PROTOCOL = "cap"
 logger = get_logger(PROTOCOL)
 
 register_alert_hook(dispatch_emergency_withdrawal)
-ALERT_THRESHOLD = 60_000_000  # 60M
+ALERT_THRESHOLD = 50_000_000  # 50M
 
 
 def main():
