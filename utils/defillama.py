@@ -31,7 +31,18 @@ def check_stablecoin_prices(
     """
     token_keys = [key for _, key in tokens]
     logger.info("Fetching prices for %d tokens from DeFiLlama", len(token_keys))
-    result = _dl_client.prices.getCurrentPrices(token_keys)
+    try:
+        result = _dl_client.prices.getCurrentPrices(token_keys)
+    except Exception as exc:
+        logger.warning("Failed to fetch DeFiLlama prices for %s: %s", protocol, exc)
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"Stablecoin price check failed: {exc}",
+                protocol,
+            )
+        )
+        return
     coins = result.get("coins", {})
     prices = {key: Decimal(str(data["price"])) for key, data in coins.items() if "price" in data}
 
