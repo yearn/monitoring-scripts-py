@@ -30,13 +30,13 @@ For each market, the script fetches on-chain:
 It then checks:
 - **Collateral Allocation Ratio:** If any asset's allocation exceeds its risk-adjusted threshold.
 - **Total Risk Level:** If the weighted risk of all collateral exceeds the market's threshold.
-- **Borrow/Supply Ratio:** Alerts if above 60%.
+- **Borrow/Supply Ratio:** Alerts if above 95%.
 - **Bad Debt:** Alerts if `getReserves()` returns a negative value (protocol has more debt than assets).
 - **Unknown Assets:** Flags collateral assets not yet in the risk tier mapping.
 
 ### Debt Supply Ratio
 
-Alerts if the borrow/supply ratio exceeds 60% (`DEBT_SUPPLY_RATIO` in [utils/assets.py](/utils/assets.py)).
+Alerts if the borrow/supply ratio exceeds 95% (`DEBT_SUPPLY_RATIO` in [collateral.py](./collateral.py)).
 
 ### Risk Levels
 

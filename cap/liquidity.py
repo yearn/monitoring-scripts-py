@@ -9,7 +9,7 @@ CUSD = "0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC"
 PROTOCOL = "cap"
 logger = get_logger(PROTOCOL)
 
-ALERT_THRESHOLD = 60_000_000  # 60M
+ALERT_THRESHOLD = 50_000_000  # 50M
 
 STABLECOIN_TOKENS: list[tuple[str, str]] = [
     ("cUSD", f"ethereum:{CUSD.lower()}"),

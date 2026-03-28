@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from utils.abi import load_abi
 from utils.assets import (
     ALLOCATION_TIERS,
-    DEBT_SUPPLY_RATIO,
     MAX_RISK_THRESHOLDS,
     SUPPLY_ASSETS_DICT,
     get_market_allocation_threshold,
@@ -31,6 +30,9 @@ from utils.web3_wrapper import ChainManager, Web3Client
 
 PROTOCOL = "comp"
 logger = get_logger(PROTOCOL)
+
+# Borrow/supply alert threshold (Compound on-chain monitoring only)
+DEBT_SUPPLY_RATIO: float = 0.95  # 95%
 
 PRICE_SCALE = 1e8  # Compound V3 prices use 8 decimal places (Chainlink format)
 

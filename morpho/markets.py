@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 import requests
 
 from utils.chains import Chain
+from utils.http import request_with_retry
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
@@ -40,7 +41,7 @@ VAULTS_BY_CHAIN = {
         ["Gauntlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2", 3],
         ["Gauntlet WETH Core", "0x4881Ef0BF6d2365D3dd6499ccd7532bcdBCE0658", 3],
         ["Gauntlet USDC Core", "0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458", 3],
-        ["MEV Capital USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D", 4],
+        # ["MEV Capital USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D", 4],
         # Vault Bridge for Katana Chain
         ["Vault Bridge USDC", "0xBEefb9f61CC44895d8AEc381373555a64191A9c4", 1],
         ["Vault Bridge USDT", "0xc54b4E08C1Dcc199fdd35c6b5Ab589ffD3428a8d", 1],
@@ -294,11 +295,13 @@ MARKETS_RISK_3 = {
         "0xf9e56386e74f06af6099340525788eec624fd9c0fc0ad9a647702d3f75e3b6a9",  # clUSD/USDC -> lltv 96.5%, oracle: Chainlink clUSD/USD
         "0xd9e34b1eed46d123ac1b69b224de1881dbc88798bc7b70f504920f62f58f28cc",  # wstUSR/USDC -> lltv 91.5%, oracle: wstUSR vault rate. USR/USD price aggregator which is checking reserves and defining max price as 1
         "0x53ed197357128ed96070e20ba9f5af4250cda6c67dcac5246876beb483f51303",  # sDOLA/USDC -> lltv 91.5%, oracle: sDOLA vault rate. DOLA = USDC hardcoded oracle.
-        "0xce68c7aa336675e42bbc8eaa8b5ecc7ebd816bf8625b5316330c6ac2dabc4cf2",  # SolvBTC/BTC -> lltv 94.5%, oracle: upgradeable MetaOracleDeviationTimelock with prime oracle morpho oracle with 1:1 hardcoded rate
         "0x7a7018e22a8bb2d08112eae9391e09f065a8ae7ae502c1c23dc96c21411a6efd",  # EIGEN/USDC -> lltv 77%, oracle: Redstone EIGEN/USD. USD = USDC.
+        "0xce68c7aa336675e42bbc8eaa8b5ecc7ebd816bf8625b5316330c6ac2dabc4cf2",  # SolvBTC/BTC -> lltv 94.5%, oracle: upgradeable MetaOracleDeviationTimelock with prime oracle morpho oracle with 1:1 hardcoded rate. same assets
         "0xbbf7ce1b40d32d3e3048f5cf27eeaa6de8cb27b80194690aab191a63381d8c99",  # siUSD/USDC -> lltv 91.5%, oracle: infinity accouting contract provides the price iUSD, vault rate siUSD to iUSD. usdc = 1 using dummy oracle.
-        "0xaac3ffcdf8a75919657e789fa72ab742a7bbfdf5bb0b87e4bbeb3c29bbbbb05c",  # PT-siUSD-26MAR2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) siUSD. USDC = 1 using dummy oracle.
+        "0xaac3ffcdf8a75919657e789fa72ab742a7bbfdf5bb0b87e4bbeb3c29bbbbb05c",  # PT-siUSD-26MAR2026/USDC -> lltv 91.5%, oracle: ChainlinkOracleV2 — Pendle Chainlink-compatible PT feed, InfiniFi RT oracle (baseFeedTwo), dummy USDC feed (quote).
+        "0xdf034d0351a4c0af947e1a37ecd5ccbce60d72eac90de6fcad48c74e2869d14c",  # PT-iUSD-25JUN2026/USDC -> lltv 91.5%, oracle: same stack as PT-siUSD row but Ojo PT Feed (Pendle-compatible) for PT leg; InfiniFi RT + dummy USDC.
         "0xc6ae8e71e11ef511acee3f6cc6ad2af67b862877d459e3789905f537c85db5e3",  # PT-sUSDE-25SEP2025/DAI -> lltv 91.5%, oracle: PendleSparkLinearDiscountOracle with linear discount oracle for sUSDE. No price oracle for DAI, USDe = DAI.
+        "0x27b9a0a5bfee98a31eb51e3850250d103a9f8e41673c782defc66aa943af0e65",  # PT-srUSDe-2APR2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) srUSDe. USDC = 1 using dummy oracle.
     ],
     Chain.BASE: [
         "0x4944a1169bc07b441473b830308ffe5bb535c10a9f824e33988b60738120c48e",  # LBTC/cbBTC -> lltv 91.5%, oracle: Custom moonwell oracle. Base feed is fetched from upgradeable oracle which uses 2 oracles. Primary oracle is redstone oracle, if the price changes more than 2% than it uses fallback oracle chainlink oracle. Chainlink didn't have an exchange rate feed. Redstone was the only provider for the LBTC reserves.
@@ -338,7 +341,6 @@ MARKETS_RISK_4 = {
         "0xe1b65304edd8ceaea9b629df4c3c926a37d1216e27900505c04f14b2ed279f33",  # RLP/USDC -> lltv 86%, oracle: RLP oracle where the price is set manually, but must be in bounds. Owner of the proxy is multisig.
         "0x8b1bc4d682b04a16309a8adf77b35de0c42063a7944016cfc37a79ccac0007b6",  # slvlUSD/USDC -> lltv 91.5%, oracle: slvlUSD vault rate. lvlUSD = USDC
         "0x95c28d447950ca6c8bbfd25fc05b80b1fd7a1cdd17a3610b4b3f1ffc8dc2e2ed",  # mHYPER/USDC -> lltv 86%, oracle: MHyperCustomAggregatorFeed
-        "0x27b9a0a5bfee98a31eb51e3850250d103a9f8e41673c782defc66aa943af0e65",  # PT-srUSDe-2APR2026/USDC -> lltv 91.5%, oracle: Pendle PT exchange rate(PT to asset) srUSDe. USDC = 1 using dummy oracle.
     ],
     Chain.BASE: [
         "0xff0f2bd52ca786a4f8149f96622885e880222d8bed12bbbf5950296be8d03f89",  # USR/USDC -> lltv 91.5%, oracle: pyth USR/USD and pyth USDC/USD
@@ -842,11 +844,10 @@ def main() -> None:
     json_data = {"query": query, "variables": {"addresses": vault_addresses}}
 
     try:
-        response = requests.post(API_URL, json=json_data, timeout=30)
-        response.raise_for_status()
+        response = request_with_retry("post", API_URL, json=json_data)
     except requests.RequestException as e:
         send_telegram_message(
-            f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨",
+            f"🚨 Problem with fetching data for Morpho markets: {e.response.status_code} 🚨",
             PROTOCOL,
             True,
             True,
@@ -855,9 +856,8 @@ def main() -> None:
 
     data = response.json()
     if "errors" in data:
-        error_msg = data["errors"][0]["message"] if data["errors"] else "Unknown GraphQL error"
         send_telegram_message(
-            f"🚨 GraphQL error when fetching Morpho data: {error_msg} 🚨",
+            f"🚨 GraphQL error when fetching Morpho data. Response code: {response.status_code} 🚨",
             PROTOCOL,
             True,
             True,

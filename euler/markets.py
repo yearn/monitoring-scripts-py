@@ -1,4 +1,3 @@
-from utils.assets import DEBT_SUPPLY_RATIO
 from utils.formatting import format_usd
 from utils.gauntlet import (
     fetch_borrow_metrics_from_gauntlet,
@@ -8,6 +7,10 @@ from utils.gauntlet import (
 from utils.telegram import send_telegram_message
 
 PROTOCOL = "euler"
+
+# Debt/supply ratio threshold for Euler Gauntlet checks (separate from Compound on-chain threshold)
+DEBT_SUPPLY_RATIO: float = 0.60  # 60%
+
 # available markets: https://dashboards.gauntlet.xyz/protocols/euler
 EULER_VAULTS_KEYS = [
     # Gauntlet tag, Risk level
@@ -76,7 +79,7 @@ def fetch_metric_from_gauntlet(max_retries=3):
 
 def analyze_euler_market_allocation(market_key, vault_risk_level):
     """Analyze Euler market allocation and send alerts if needed"""
-    alerts = fetch_borrow_metrics_from_gauntlet(PROTOCOL, market_key, vault_risk_level)
+    alerts = fetch_borrow_metrics_from_gauntlet(PROTOCOL, market_key, vault_risk_level, DEBT_SUPPLY_RATIO)
     if alerts:
         message = "\n\n".join(alerts)
         send_telegram_message(message, PROTOCOL)
