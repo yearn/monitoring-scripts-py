@@ -150,7 +150,11 @@ def main():
         if legacy_loan_expiry > 0:
             if datetime.datetime.now().timestamp() > legacy_loan_expiry:
                 send_alert(
-                    Alert(AlertSeverity.MEDIUM, "*Legacy Loan Expired*\n\nThe legacy loan (NVIDIA H200s) has expired.", PROTOCOL)
+                    Alert(
+                        AlertSeverity.MEDIUM,
+                        "*Legacy Loan Expired*\n\nThe legacy loan (NVIDIA H200s) has expired.",
+                        PROTOCOL,
+                    )
                 )
 
         if all_loans or legacy_loan_principal > 0:
