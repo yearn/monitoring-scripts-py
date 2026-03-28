@@ -14,6 +14,7 @@ import requests
 from dotenv import load_dotenv
 
 from utils.chains import Chain
+from utils.http import request_with_retry
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
@@ -305,8 +306,7 @@ def check_graph_data_for_chain(chain: Chain):
 
     json_data = {"query": query}
     try:
-        response = requests.post(api_url, json=json_data, timeout=30)
-        response.raise_for_status()
+        response = request_with_retry("post", api_url, json=json_data)
     except requests.RequestException as e:
         send_telegram_message(
             f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨",
