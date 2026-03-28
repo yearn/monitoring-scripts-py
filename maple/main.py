@@ -66,10 +66,8 @@ ABI_ERC20_BALANCE = [
 
 # --- Thresholds ---
 TVL_CHANGE_THRESHOLD = 0.15  # 15% TVL change alert
-WITHDRAWAL_QUEUE_THRESHOLD = 0.20  # 20% of liquid funds
-POOL_CASH_THRESHOLD = 1_000_000  # $1M minimum cash balance
-CASH_RATIO_THRESHOLD = 0.005  # 0.5% of TVL
-QUEUE_DEPTH_THRESHOLD = 50  # Max pending withdrawal requests
+WITHDRAWAL_QUEUE_THRESHOLD = 0.80  # 80% of liquid funds
+QUEUE_DEPTH_THRESHOLD = 20  # Max pending withdrawal requests
 
 # --- Stablecoin price monitoring (DeFiLlama coins API keys; must be indexed tokens) ---
 STABLECOIN_TOKENS: list[tuple[str, str]] = [
@@ -224,7 +222,7 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
         format_usd(liquid_funds),
     )
 
-    if liquid_funds > 0 and pending_assets / liquid_funds >= WITHDRAWAL_QUEUE_THRESHOLD:
+    if liquid_funds > 0 and pending_assets / liquid_funds > WITHDRAWAL_QUEUE_THRESHOLD:
         ratio = pending_assets / liquid_funds
         message = (
             f"🚨 *Maple syrupUSDC Withdrawal Queue Alert*\n"
@@ -259,12 +257,9 @@ def check_pool_liquidity(client, tvl: float) -> None:
     next_request_id, last_request_id = responses[2]
     pending_requests = max(0, last_request_id - next_request_id + 1) if last_request_id >= next_request_id else 0
 
-    cash_ratio = cash_balance / tvl if tvl > 0 else 0.0
-
     logger.info(
-        "Pool liquidity — Cash: %s (%.3f%% of TVL), Locked: %s, Queue depth: %d pending",
+        "Pool liquidity — Cash: %s, Locked: %s, Queue depth: %d pending",
         format_usd(cash_balance),
-        cash_ratio * 100,
         format_usd(locked_liquidity),
         pending_requests,
     )
@@ -280,27 +275,7 @@ def check_pool_liquidity(client, tvl: float) -> None:
             f"⚠️ More USDC is committed to withdrawals than is available in the pool\n"
             f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
         )
-        send_telegram_message(message, PROTOCOL)
-
-    # Warning: low cash balance
-    if cash_balance < POOL_CASH_THRESHOLD:
-        message = (
-            f"⚠️ *Maple syrupUSDC Low Pool Cash*\n"
-            f"💵 Cash: {format_usd(cash_balance)} (threshold: {format_usd(POOL_CASH_THRESHOLD)})\n"
-            f"📊 Cash ratio: {cash_ratio:.3%} of {format_usd(tvl)} TVL\n"
-            f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
-        )
-        send_telegram_message(message, PROTOCOL)
-
-    # Warning: low cash ratio
-    elif tvl > 0 and cash_ratio < CASH_RATIO_THRESHOLD:
-        message = (
-            f"⚠️ *Maple syrupUSDC Low Cash Ratio*\n"
-            f"📊 Cash ratio: {cash_ratio:.3%} (threshold: {CASH_RATIO_THRESHOLD:.1%})\n"
-            f"💵 Cash: {format_usd(cash_balance)} / TVL: {format_usd(tvl)}\n"
-            f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
-        )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
     # Warning: high queue depth
     if pending_requests > QUEUE_DEPTH_THRESHOLD:
@@ -310,7 +285,7 @@ def check_pool_liquidity(client, tvl: float) -> None:
             f"💵 Cash: {format_usd(cash_balance)} | Locked: {format_usd(locked_liquidity)}\n"
             f"🔗 [WithdrawalManager](https://etherscan.io/address/{WITHDRAWAL_MANAGER})"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
 
 def check_delegate_cover(client) -> None:
