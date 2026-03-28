@@ -26,7 +26,7 @@ DEFAULT_COOLDOWN_SECONDS = 3600  # 60 minutes
 
 # Protocols that have emergency withdrawal config in liquidity-monitoring.
 # Only these protocols will trigger a dispatch.
-DISPATCHABLE_PROTOCOLS = {"infinifi", "cap", "ethena", "ethplus", "usdai", "origin"}
+DISPATCHABLE_PROTOCOLS = {"infinifi", "cap", "ethena", "ethplus", "usdai", "origin", "maple"}
 
 
 def _is_on_cooldown(protocol: str, cooldown_seconds: int = DEFAULT_COOLDOWN_SECONDS) -> bool:
@@ -50,7 +50,9 @@ def _record_dispatch(protocol: str) -> None:
 def dispatch_emergency_withdrawal(alert: Alert) -> None:
     """Dispatch an emergency withdrawal to liquidity-monitoring.
 
-    Intended to be registered as an alert hook via ``register_alert_hook``.
+    Registered by default when ``utils.alert`` is imported (see
+    ``_ensure_default_dispatch_hook``) unless a hook was already set; override via
+    ``register_alert_hook``.
     Only dispatches for HIGH and CRITICAL alerts whose protocol is in
     ``DISPATCHABLE_PROTOCOLS``. Respects a per-protocol cooldown to avoid
     duplicate dispatches from repeated alerts.

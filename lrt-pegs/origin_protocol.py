@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 
 from utils.abi import load_abi
-from utils.alert import Alert, AlertSeverity, register_alert_hook, send_alert
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.chains import Chain
-from utils.dispatch import dispatch_emergency_withdrawal
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
 
@@ -12,8 +11,6 @@ REDEEM_VALUE = int(1e18)
 PROTOCOL = "origin"
 CHANNEL = "pegs"
 logger = get_logger("lrt-pegs.origin")
-
-register_alert_hook(dispatch_emergency_withdrawal)
 
 # Load Origin Vault ABI
 ABI_ORIGIN_VAULT = load_abi("lrt-pegs/abi/OriginVault.json")

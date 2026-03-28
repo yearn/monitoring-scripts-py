@@ -12,13 +12,14 @@ Monitors:
 - Pool Delegate Cover — alerts when delegate cover balance drops to zero
 """
 
-from maple.collateral import check_collateral_risk
+from maple.collateral import SYRUP_USDT_POOL_ID, check_collateral_risk
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
+from utils.defillama import check_stablecoin_prices
 from utils.formatting import format_usd
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "maple"
@@ -66,6 +67,13 @@ ABI_ERC20_BALANCE = [
 TVL_CHANGE_THRESHOLD = 0.15  # 15% TVL change alert
 WITHDRAWAL_QUEUE_THRESHOLD = 0.20  # 20% of liquid funds
 
+# --- Stablecoin price monitoring (DeFiLlama coins API keys; must be indexed tokens) ---
+STABLECOIN_TOKENS: list[tuple[str, str]] = [
+    ("syrupUSDC", f"ethereum:{SYRUP_USDC_POOL.lower()}"),
+    # Subgraph pool id — listed on coins.llama.fi; 0x8a4f85… is not indexed.
+    ("syrupUSDT", f"ethereum:{SYRUP_USDT_POOL_ID}"),
+]
+
 
 def get_cache_value(key: str) -> float:
     """Read a cached float value, returns 0 if not found."""
@@ -98,7 +106,7 @@ def check_pps(client, pool) -> float:
             f"⚠️ This may indicate loan impairment or loss\n"
             f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
 
     if pps_float != previous_pps:
         set_cache_value(CACHE_KEY_PPS, pps_float)
@@ -123,7 +131,7 @@ def check_tvl(client, pool) -> float:
                 f"📊 {format_usd(previous_tvl)} → {format_usd(tvl_usd)}\n"
                 f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
             )
-            send_telegram_message(message, PROTOCOL)
+            send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
 
     if tvl_usd != previous_tvl:
         set_cache_value(CACHE_KEY_TVL, tvl_usd)
@@ -172,7 +180,7 @@ def check_unrealized_losses(client) -> float:
             f"🔗 [FixedTermLM](https://etherscan.io/address/{FIXED_TERM_LOAN_MANAGER})\n"
             f"🔗 [OpenTermLM](https://etherscan.io/address/{OPEN_TERM_LOAN_MANAGER})"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
 
     return fixed_aum + open_aum
 
@@ -220,7 +228,7 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
             f"💧 Liquid funds: {format_usd(liquid_funds)} (Aave: {format_usd(aave_assets)}, Sky: {format_usd(sky_assets)})\n"
             f"🔗 [WithdrawalManager](https://etherscan.io/address/{WITHDRAWAL_MANAGER})"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
 
 def check_delegate_cover(client) -> None:
@@ -246,7 +254,7 @@ def check_delegate_cover(client) -> None:
                 f"⚠️ No delegate skin-in-the-game — reduced accountability for loan defaults\n"
                 f"🔗 [PoolDelegateCover](https://etherscan.io/address/{POOL_DELEGATE_COVER})"
             )
-            send_telegram_message(message, PROTOCOL)
+            send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
     elif previous_cover > 0 and cover_usd < previous_cover:
         decrease_pct = (previous_cover - cover_usd) / previous_cover * 100
         message = (
@@ -254,7 +262,7 @@ def check_delegate_cover(client) -> None:
             f"📊 Cover: {format_usd(previous_cover)} → {format_usd(cover_usd)} (-{decrease_pct:.1f}%)\n"
             f"🔗 [PoolDelegateCover](https://etherscan.io/address/{POOL_DELEGATE_COVER})"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
     if cover_usd != previous_cover:
         set_cache_value(CACHE_KEY_DELEGATE_COVER, cover_usd)
@@ -267,6 +275,7 @@ def main() -> None:
     pool = client.eth.contract(address=SYRUP_USDC_POOL, abi=ABI_POOL)
 
     try:
+        check_stablecoin_prices(STABLECOIN_TOKENS, PROTOCOL)
         pps = check_pps(client, pool)
         tvl = check_tvl(client, pool)
         check_unrealized_losses(client)
@@ -281,11 +290,7 @@ def main() -> None:
         )
     except Exception as e:
         logger.error("Error during Maple monitoring: %s", e)
-        send_telegram_message(
-            f"🚨 *Maple Monitoring Error*\n❌ {e}",
-            PROTOCOL,
-            plain_text=True,
-        )
+        send_alert(Alert(AlertSeverity.LOW, "Maple monitoring failed", PROTOCOL))
 
 
 if __name__ == "__main__":
