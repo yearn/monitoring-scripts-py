@@ -29,6 +29,9 @@ KNOWN_SELECTORS: dict[str, str] = {
     # Pausable
     "0x8456cb59": "pause()",
     "0x3f4ba83a": "unpause()",
+    # Strata CDO
+    "0x913db905": "setActionStates(bool,bool,bool)",
+    "0x7fecc3e5": "setActionStates(uint8,uint8,uint8)",
     # Governance admin
     "0xe177246e": "setDelay(uint256)",
     "0x4dd18bf5": "setPendingAdmin(address)",
