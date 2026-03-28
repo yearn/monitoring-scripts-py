@@ -4,11 +4,11 @@ import requests
 from web3 import Web3
 
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.config import Config
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 # Constants
@@ -60,7 +60,7 @@ def get_loan_details(client, owner_addr):
 
     except Exception as e:
         logger.error("Loan scan error: %s", e)
-        send_telegram_message(f"⚠️ Loan scan error: {e}", PROTOCOL, False, True)
+        send_alert(Alert(AlertSeverity.LOW, f"Loan scan error: {e}", PROTOCOL), plain_text=True)
 
     return loans
 
@@ -149,8 +149,8 @@ def main():
 
         if legacy_loan_expiry > 0:
             if datetime.datetime.now().timestamp() > legacy_loan_expiry:
-                send_telegram_message(
-                    "⚠️ *Legacy Loan Expired*\n\nThe legacy loan (NVIDIA H200s) has expired.", PROTOCOL
+                send_alert(
+                    Alert(AlertSeverity.MEDIUM, "*Legacy Loan Expired*\n\nThe legacy loan (NVIDIA H200s) has expired.", PROTOCOL)
                 )
 
         if all_loans or legacy_loan_principal > 0:
@@ -186,14 +186,14 @@ def main():
                 )
 
                 msg = (
-                    f"📢 *sUSDai Loan Activity*\n\n"
+                    f"*sUSDai Loan Activity*\n\n"
                     f"Total Verified Principal has {change_type}.\n"
                     f"Change: ${diff:,.2f} ({percent_change:.2f}% of Total Loans)\n"
                     f"Old Total: ${last_principal:,.2f}\n"
                     f"New Total: ${total_verified_principal:,.2f}\n"
                     f"Current Ratio: {verified_ratio:.2f}% of Supply"
                 )
-                send_telegram_message(msg, PROTOCOL)
+                send_alert(Alert(AlertSeverity.LOW, msg, PROTOCOL))
 
             # Update cache
             write_last_value_to_file(cache_filename, cache_key_principal, total_verified_principal)
@@ -204,8 +204,8 @@ def main():
             last_ratio = int(get_last_value_for_key_from_file(cache_filename, cache_key_ratio))
 
             if last_ratio != 0 and last_ratio != mint_ratio:
-                msg = f"⚠️ *USDai Mint Ratio Changed*\n\nOld: {last_ratio / 10000:.4f}\nNew: {mint_ratio / 10000:.4f}"
-                send_telegram_message(msg, PROTOCOL)
+                msg = f"*USDai Mint Ratio Changed*\n\nOld: {last_ratio / 10000:.4f}\nNew: {mint_ratio / 10000:.4f}"
+                send_alert(Alert(AlertSeverity.HIGH, msg, PROTOCOL))
 
             # Always update ratio cache
             write_last_value_to_file(cache_filename, cache_key_ratio, mint_ratio)
@@ -220,19 +220,19 @@ def main():
                 crossed_below = last_buffer >= buffer_alert_threshold and buffer < buffer_alert_threshold
                 if crossed_below:
                     msg = (
-                        "📉 *USDai Low Buffer Alert*\n\n"
+                        "*USDai Low Buffer Alert*\n\n"
                         f"Buffer dropped below ${buffer_alert_threshold:,.0f}.\n"
                         f"Old Buffer: ${last_buffer:,.2f}\n"
                         f"New Buffer: ${buffer:,.2f}\n"
                         f"(Collateral: ${collateral_metric:,.2f})"
                     )
-                    send_telegram_message(msg, PROTOCOL)
+                    send_alert(Alert(AlertSeverity.HIGH, msg, PROTOCOL))
 
             write_last_value_to_file(cache_filename, cache_key_buffer, buffer)
 
     except Exception as e:
         logger.error("Error: %s", e)
-        send_telegram_message(f"⚠️ USDai monitoring failed: {e}", PROTOCOL, False, True)
+        send_alert(Alert(AlertSeverity.LOW, f"USDai monitoring failed: {e}", PROTOCOL), plain_text=True)
 
 
 if __name__ == "__main__":
