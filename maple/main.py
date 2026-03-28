@@ -6,10 +6,10 @@ Monitors:
 - TVL (Total Value Locked) via totalAssets() — alerts on >15% change
 - Unrealized losses on loan managers — alerts on any non-zero value
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
-- Withdrawal queue vs liquid funds — alerts when pending withdrawals >= 20% of liquid funds (Aave + Sky)
-- Pool liquidity — cash balance, cash ratio, queue depth, locked vs available liquidity
+- Withdrawal queue vs liquid funds — alerts when pending withdrawals > 80% of liquid funds (Aave + Sky)
+- Pool liquidity — cash, locked liquidity (alert if > $1M), withdrawal queue depth
 - Loan collateral risk — weighted risk score based on collateral asset types
-- Collateralization ratio (via syrupGlobals) — alerts when combined ratio drops below 150%
+- Collateralization ratio (via syrupGlobals) — alerts when combined ratio drops below 140%
 - Pool Delegate Cover — alerts when delegate cover balance drops to zero
 """
 
@@ -47,6 +47,7 @@ USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 # USDC has 6 decimals
 USDC_DECIMALS = 6
 ONE_SHARE = 10**USDC_DECIMALS  # 1e6
+LOCKED_LIQUIDITY_THRESHOLD = 1_000_000  # $1M
 
 # --- Cache Keys ---
 CACHE_KEY_PPS = "MAPLE_PPS"
@@ -188,7 +189,7 @@ def check_unrealized_losses(client) -> float:
 
 
 def check_strategy_and_withdrawal_queue(client, pool) -> None:
-    """Check strategy allocations and alert if pending withdrawals >= 20% of liquid funds."""
+    """Check strategy allocations and alert if pending withdrawals > 80% of liquid funds."""
     aave_strategy = client.eth.contract(address=AAVE_STRATEGY, abi=ABI_STRATEGY)
     sky_strategy = client.eth.contract(address=SKY_STRATEGY, abi=ABI_STRATEGY)
     wm = client.eth.contract(address=WITHDRAWAL_MANAGER, abi=ABI_WITHDRAWAL_MANAGER)
@@ -233,12 +234,14 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
         send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
 
-def check_pool_liquidity(client, tvl: float) -> None:
-    """Check pool cash balance, cash ratio, withdrawal queue depth, and locked liquidity.
+def check_pool_liquidity(client) -> None:
+    """Check pool USDC cash, withdrawal locked liquidity, and queue depth.
+
+    Alerts when locked liquidity exceeds LOCKED_LIQUIDITY_THRESHOLD ($1M), or when
+    pending withdrawal request count exceeds QUEUE_DEPTH_THRESHOLD.
 
     Args:
         client: Web3 client for Ethereum mainnet.
-        tvl: Current pool TVL in USD (used for cash ratio calculation).
     """
     usdc = client.eth.contract(address=USDC_ADDRESS, abi=ABI_ERC20_BALANCE)
     wm = client.eth.contract(address=WITHDRAWAL_MANAGER, abi=ABI_WITHDRAWAL_MANAGER)
@@ -264,20 +267,16 @@ def check_pool_liquidity(client, tvl: float) -> None:
         pending_requests,
     )
 
-    # Critical: locked liquidity exceeds available cash
-    if locked_liquidity > cash_balance and locked_liquidity > 0:
-        shortfall = locked_liquidity - cash_balance
+    if locked_liquidity > LOCKED_LIQUIDITY_THRESHOLD:
         message = (
-            f"🚨 *Maple syrupUSDC Locked Liquidity Exceeds Cash*\n"
+            f"🚨 *Maple syrupUSDC Locked Liquidity Exceeds Threshold*\n"
             f"🔒 Locked: {format_usd(locked_liquidity)}\n"
             f"💵 Cash: {format_usd(cash_balance)}\n"
-            f"📊 Shortfall: {format_usd(shortfall)}\n"
-            f"⚠️ More USDC is committed to withdrawals than is available in the pool\n"
+            f"⚠️ Locked liquidity exceeds threshold (${LOCKED_LIQUIDITY_THRESHOLD})\n"
             f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
         )
         send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
-    # Warning: high queue depth
     if pending_requests > QUEUE_DEPTH_THRESHOLD:
         message = (
             f"⚠️ *Maple syrupUSDC High Withdrawal Queue Depth*\n"
@@ -337,7 +336,7 @@ def main() -> None:
         tvl = check_tvl(client, pool)
         check_unrealized_losses(client)
         check_strategy_and_withdrawal_queue(client, pool)
-        check_pool_liquidity(client, tvl)
+        check_pool_liquidity(client)
         check_collateral_risk()
         check_delegate_cover(client)
 
