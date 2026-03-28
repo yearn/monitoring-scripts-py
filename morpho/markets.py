@@ -847,7 +847,7 @@ def main() -> None:
         response = request_with_retry("post", API_URL, json=json_data)
     except requests.RequestException as e:
         send_telegram_message(
-            f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨",
+            f"🚨 Problem with fetching data for Morpho markets: {e.response.status_code} 🚨",
             PROTOCOL,
             True,
             True,
