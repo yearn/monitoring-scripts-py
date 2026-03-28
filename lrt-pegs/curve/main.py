@@ -1,14 +1,12 @@
 from utils.abi import load_abi
-from utils.alert import Alert, AlertSeverity, register_alert_hook, send_alert
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.chains import Chain
-from utils.dispatch import dispatch_emergency_withdrawal
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
 
 CHANNEL = "pegs"
 logger = get_logger("lrt-pegs.curve")
 
-register_alert_hook(dispatch_emergency_withdrawal)
 # Load Balancer Vault ABI
 ABI_CURVE_POOL = load_abi("lrt-pegs/abi/CurvePool.json")
 THRESHOLD_RATIO = 90.0

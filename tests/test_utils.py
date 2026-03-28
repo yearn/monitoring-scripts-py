@@ -1,6 +1,9 @@
 """Tests for utility functions."""
 
+import importlib
 import os
+import sys
+import types
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -441,6 +444,31 @@ class TestDispatch(unittest.TestCase):
             # Old dispatch (past cooldown)
             mock_get.return_value = str(time.time() - 7200)
             self.assertFalse(_is_on_cooldown("infinifi", cooldown_seconds=3600))
+
+
+class TestDefiLlama(unittest.TestCase):
+    """Tests for the DeFiLlama stablecoin price helper."""
+
+    def test_check_stablecoin_prices_swallows_fetch_errors(self):
+        fake_client = MagicMock()
+        fake_client.prices.getCurrentPrices.side_effect = RuntimeError("upstream timeout")
+        fake_sdk = types.ModuleType("defillama_sdk")
+        fake_sdk.DefiLlama = MagicMock(return_value=fake_client)
+
+        with patch.dict(sys.modules, {"defillama_sdk": fake_sdk}):
+            sys.modules.pop("utils.defillama", None)
+            defillama = importlib.import_module("utils.defillama")
+            try:
+                with patch.object(defillama, "send_alert") as mock_send_alert:
+                    defillama.check_stablecoin_prices([("USDe", "ethereum:token")], "ethena")
+
+                mock_send_alert.assert_called_once()
+                alert = mock_send_alert.call_args.args[0]
+                self.assertEqual(alert.severity, AlertSeverity.LOW)
+                self.assertEqual(alert.protocol, "ethena")
+                self.assertIn("Stablecoin price check failed", alert.message)
+            finally:
+                sys.modules.pop("utils.defillama", None)
 
 
 if __name__ == "__main__":

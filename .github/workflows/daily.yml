@@ -23,3 +23,4 @@ jobs:
         cap/liquidity.py
         utils/tenderly/tenderly.py
         yearn/check_shadow_debt.py
+        compound/main.py

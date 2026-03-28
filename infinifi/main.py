@@ -2,10 +2,10 @@ import requests
 from web3 import Web3
 
 from utils.abi import load_abi
-from utils.alert import Alert, AlertSeverity, register_alert_hook, send_alert
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
-from utils.dispatch import dispatch_emergency_withdrawal
+from utils.defillama import check_stablecoin_prices
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
 
@@ -13,9 +13,13 @@ from utils.web3_wrapper import ChainManager
 PROTOCOL = "infinifi"
 logger = get_logger(PROTOCOL)
 
-# Register emergency dispatch hook for HIGH/CRITICAL alerts
-register_alert_hook(dispatch_emergency_withdrawal)
 IUSD_ADDRESS = Web3.to_checksum_address("0x48f9e38f3070AD8945DFEae3FA70987722E3D89c")
+
+# --- Stablecoin price monitoring ---
+STABLECOIN_TOKENS: list[tuple[str, str]] = [
+    ("iUSD", "ethereum:0x48f9e38f3070AD8945DFEae3FA70987722E3D89c"),
+]
+
 LIQUID_RESERVES_THRESHOLD = 15_000_000
 BACKING_PER_IUSD_MIN = 0.999
 REDEMPTION_TO_LIQUID_RATIO_MAX = 0.8
@@ -28,6 +32,7 @@ SAFE_FARM_IDENTIFIERS = [
     "maple",
     "cap",
     "aave horizon",
+    "aave usdc",
     "syrupusdc",
     "autousd",
     "spark susdc",
@@ -80,6 +85,8 @@ def clear_breach_state(cache_key):
 
 
 def main():
+    check_stablecoin_prices(STABLECOIN_TOKENS, PROTOCOL)
+
     client = ChainManager.get_client(Chain.MAINNET)
     erc20_abi = load_abi("common-abi/ERC20.json")
 
@@ -295,7 +302,7 @@ def main():
                 moved_farms.sort(key=lambda x: x["change_pct"], reverse=True)
                 moved_lines = [
                     (f"- {f['label']}: {f['last_ratio']:.2%} -> {f['new_ratio']:.2%} ({f['change_pct']:.2%} change)")
-                    for f in moved_farms[:10]
+                    for f in moved_farms
                 ]
                 more_count = len(moved_farms) - 10
                 if more_count > 0:
@@ -312,7 +319,7 @@ def main():
 
             if activated_farms:
                 activated_farms.sort(key=lambda x: x["new_ratio"], reverse=True)
-                activated_lines = [f"- {f['label']}: {f['new_ratio']:.2%}" for f in activated_farms[:10]]
+                activated_lines = [f"- {f['label']}: {f['new_ratio']:.2%}" for f in activated_farms]
                 more_count = len(activated_farms) - 10
                 if more_count > 0:
                     activated_lines.append(f"- ...and {more_count} more farms")
