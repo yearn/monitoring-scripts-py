@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 import requests
 
 from utils.chains import Chain
+from utils.http import request_with_retry
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
@@ -843,11 +844,10 @@ def main() -> None:
     json_data = {"query": query, "variables": {"addresses": vault_addresses}}
 
     try:
-        response = requests.post(API_URL, json=json_data, timeout=30)
-        response.raise_for_status()
+        response = request_with_retry("post", API_URL, json=json_data)
     except requests.RequestException as e:
         send_telegram_message(
-            f"🚨 Problem with fetching data for Morpho markets: {str(e)} 🚨",
+            f"🚨 Problem with fetching data for Morpho markets: {e.response.status_code} 🚨",
             PROTOCOL,
             True,
             True,
