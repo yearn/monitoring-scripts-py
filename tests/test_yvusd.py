@@ -13,7 +13,9 @@ from yearn.yvusd import (
 class TestYvUsdCctpChecks(unittest.TestCase):
     @patch("yearn.yvusd.send_alert")
     @patch("yearn.yvusd.ChainManager.get_client")
-    def test_alerts_on_report_skew_between_local_and_remote(self, mock_get_client: MagicMock, mock_send_alert: MagicMock):
+    def test_alerts_on_report_skew_between_local_and_remote(
+        self, mock_get_client: MagicMock, mock_send_alert: MagicMock
+    ):
         now = 1_000_000
         local_last_report = now - 3600
         remote_last_report = now - int((CCTP_REPORT_SKEW_HOURS + 2) * 3600)

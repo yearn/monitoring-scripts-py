@@ -247,9 +247,7 @@ def check_strategy_staleness(client: Web3Client, api_data: dict) -> None:
         )
         if alert_lines:
             message = (
-                "*yvUSD CCTP Bridge Health Alert*\n"
-                + "\n".join(alert_lines)
-                + "\n"
+                "*yvUSD CCTP Bridge Health Alert*\n" + "\n".join(alert_lines) + "\n"
                 f"[Strategy](https://etherscan.io/address/{address})"
             )
             send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
