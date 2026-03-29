@@ -16,35 +16,46 @@ DEPEG_THRESHOLD = Decimal("0.97")
 _dl_client = DefiLlama()
 
 
+def fetch_prices(token_keys: list[str]) -> dict[str, Decimal]:
+    """Fetch current prices from DeFiLlama for the given token keys.
+
+    Args:
+        token_keys: List of DeFiLlama keys ("chain:token_address").
+
+    Returns:
+        Mapping of token key to price as Decimal. Missing tokens are omitted.
+
+    Raises:
+        Exception: If the DeFiLlama API call fails.
+    """
+    logger.info("Fetching prices for %d tokens from DeFiLlama", len(token_keys))
+    result = _dl_client.prices.getCurrentPrices(token_keys)
+    coins = result.get("coins", {})
+    return {key: Decimal(str(data["price"])) for key, data in coins.items() if "price" in data}
+
+
 def check_stablecoin_prices(
     tokens: list[tuple[str, str]],
     protocol: str,
     threshold: Decimal = DEPEG_THRESHOLD,
+    prices: dict[str, Decimal] | None = None,
 ) -> None:
-    """Fetch prices for stablecoins via DeFiLlama and alert on depeg.
+    """Check stablecoin prices and alert on depeg.
 
     Args:
         tokens: List of (display_name, defillama_key) tuples.
-            DeFiLlama key format: "chain:token_address".
         protocol: Protocol name for Telegram routing.
         threshold: Price below which a depeg alert is sent.
+        prices: Pre-fetched prices from ``fetch_prices``. If None, prices
+            are fetched inline (one API call per invocation).
     """
-    token_keys = [key for _, key in tokens]
-    logger.info("Fetching prices for %d tokens from DeFiLlama", len(token_keys))
-    try:
-        result = _dl_client.prices.getCurrentPrices(token_keys)
-    except Exception as exc:
-        logger.warning("Failed to fetch DeFiLlama prices for %s: %s", protocol, exc)
-        send_alert(
-            Alert(
-                AlertSeverity.LOW,
-                f"Stablecoin price check failed: {exc}",
-                protocol,
-            )
-        )
-        return
-    coins = result.get("coins", {})
-    prices = {key: Decimal(str(data["price"])) for key, data in coins.items() if "price" in data}
+    if prices is None:
+        try:
+            prices = fetch_prices([key for _, key in tokens])
+        except Exception as exc:
+            logger.warning("Failed to fetch DeFiLlama prices for %s: %s", protocol, exc)
+            send_alert(Alert(AlertSeverity.LOW, f"Stablecoin price check failed: {exc}", protocol))
+            return
 
     depegged: list[tuple[str, Decimal]] = []
 

@@ -4,7 +4,7 @@ Fetches all monitored stablecoin prices in a single DeFiLlama call and routes
 depeg alerts to the owning protocol's Telegram channel.
 """
 
-from utils.defillama import check_stablecoin_prices
+from utils.defillama import check_stablecoin_prices, fetch_prices
 from utils.logging import get_logger
 
 logger = get_logger("stables")
@@ -25,14 +25,21 @@ MONITORED_TOKENS: list[tuple[str, str, str]] = [
 
 
 def main() -> None:
-    """Check all stablecoin prices, grouping alerts per protocol."""
-    # Group tokens by protocol so each protocol gets its own alert
+    """Check all stablecoin prices with one DeFiLlama call, alerting per protocol."""
+    all_keys = [key for _, key, _ in MONITORED_TOKENS]
+    try:
+        prices = fetch_prices(all_keys)
+    except Exception as exc:
+        logger.error("Failed to fetch DeFiLlama prices: %s", exc)
+        return
+
+    # Group tokens by protocol and check with pre-fetched prices
     by_protocol: dict[str, list[tuple[str, str]]] = {}
     for name, key, protocol in MONITORED_TOKENS:
         by_protocol.setdefault(protocol, []).append((name, key))
 
     for protocol, tokens in by_protocol.items():
-        check_stablecoin_prices(tokens, protocol)
+        check_stablecoin_prices(tokens, protocol, prices=prices)
 
     logger.info("Stablecoin price check complete (%d tokens)", len(MONITORED_TOKENS))
 
