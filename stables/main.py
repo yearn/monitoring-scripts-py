@@ -4,10 +4,15 @@ Fetches all monitored stablecoin prices in a single DeFiLlama call and routes
 depeg alerts to the owning protocol's Telegram channel.
 """
 
-from utils.defillama import check_stablecoin_prices, fetch_prices
+from decimal import Decimal
+
+from utils.alert import Alert, AlertSeverity, send_alert
+from utils.defillama import fetch_prices
 from utils.logging import get_logger
 
 logger = get_logger("stables")
+
+DEPEG_THRESHOLD = Decimal("0.97")
 
 # (display_name, defillama_key, protocol for telegram routing)
 MONITORED_TOKENS: list[tuple[str, str, str]] = [
@@ -26,20 +31,27 @@ MONITORED_TOKENS: list[tuple[str, str, str]] = [
 
 def main() -> None:
     """Check all stablecoin prices with one DeFiLlama call, alerting per protocol."""
-    all_keys = [key for _, key, _ in MONITORED_TOKENS]
     try:
-        prices = fetch_prices(all_keys)
+        prices = fetch_prices([key for _, key, _ in MONITORED_TOKENS])
     except Exception as exc:
         logger.error("Failed to fetch DeFiLlama prices: %s", exc)
         return
 
-    # Group tokens by protocol and check with pre-fetched prices
-    by_protocol: dict[str, list[tuple[str, str]]] = {}
+    # Group depegged tokens by protocol
+    depegged_by_protocol: dict[str, list[tuple[str, Decimal]]] = {}
     for name, key, protocol in MONITORED_TOKENS:
-        by_protocol.setdefault(protocol, []).append((name, key))
+        price = prices.get(key)
+        if price is None:
+            logger.warning("No price returned for %s (%s)", name, key)
+            continue
+        logger.info("%s price: $%s", name, price)
+        if price < DEPEG_THRESHOLD:
+            depegged_by_protocol.setdefault(protocol, []).append((name, price))
 
-    for protocol, tokens in by_protocol.items():
-        check_stablecoin_prices(tokens, protocol, prices=prices)
+    for protocol, depegged in depegged_by_protocol.items():
+        lines = [f"*{name}*: ${price}" for name, price in depegged]
+        message = f"Stablecoin Depeg (below ${DEPEG_THRESHOLD}):\n" + "\n".join(lines)
+        send_alert(Alert(AlertSeverity.CRITICAL, message, protocol))
 
     logger.info("Stablecoin price check complete (%d tokens)", len(MONITORED_TOKENS))
 

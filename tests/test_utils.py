@@ -449,7 +449,7 @@ class TestDispatch(unittest.TestCase):
 class TestDefiLlama(unittest.TestCase):
     """Tests for the DeFiLlama stablecoin price helper."""
 
-    def test_check_stablecoin_prices_swallows_fetch_errors(self):
+    def test_fetch_prices_raises_on_api_error(self):
         fake_client = MagicMock()
         fake_client.prices.getCurrentPrices.side_effect = RuntimeError("upstream timeout")
         fake_sdk = types.ModuleType("defillama_sdk")
@@ -459,14 +459,8 @@ class TestDefiLlama(unittest.TestCase):
             sys.modules.pop("utils.defillama", None)
             defillama = importlib.import_module("utils.defillama")
             try:
-                with patch.object(defillama, "send_alert") as mock_send_alert:
-                    defillama.check_stablecoin_prices([("USDe", "ethereum:token")], "ethena")
-
-                mock_send_alert.assert_called_once()
-                alert = mock_send_alert.call_args.args[0]
-                self.assertEqual(alert.severity, AlertSeverity.LOW)
-                self.assertEqual(alert.protocol, "ethena")
-                self.assertIn("Stablecoin price check failed", alert.message)
+                with self.assertRaises(RuntimeError):
+                    defillama.fetch_prices(["ethereum:0xtoken"])
             finally:
                 sys.modules.pop("utils.defillama", None)
 
