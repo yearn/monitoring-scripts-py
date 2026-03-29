@@ -25,9 +25,9 @@ logger = get_logger(PROTOCOL)
 CACHE_FILENAME = "cache-id.txt"
 
 # --- ABIs ---
-ABI_VAULT = load_abi("yvusd/abi/YearnV3Vault.json")
-ABI_MORPHO = load_abi("yvusd/abi/Morpho.json")
-ABI_LOCKED = load_abi("yvusd/abi/LockedYvUSD.json")
+ABI_VAULT = load_abi("yearn/abi/YearnV3Vault.json")
+ABI_MORPHO = load_abi("yearn/abi/Morpho.json")
+ABI_LOCKED = load_abi("yearn/abi/LockedYvUSD.json")
 
 # --- Contract Addresses ---
 YVUSD_VAULT = "0x696d02Db93291651ED510704c9b286841d506987"
