@@ -1,7 +1,6 @@
 from utils.abi import load_abi
 from utils.alert import Alert, AlertSeverity, send_alert
 from utils.chains import Chain
-from utils.defillama import check_stablecoin_prices
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
 
@@ -11,14 +10,8 @@ logger = get_logger(PROTOCOL)
 
 ALERT_THRESHOLD = 50_000_000  # 50M
 
-STABLECOIN_TOKENS: list[tuple[str, str]] = [
-    ("cUSD", f"ethereum:{CUSD.lower()}"),
-]
-
 
 def main():
-    check_stablecoin_prices(STABLECOIN_TOKENS, PROTOCOL)
-
     client = ChainManager.get_client(Chain.MAINNET)
     ctoken = client.eth.contract(address=CUSD, abi=load_abi("cap/abi/CToken.json"))  # aka cusd
 

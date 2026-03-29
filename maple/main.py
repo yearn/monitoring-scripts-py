@@ -13,12 +13,11 @@ Monitors:
 - Pool Delegate Cover — alerts when delegate cover balance drops to zero
 """
 
-from maple.collateral import SYRUP_USDT_POOL_ID, check_collateral_risk
+from maple.collateral import check_collateral_risk
 from utils.abi import load_abi
 from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
-from utils.defillama import check_stablecoin_prices
 from utils.formatting import format_usd
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
@@ -69,13 +68,6 @@ ABI_ERC20_BALANCE = [
 TVL_CHANGE_THRESHOLD = 0.15  # 15% TVL change alert
 WITHDRAWAL_QUEUE_THRESHOLD = 0.80  # 80% of liquid funds
 QUEUE_DEPTH_THRESHOLD = 20  # Max pending withdrawal requests
-
-# --- Stablecoin price monitoring (DeFiLlama coins API keys; must be indexed tokens) ---
-STABLECOIN_TOKENS: list[tuple[str, str]] = [
-    ("syrupUSDC", f"ethereum:{SYRUP_USDC_POOL.lower()}"),
-    # Subgraph pool id — listed on coins.llama.fi; 0x8a4f85… is not indexed.
-    ("syrupUSDT", f"ethereum:{SYRUP_USDT_POOL_ID}"),
-]
 
 
 def get_cache_value(key: str) -> float:
@@ -331,7 +323,6 @@ def main() -> None:
     pool = client.eth.contract(address=SYRUP_USDC_POOL, abi=ABI_POOL)
 
     try:
-        check_stablecoin_prices(STABLECOIN_TOKENS, PROTOCOL)
         pps = check_pps(client, pool)
         tvl = check_tvl(client, pool)
         check_unrealized_losses(client)
