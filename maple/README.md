@@ -12,7 +12,7 @@
 - **Loan Collateral Risk:** GraphQL collateral merged across both pools; USD-weighted risk from `ASSET_RISK_SCORES` in [`maple/collateral.py`](./collateral.py). Alerts when weighted average is **>** **1.5** (MEDIUM), or when a collateral symbol is missing from the map (MEDIUM; unknowns use default score 5 for weighting).
 - **Collateralization Ratio:** [`syrupGlobals`](https://docs.maple.finance/integrate/technical-resources/collateral-and-yield-disclosure) combined ratio (OC loans only; strategies excluded). Alerts when `collateralRatio` **<** **140%** (MEDIUM).
 - **Pool Delegate Cover:** USDC `balanceOf` on PoolDelegateCover vs cached prior. Alerts if balance hits **$0** after a non-zero cached value, or on any decrease vs that cached prior (MEDIUM).
-- **Stablecoin Peg (DeFiLlama):** `syrupUSDC` and `syrupUSDT` prices via `check_stablecoin_prices`. Depeg alert below **$0.97** (CRITICAL); fetch failure alerts LOW.
+- **Stablecoin Peg (DeFiLlama):** `syrupUSDC` and `syrupUSDT` prices monitored via [`stables/main.py`](../stables/main.py) (runs every 10 min). Depeg alert below **$0.97** (CRITICAL); fetch failure alerts LOW.
 
 ## Key Contracts
 
@@ -43,8 +43,8 @@ Severities match `AlertSeverity` in code (`utils.alert`): **CRITICAL** / **HIGH*
 | Unknown collateral asset | Collateral asset not in `ASSET_RISK_SCORES` | MEDIUM |
 | Collateralization ratio | `syrupGlobals.collateralRatio` **<** 140% (combined Syrup pools; OC loans only) | MEDIUM |
 | Delegate cover | USDC balance → $0 from cached non-zero, or any decrease vs cached prior | MEDIUM |
-| Stablecoin peg (DeFiLlama) | `syrupUSDC` / `syrupUSDT` price **<** $0.97 | CRITICAL |
-| DeFiLlama price fetch | Request fails | LOW |
+| Stablecoin peg (DeFiLlama) | `syrupUSDC` / `syrupUSDT` price **<** $0.97 — see [`stables/main.py`](../stables/main.py) | CRITICAL |
+| DeFiLlama price fetch | Request fails — see [`stables/main.py`](../stables/main.py) | LOW |
 | Monitoring run failure | Uncaught exception in `main()` | LOW |
 
 ## Collateral Risk Scores
