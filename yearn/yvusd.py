@@ -3,7 +3,7 @@ yvUSD vault monitoring script.
 
 Monitors:
 - APY anomalies: unlocked APY > locked APY inversion, negative strategy APR
-- CCTP bridging delays: stale cross-chain strategy reports
+- CCTP bridging delays: stale or out-of-sync cross-chain strategy reports
 - Flashloan liquidity: available liquidity for looper strategy unwinding
 - Large cooldown requests: significant LockedyvUSD cooldown events
 """
@@ -19,8 +19,8 @@ from utils.http import fetch_json
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager, Web3Client
 
-PROTOCOL = "yvusd"
-logger = get_logger(PROTOCOL)
+PROTOCOL = "yearn"
+logger = get_logger("yvusd")
 
 CACHE_FILENAME = "cache-id.txt"
 
@@ -41,7 +41,8 @@ YVUSD_API_URL = "https://yvusd-api.yearn.fi/api/aprs"
 
 # --- Thresholds ---
 APY_INVERSION_HOURS = 6  # Alert after this many hours of unlocked APY > locked APY
-STRATEGY_STALENESS_HOURS = 48  # Cross-chain strategy report staleness threshold
+CCTP_REPORT_STALENESS_HOURS = 48  # Report freshness threshold
+CCTP_REPORT_SKEW_HOURS = 6  # Max allowed skew between local and remote reports
 LARGE_COOLDOWN_THRESHOLD = 100_000  # $100K in USD
 
 USDC_DECIMALS = 6
@@ -168,8 +169,9 @@ def _check_negative_strategy_apr(yvusd_data: dict) -> None:
 def check_strategy_staleness(client: Web3Client, api_data: dict) -> None:
     """Check cross-chain strategy report freshness.
 
-    Alerts when a CCTP cross-chain strategy hasn't reported
-    in more than STRATEGY_STALENESS_HOURS.
+    Alerts when a CCTP cross-chain strategy or its remote counterpart:
+    - has not reported in more than CCTP_REPORT_STALENESS_HOURS, or
+    - is out of sync with the other side by more than CCTP_REPORT_SKEW_HOURS
     """
     strategies = api_data.get(YVUSD_VAULT, {}).get("meta", {}).get("strategies", [])
     cross_chain = [s for s in strategies if s.get("meta", {}).get("type") == "cross-chain"]
@@ -191,34 +193,107 @@ def check_strategy_staleness(client: Web3Client, api_data: dict) -> None:
 
     now = int(time.time())
 
-    for i, strategy in enumerate(cross_chain):
-        activation, last_report, current_debt, max_debt = responses[i]
+    for strategy, local_state in zip(cross_chain, responses, strict=False):
+        activation, local_last_report, local_debt, _ = local_state
         name = strategy.get("meta", {}).get("name", strategy["address"])
         address = strategy["address"]
+        meta = strategy.get("meta", {})
+        remote_chain_id = meta.get("remote_chain_id")
+        remote_vault = meta.get("remote_vault")
+        remote_counterpart = meta.get("remote_counterpart")
 
-        if activation == 0:
+        if activation == 0 or not remote_chain_id or not remote_vault or not remote_counterpart:
             continue
 
-        hours_since_report = (now - last_report) / 3600
-        debt_usd = current_debt / ONE_USDC
+        try:
+            remote_chain = Chain.from_chain_id(remote_chain_id)
+            remote_client = ChainManager.get_client(remote_chain)
+            remote_contract = remote_client.eth.contract(address=remote_vault, abi=ABI_VAULT)
+            remote_activation, remote_last_report, remote_debt, _ = remote_contract.functions.strategies(
+                remote_counterpart
+            ).call()
+        except Exception as e:
+            logger.warning("Could not fetch remote counterpart state for %s: %s", name, e)
+            continue
+
+        if remote_activation == 0:
+            continue
+
+        local_hours_since = (now - local_last_report) / 3600
+        remote_hours_since = (now - remote_last_report) / 3600
+        report_skew_hours = abs(local_last_report - remote_last_report) / 3600
+        local_debt_usd = local_debt / ONE_USDC
+        remote_debt_usd = remote_debt / ONE_USDC
 
         logger.info(
-            "CCTP strategy %s — last report: %.1f hours ago, debt: %s",
+            "CCTP strategy %s — local report: %.1fh, remote report: %.1fh, skew: %.1fh, local debt: %s, remote debt: %s",
             name,
-            hours_since_report,
-            format_usd(debt_usd),
+            local_hours_since,
+            remote_hours_since,
+            report_skew_hours,
+            format_usd(local_debt_usd),
+            format_usd(remote_debt_usd),
         )
 
-        if current_debt > 0 and hours_since_report > STRATEGY_STALENESS_HOURS:
+        alert_lines = _build_cctp_alert_lines(
+            name=name,
+            local_chain=Chain.MAINNET,
+            local_last_report=local_last_report,
+            local_debt=local_debt,
+            remote_chain=remote_chain,
+            remote_last_report=remote_last_report,
+            remote_debt=remote_debt,
+            now=now,
+        )
+        if alert_lines:
             message = (
-                f"*yvUSD CCTP Strategy Stale Report*\n"
-                f"{name}\n"
-                f"Last report: {hours_since_report:.1f} hours ago (threshold: {STRATEGY_STALENESS_HOURS}h)\n"
-                f"Debt: {format_usd(debt_usd)}\n"
-                f"Cross-chain accounting may be outdated\n"
+                "*yvUSD CCTP Bridge Health Alert*\n"
+                + "\n".join(alert_lines)
+                + "\n"
                 f"[Strategy](https://etherscan.io/address/{address})"
             )
             send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
+
+
+def _build_cctp_alert_lines(
+    *,
+    name: str,
+    local_chain: Chain,
+    local_last_report: int,
+    local_debt: int,
+    remote_chain: Chain,
+    remote_last_report: int,
+    remote_debt: int,
+    now: int,
+) -> list[str]:
+    local_hours_since = (now - local_last_report) / 3600
+    remote_hours_since = (now - remote_last_report) / 3600
+    report_skew_hours = abs(local_last_report - remote_last_report) / 3600
+    has_position = local_debt > 0 or remote_debt > 0
+    if not has_position:
+        return []
+
+    problems = []
+    if local_debt > 0 and local_hours_since > CCTP_REPORT_STALENESS_HOURS:
+        problems.append(f"{local_chain.network_name} report stale: {local_hours_since:.1f}h")
+    if remote_debt > 0 and remote_hours_since > CCTP_REPORT_STALENESS_HOURS:
+        problems.append(f"{remote_chain.network_name} report stale: {remote_hours_since:.1f}h")
+    if report_skew_hours > CCTP_REPORT_SKEW_HOURS:
+        newer_chain = local_chain if local_last_report >= remote_last_report else remote_chain
+        problems.append(
+            f"report skew {report_skew_hours:.1f}h ({newer_chain.network_name} is newer than the other side)"
+        )
+
+    if not problems:
+        return []
+
+    return [
+        name,
+        *problems,
+        f"Mainnet last report: {local_hours_since:.1f}h ago, debt: {format_usd(local_debt / ONE_USDC)}",
+        f"{remote_chain.network_name.title()} last report: {remote_hours_since:.1f}h ago, debt: {format_usd(remote_debt / ONE_USDC)}",
+        "Bridge accounting may be delayed or unsynced",
+    ]
 
 
 def check_flashloan_liquidity(client: Web3Client, api_data: dict) -> None:
@@ -335,7 +410,6 @@ def check_large_cooldowns(client: Web3Client) -> None:
         events = locked.events.CooldownStarted.get_logs(fromBlock=from_block, toBlock=current_block)
     except Exception as e:
         logger.warning("Could not fetch CooldownStarted events: %s", e)
-        set_cache_value(CACHE_KEY_LAST_BLOCK, current_block)
         return
 
     large_count = 0
