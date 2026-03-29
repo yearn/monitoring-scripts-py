@@ -5,7 +5,6 @@ from utils.abi import load_abi
 from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
-from utils.defillama import check_stablecoin_prices
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
 
@@ -14,11 +13,6 @@ PROTOCOL = "infinifi"
 logger = get_logger(PROTOCOL)
 
 IUSD_ADDRESS = Web3.to_checksum_address("0x48f9e38f3070AD8945DFEae3FA70987722E3D89c")
-
-# --- Stablecoin price monitoring ---
-STABLECOIN_TOKENS: list[tuple[str, str]] = [
-    ("iUSD", "ethereum:0x48f9e38f3070AD8945DFEae3FA70987722E3D89c"),
-]
 
 LIQUID_RESERVES_THRESHOLD = 15_000_000
 BACKING_PER_IUSD_MIN = 0.999
@@ -85,8 +79,6 @@ def clear_breach_state(cache_key):
 
 
 def main():
-    check_stablecoin_prices(STABLECOIN_TOKENS, PROTOCOL)
-
     client = ChainManager.get_client(Chain.MAINNET)
     erc20_abi = load_abi("common-abi/ERC20.json")
 

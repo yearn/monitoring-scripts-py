@@ -18,3 +18,4 @@ jobs:
       cache_key_prefix: nonces-v3
       scripts: |
         safe/main.py
+        stables/main.py
