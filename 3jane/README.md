@@ -29,6 +29,10 @@
 | Debt cap change | Any change to `getDebtCap()` | MEDIUM |
 | Monitoring run failure | Uncaught exception in `main()` | LOW |
 
+## Governance
+
+[Internal timelock monitoring](../timelock/README.md) for CallScheduled events on the [3Jane TimelockController](https://etherscan.io/address/0x1dccd4628d48a50c1a7adea3848bcc869f08f8c2) on Mainnet.
+
 ## Running
 
 ```bash
