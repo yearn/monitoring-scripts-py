@@ -2,21 +2,38 @@ import requests
 from web3 import Web3
 
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 # Constants
 PROTOCOL = "infinifi"
 logger = get_logger(PROTOCOL)
+
 IUSD_ADDRESS = Web3.to_checksum_address("0x48f9e38f3070AD8945DFEae3FA70987722E3D89c")
+
 LIQUID_RESERVES_THRESHOLD = 15_000_000
 BACKING_PER_IUSD_MIN = 0.999
 REDEMPTION_TO_LIQUID_RATIO_MAX = 0.8
 FARM_RATIO_CHANGE_ALERT_THRESHOLD = 0.30
 FARM_RATIO_ACTIVATION_ALERT_THRESHOLD = 0.03
+FARM_RATIO_MIN_TVL_ALERT = 0.01
+SAFE_FARM_IDENTIFIERS = [
+    "sentora pyusd",
+    "sgho",
+    "maple",
+    "cap",
+    "aave horizon",
+    "aave usdc",
+    "syrupusdc",
+    "autousd",
+    "spark susdc",
+    "fluid usdc",
+    "euler sentora usdc",
+]
+JUNIOR_RISKY_COVERAGE_MIN = 0.5
 
 # API Configuration
 API_BASE_URL = "https://api.infinifi.xyz"
@@ -48,11 +65,10 @@ def to_float(value, default=0.0):
         return default
 
 
-def send_breach_alert_once(cache_key, alert_message):
+def send_breach_alert_once(cache_key, alert_message, severity=AlertSeverity.HIGH):
     last_state = int(get_last_value_for_key_from_file(cache_filename, cache_key))
-
     if last_state == 0:
-        send_telegram_message(alert_message, PROTOCOL)
+        send_alert(Alert(severity, alert_message, PROTOCOL))
         write_last_value_to_file(cache_filename, cache_key, 1)
 
 
@@ -88,6 +104,7 @@ def main():
         pending_redemptions = 0
         reserve_ratio = 0
         illiquid_ratio = 0
+        junior_tvl = 0
         farms = []
         # target_reserve_ratio = 0
         # target_illiquid_ratio = 0
@@ -115,6 +132,10 @@ def main():
             if total_backing > 0:
                 reserve_ratio = liquid_reserves / total_backing
                 illiquid_ratio = 1 - reserve_ratio
+
+            receipt_stats = stats.get("receipt")
+            if receipt_stats and "totalLockedNormalized" in receipt_stats:
+                junior_tvl = to_float(receipt_stats["totalLockedNormalized"])
 
             farms = api_data["data"].get("farms", [])
 
@@ -165,7 +186,8 @@ def main():
                 and last_reserves >= LIQUID_RESERVES_THRESHOLD
             ):
                 msg = f"📉 *Infinifi Liquid Reserves Alert*\n\nReserves dropped below ${LIQUID_RESERVES_THRESHOLD:,.0f}: ${liquid_reserves:,.2f}"
-                send_telegram_message(msg, PROTOCOL)
+                # TODO: add hook data
+                send_alert(Alert(AlertSeverity.HIGH, msg, PROTOCOL))
 
             write_last_value_to_file(cache_filename, cache_key_reserves, liquid_reserves)
 
@@ -201,6 +223,7 @@ def main():
             if backing_per_iusd < BACKING_PER_IUSD_MIN:
                 send_breach_alert_once(
                     cache_key=cache_key_backing,
+                    severity=AlertSeverity.CRITICAL,
                     alert_message=(
                         "🚨 *Infinifi Backing Alert*\n\n"
                         f"Backing per iUSD is {backing_per_iusd:.6f}, below {BACKING_PER_IUSD_MIN:.3f}.\n"
@@ -242,7 +265,11 @@ def main():
                 last_ratio = to_float(get_last_value_for_key_from_file(cache_filename, cache_key_farm_ratio))
                 if last_ratio > 0:
                     ratio_change_pct = abs(farm_ratio - last_ratio) / last_ratio
-                    if ratio_change_pct > FARM_RATIO_CHANGE_ALERT_THRESHOLD:
+                    # skip farm if ratio change is less than 1% of TVL
+                    if (
+                        ratio_change_pct > FARM_RATIO_CHANGE_ALERT_THRESHOLD
+                        and max(last_ratio, farm_ratio) >= FARM_RATIO_MIN_TVL_ALERT
+                    ):
                         moved_farms.append(
                             {
                                 "label": farm_label,
@@ -267,34 +294,81 @@ def main():
                 moved_farms.sort(key=lambda x: x["change_pct"], reverse=True)
                 moved_lines = [
                     (f"- {f['label']}: {f['last_ratio']:.2%} -> {f['new_ratio']:.2%} ({f['change_pct']:.2%} change)")
-                    for f in moved_farms[:10]
+                    for f in moved_farms
                 ]
                 more_count = len(moved_farms) - 10
                 if more_count > 0:
                     moved_lines.append(f"- ...and {more_count} more farms")
 
-                send_telegram_message(
-                    "⚠️ *Infinifi Farm Allocation Shift Alert*\n\n"
-                    "Farm allocation ratio changed by more than 10% vs previous run:\n" + "\n".join(moved_lines),
-                    PROTOCOL,
+                send_alert(
+                    Alert(
+                        AlertSeverity.MEDIUM,
+                        "*Infinifi Farm Allocation Shift Alert*\n\n"
+                        "Farm allocation ratio changed by more than 10% vs previous run:\n" + "\n".join(moved_lines),
+                        PROTOCOL,
+                    )
                 )
 
             if activated_farms:
                 activated_farms.sort(key=lambda x: x["new_ratio"], reverse=True)
-                activated_lines = [f"- {f['label']}: {f['new_ratio']:.2%}" for f in activated_farms[:10]]
+                activated_lines = [f"- {f['label']}: {f['new_ratio']:.2%}" for f in activated_farms]
                 more_count = len(activated_farms) - 10
                 if more_count > 0:
                     activated_lines.append(f"- ...and {more_count} more farms")
 
-                send_telegram_message(
-                    "ℹ️ *Infinifi Farm Activation Alert*\n\n"
-                    "Farms previously at 0 ratio are now above 5% of TVL:\n" + "\n".join(activated_lines),
-                    PROTOCOL,
+                send_alert(
+                    Alert(
+                        AlertSeverity.LOW,
+                        "*Infinifi Farm Activation Alert*\n\n"
+                        "Farms previously at 0 ratio are now above 5% of TVL:\n" + "\n".join(activated_lines),
+                        PROTOCOL,
+                    )
                 )
+
+        # Alert 7: Junior TVL below risky farm exposure
+        # Junior tranche (locked iUSD) should cover at least 80% of risky farms TVL.
+        # Risky farms = all farms NOT in the safe farms whitelist.
+        if junior_tvl > 0 and farms:
+
+            def is_safe_farm(farm):
+                name = farm.get("name", "").lower()
+                label = farm.get("label", "").lower()
+                return any(identifier in name or identifier in label for identifier in SAFE_FARM_IDENTIFIERS)
+
+            risky_farms = [f for f in farms if not is_safe_farm(f)]
+            risky_exposure = sum(to_float(f.get("assetsNormalized")) for f in risky_farms)
+
+            if risky_exposure > 0:
+                min_required = risky_exposure * JUNIOR_RISKY_COVERAGE_MIN
+                logger.info("Junior TVL:      $%s", f"{junior_tvl:,.2f}")
+                logger.info("Risky Exposure:  $%s", f"{risky_exposure:,.2f}")
+                logger.info("Min Required:    $%s (%.0f%%)", f"{min_required:,.2f}", JUNIOR_RISKY_COVERAGE_MIN * 100)
+
+                cache_key_junior_risky = f"{PROTOCOL}_junior_below_risky_breach"
+                if junior_tvl < min_required:
+                    risky_farms_detail = [
+                        f"- {f.get('label', f.get('name', 'unknown'))}: ${to_float(f.get('assetsNormalized')):,.2f}"
+                        for f in risky_farms
+                        if to_float(f.get("assetsNormalized")) > 0
+                    ]
+                    coverage_pct = (junior_tvl / risky_exposure) * 100 if risky_exposure > 0 else 0
+                    send_breach_alert_once(
+                        cache_key=cache_key_junior_risky,
+                        alert_message=(
+                            "🚨 *Infinifi Junior TVL Below Risky Farm Exposure*\n\n"
+                            f"Junior TVL (locked iUSD): ${junior_tvl:,.2f}\n"
+                            f"Total risky farm exposure: ${risky_exposure:,.2f}\n"
+                            f"Coverage: {coverage_pct:.1f}% (min required: {JUNIOR_RISKY_COVERAGE_MIN:.0%})\n"
+                            f"Shortfall: ${min_required - junior_tvl:,.2f}\n\n"
+                            f"Risky farms:\n" + "\n".join(risky_farms_detail)
+                        ),
+                    )
+                else:
+                    clear_breach_state(cache_key_junior_risky)
 
     except Exception as e:
         logger.error("Error: %s", e)
-        send_telegram_message(f"⚠️ Infinifi monitoring failed: {e}", PROTOCOL, False, True)
+        send_alert(Alert(AlertSeverity.LOW, f"Infinifi monitoring failed: {e}", PROTOCOL))
 
 
 if __name__ == "__main__":

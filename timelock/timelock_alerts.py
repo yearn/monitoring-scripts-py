@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 from dataclasses import dataclass
 
@@ -14,7 +15,9 @@ from dotenv import load_dotenv
 from timelock.calldata_decoder import format_call_lines
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import EXPLORER_URLS, Chain
+from utils.llm.ai_explainer import explain_batch_transaction, explain_transaction, format_explanation_line
 from utils.logging import get_logger
+from utils.proxy import build_diff_url, detect_proxy_upgrade, get_current_implementation
 from utils.telegram import MAX_MESSAGE_LENGTH, send_telegram_message
 
 load_dotenv()
@@ -70,7 +73,7 @@ TIMELOCKS: dict[tuple[str, int], TimelockConfig] = {(t.address, t.chain_id): t f
 _logger = get_logger("timelock_alerts")
 
 
-def http_json(url: str, method: str = "GET", body: dict | None = None, headers: dict | None = None) -> dict:
+def http_json(url: str, method: str = "GET", body: dict | None = None, headers: dict | None = None) -> dict | None:
     """Make an HTTP request and return JSON response."""
     _logger.info("http_json %s %s", method, url)
     data = None
@@ -81,13 +84,21 @@ def http_json(url: str, method: str = "GET", body: dict | None = None, headers: 
         data = json.dumps(body).encode("utf-8")
         req_headers["Content-Type"] = "application/json"
     req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        payload = json.loads(resp.read().decode("utf-8"))
-        _logger.info("http_json status=%s", resp.status)
-        return payload
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                payload = json.loads(resp.read().decode("utf-8"))
+                _logger.info("http_json status=%s", resp.status)
+                return payload
+        except (urllib.error.URLError, ConnectionError, OSError) as e:
+            _logger.warning("http_json attempt %s/%s failed: %s", attempt, max_retries, e)
+            if attempt < max_retries:
+                time.sleep(2 * attempt)
+    return None
 
 
-def gql_request(query: str, variables: dict) -> dict:
+def gql_request(query: str, variables: dict) -> dict | None:
     """Execute a GraphQL query against the Envio indexer."""
     if not ENVIO_GRAPHQL_URL:
         raise RuntimeError(
@@ -116,7 +127,7 @@ def format_delay(seconds: int) -> str:
     return " ".join(parts)
 
 
-def load_events(limit: int, since_ts: int, timelocks: list[TimelockConfig] | None = None) -> dict:
+def load_events(limit: int, since_ts: int, timelocks: list[TimelockConfig] | None = None) -> dict | None:
     """Fetch TimelockEvent events from the Envio GraphQL API."""
     source = timelocks if timelocks is not None else TIMELOCK_LIST
     addresses = [t.address for t in source]
@@ -181,7 +192,7 @@ def _format_delay_info(delay: int | None, timelock_type: str) -> str | None:
     return f"⏳ Delay: {format_delay(delay_val)}"
 
 
-def _build_call_info(event: dict, explorer: str | None, show_index: bool) -> list[str]:
+def _build_call_info(event: dict, explorer: str | None, show_index: bool, chain_id: int = 0) -> list[str]:
     """Build call info lines for TimelockController/Compound/Puffer events."""
     lines: list[str] = []
     target = event.get("target")
@@ -201,12 +212,58 @@ def _build_call_info(event: dict, explorer: str | None, show_index: bool) -> lis
     elif len(data_hex) >= 10:
         lines.extend(format_call_lines(data_hex))
 
+    # Proxy upgrade detection: show diff link between old and new implementation
+    if len(data_hex) >= 10:
+        new_impl = detect_proxy_upgrade(data_hex)
+        if new_impl and chain_id:
+            old_impl = get_current_implementation(target, chain_id)
+            if old_impl:
+                lines.append(f"🔄 Upgrade: `{old_impl}` → `{new_impl}`")
+                diff_url = build_diff_url(old_impl, new_impl, chain_id)
+                if diff_url:
+                    lines.append(f"📊 [Diff]({diff_url})")
+            else:
+                lines.append(f"🔄 New impl: `{new_impl}`")
+
     # Value only for types that have it (not Puffer)
     value = event.get("value")
     if value and int(value) > 0:
         lines.append(f"💰 Value: {int(value) / 1e18:.4f} ETH")
 
     return lines
+
+
+def _get_ai_explanation(events: list[dict], timelock_info: TimelockConfig, chain_id: int) -> str | None:
+    """Generate AI explanation for timelock events. Returns None on any failure."""
+    try:
+        calls_with_data = [e for e in events if e.get("target") and e.get("data") and len(e.get("data", "")) >= 10]
+        if not calls_with_data:
+            return None
+
+        if len(calls_with_data) == 1:
+            event = calls_with_data[0]
+            return explain_transaction(
+                target=event["target"],
+                calldata=event["data"],
+                chain_id=chain_id,
+                value=int(event.get("value", 0)),
+                protocol=timelock_info.protocol,
+                label=timelock_info.label,
+                from_address=timelock_info.address,
+            )
+
+        # Batch transaction
+        calls = [{"target": e["target"], "data": e["data"], "value": str(e.get("value", 0))} for e in calls_with_data]
+        return explain_batch_transaction(
+            calls=calls,
+            chain_id=chain_id,
+            protocol=timelock_info.protocol,
+            label=timelock_info.label,
+            from_address=timelock_info.address,
+        )
+    except Exception:
+        _logger.debug("AI explanation failed", exc_info=True)
+        return None
 
 
 def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> str:
@@ -259,11 +316,16 @@ def build_alert_message(events: list[dict], timelock_info: TimelockConfig) -> st
 
     elif timelock_type in ("TimelockController", "Compound", "Puffer"):
         for event in events:
-            lines.extend(_build_call_info(event, explorer, len(events) > 1))
+            lines.extend(_build_call_info(event, explorer, len(events) > 1, chain_id))
 
     else:
         # Unknown type - show operationId at minimum
         lines.append(f"🆔 Operation: {first.get('operationId') or ''}")
+
+    # AI explanation (best-effort, non-blocking)
+    explanation = _get_ai_explanation(events, timelock_info, chain_id)
+    if explanation:
+        lines.append(format_explanation_line(explanation))
 
     # Footer
     if explorer:
@@ -404,9 +466,20 @@ def main() -> None:
     _logger.info("Fetching TimelockEvent events since timestamp %s", since_ts)
 
     response = load_events(args.limit, since_ts, filtered_timelocks)
+    if response is None:
+        msg = "⚠️ Timelock alerts: Envio API is unreachable after 3 retries"
+        _logger.error(msg)
+        for protocol in {t.protocol for t in (filtered_timelocks or TIMELOCK_LIST)}:
+            try:
+                send_telegram_message(msg, protocol)
+            except Exception:
+                _logger.exception("Failed to send Envio error alert for protocol %s", protocol)
+        return
     if "errors" in response:
-        _logger.error("GraphQL errors: %s", response["errors"])
-        sys.exit(1)
+        msg = f"Timelock alerts: GraphQL errors: {response['errors']}"
+        _logger.error(msg)
+        send_telegram_message(msg, protocol, plain_text=True)
+        return
 
     data = response.get("data", {})
     events = data.get("TimelockEvent", [])

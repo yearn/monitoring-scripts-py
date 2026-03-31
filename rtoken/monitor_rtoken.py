@@ -1,14 +1,15 @@
 from dataclasses import dataclass
 
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import get_last_queued_id_from_file, write_last_queued_id_to_file
 from utils.chains import Chain
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
-PROTOCOL = "rtoken"
-logger = get_logger(PROTOCOL)
+PROTOCOL = "ethplus"
+CHANNEL = "rtoken"
+logger = get_logger(CHANNEL)
 
 # Load ABIs once
 ABI_RTOKEN = load_abi("rtoken/abi/rtoken.json")
@@ -130,13 +131,20 @@ def monitor_rtoken_on_chain(chain: Chain):
         else:
             error_message = f"[{chain.network_name}] Batch Call: Expected 4 responses, got {len(responses)}"
             logger.error("%s", error_message)
-            send_telegram_message(error_message, PROTOCOL, True, True)
+            send_alert(Alert(AlertSeverity.LOW, error_message, PROTOCOL, channel=CHANNEL))
             return
 
     # --- RToken Coverage Check ---
     if basket_needed is not None and total_supply is not None:
         if total_supply == 0:
-            send_telegram_message(f"⚠️ Warning: totalSupply is zero on {chain.network_name}.", PROTOCOL)
+            send_alert(
+                Alert(
+                    AlertSeverity.LOW,
+                    f"⚠️ Warning: totalSupply is zero on {chain.network_name}.",
+                    PROTOCOL,
+                    channel=CHANNEL,
+                )
+            )
         else:
             coverage = basket_needed / total_supply
             logger.info("[%s] RToken Coverage: %s", chain.network_name, f"{coverage:.4f}")
@@ -149,30 +157,15 @@ def monitor_rtoken_on_chain(chain: Chain):
                     f"Total Supply: {total_supply / 1e18:.4f}\\n"
                     f"Basket Needed: {basket_needed / 1e18:.4f}"
                 )
-                send_telegram_message(message, PROTOCOL)
+                send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL, channel=CHANNEL))
     else:
-        send_telegram_message(
-            f"Skipping RToken coverage check due to invalid data from batch on {chain.network_name}.",
-            PROTOCOL,
-        )
-
-    # --- RToken Redemption Available Check ---
-    if redemption_available is not None:
-        logger.info("[%s] RToken Redemption Available: %s", chain.network_name, redemption_available)
-        if redemption_available < config.redemption_threshold:
-            threshold_eth = config.redemption_threshold / 1e18
-            logger.warning("[%s] redemptionAvailable is less than %s ETH.", chain.network_name, f"{threshold_eth:.0f}")
-            message = (
-                f"🚨 *{PROTOCOL} {chain.network_name.upper()} Alert* 🚨\\n"
-                f"RToken redemptionAvailable is less than {threshold_eth:.0f} ETH!\\n"
-                f"Redemption Available: {redemption_available / 1e18:.4f} ETH\\n"
-                f"Threshold: {threshold_eth:.0f} ETH\\n"
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"Skipping RToken coverage check due to invalid data from batch on {chain.network_name}.",
+                PROTOCOL,
+                channel=CHANNEL,
             )
-            send_telegram_message(message, PROTOCOL)
-    else:
-        send_telegram_message(
-            f"Skipping RToken redemptionAvailable check due to invalid data from batch on {chain.network_name}.",
-            PROTOCOL,
         )
 
     # --- StRSR Exchange Rate Check ---
@@ -190,12 +183,39 @@ def monitor_rtoken_on_chain(chain: Chain):
                 f"Current Rate: {current_rate}\\n"
                 f"Initial Rate (from cache): {initial_rate}"
             )
-            send_telegram_message(message, PROTOCOL)
+            send_alert(Alert(AlertSeverity.CRITICAL, message, PROTOCOL, channel=CHANNEL))
         write_last_queued_id_to_file(cache_key, current_rate)
     else:
-        send_telegram_message(
-            f"Skipping StRSR exchange rate check due to invalid data from batch on {chain.network_name}.",
-            PROTOCOL,
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"Skipping StRSR exchange rate check due to invalid data from batch on {chain.network_name}.",
+                PROTOCOL,
+                channel=CHANNEL,
+            )
+        )
+
+    # --- RToken Redemption Available Check ---
+    if redemption_available is not None:
+        logger.info("[%s] RToken Redemption Available: %s", chain.network_name, redemption_available)
+        if redemption_available < config.redemption_threshold:
+            threshold_eth = config.redemption_threshold / 1e18
+            logger.warning("[%s] redemptionAvailable is less than %s ETH.", chain.network_name, f"{threshold_eth:.0f}")
+            message = (
+                f"🚨 *{PROTOCOL} {chain.network_name.upper()} Alert* 🚨\\n"
+                f"RToken redemptionAvailable is less than {threshold_eth:.0f} ETH!\\n"
+                f"Redemption Available: {redemption_available / 1e18:.4f} ETH\\n"
+                f"Threshold: {threshold_eth:.0f} ETH\\n"
+            )
+            send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL, channel=CHANNEL))
+    else:
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"Skipping RToken redemptionAvailable check due to invalid data from batch on {chain.network_name}.",
+                PROTOCOL,
+                channel=CHANNEL,
+            )
         )
 
 
@@ -212,7 +232,7 @@ def main():
         except Exception as e:
             error_message = f"Critical error monitoring on {chain.network_name}. Check the logs."
             logger.error("%s\n%s", error_message, e)
-            send_telegram_message(error_message, PROTOCOL, True, True)
+            send_alert(Alert(AlertSeverity.LOW, error_message, PROTOCOL, channel=CHANNEL))
 
 
 if __name__ == "__main__":

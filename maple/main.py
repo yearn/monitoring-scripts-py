@@ -6,19 +6,20 @@ Monitors:
 - TVL (Total Value Locked) via totalAssets() — alerts on >15% change
 - Unrealized losses on loan managers — alerts on any non-zero value
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
-- Withdrawal queue vs liquid funds — alerts when pending withdrawals >= 20% of liquid funds (Aave + Sky)
+- Withdrawal queue vs liquid funds — alerts when pending withdrawals > 80% of liquid funds (Aave + Sky)
+- Pool liquidity — cash, locked liquidity (alert if > $1M), withdrawal queue depth
 - Loan collateral risk — weighted risk score based on collateral asset types
-- Collateralization ratio (via syrupGlobals) — alerts when combined ratio drops below 150%
+- Collateralization ratio (via syrupGlobals) — alerts when combined ratio drops below 140%
 - Pool Delegate Cover — alerts when delegate cover balance drops to zero
 """
 
 from maple.collateral import check_collateral_risk
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.formatting import format_usd
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 PROTOCOL = "maple"
@@ -45,6 +46,7 @@ USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 # USDC has 6 decimals
 USDC_DECIMALS = 6
 ONE_SHARE = 10**USDC_DECIMALS  # 1e6
+LOCKED_LIQUIDITY_THRESHOLD = 1_000_000  # $1M
 
 # --- Cache Keys ---
 CACHE_KEY_PPS = "MAPLE_PPS"
@@ -64,7 +66,8 @@ ABI_ERC20_BALANCE = [
 
 # --- Thresholds ---
 TVL_CHANGE_THRESHOLD = 0.15  # 15% TVL change alert
-WITHDRAWAL_QUEUE_THRESHOLD = 0.20  # 20% of liquid funds
+WITHDRAWAL_QUEUE_THRESHOLD = 0.80  # 80% of liquid funds
+QUEUE_DEPTH_THRESHOLD = 20  # Max pending withdrawal requests
 
 
 def get_cache_value(key: str) -> float:
@@ -98,7 +101,7 @@ def check_pps(client, pool) -> float:
             f"⚠️ This may indicate loan impairment or loss\n"
             f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
 
     if pps_float != previous_pps:
         set_cache_value(CACHE_KEY_PPS, pps_float)
@@ -123,7 +126,7 @@ def check_tvl(client, pool) -> float:
                 f"📊 {format_usd(previous_tvl)} → {format_usd(tvl_usd)}\n"
                 f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
             )
-            send_telegram_message(message, PROTOCOL)
+            send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
 
     if tvl_usd != previous_tvl:
         set_cache_value(CACHE_KEY_TVL, tvl_usd)
@@ -172,13 +175,13 @@ def check_unrealized_losses(client) -> float:
             f"🔗 [FixedTermLM](https://etherscan.io/address/{FIXED_TERM_LOAN_MANAGER})\n"
             f"🔗 [OpenTermLM](https://etherscan.io/address/{OPEN_TERM_LOAN_MANAGER})"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
 
     return fixed_aum + open_aum
 
 
 def check_strategy_and_withdrawal_queue(client, pool) -> None:
-    """Check strategy allocations and alert if pending withdrawals >= 20% of liquid funds."""
+    """Check strategy allocations and alert if pending withdrawals > 80% of liquid funds."""
     aave_strategy = client.eth.contract(address=AAVE_STRATEGY, abi=ABI_STRATEGY)
     sky_strategy = client.eth.contract(address=SKY_STRATEGY, abi=ABI_STRATEGY)
     wm = client.eth.contract(address=WITHDRAWAL_MANAGER, abi=ABI_WITHDRAWAL_MANAGER)
@@ -212,7 +215,7 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
         format_usd(liquid_funds),
     )
 
-    if liquid_funds > 0 and pending_assets / liquid_funds >= WITHDRAWAL_QUEUE_THRESHOLD:
+    if liquid_funds > 0 and pending_assets / liquid_funds > WITHDRAWAL_QUEUE_THRESHOLD:
         ratio = pending_assets / liquid_funds
         message = (
             f"🚨 *Maple syrupUSDC Withdrawal Queue Alert*\n"
@@ -220,7 +223,60 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
             f"💧 Liquid funds: {format_usd(liquid_funds)} (Aave: {format_usd(aave_assets)}, Sky: {format_usd(sky_assets)})\n"
             f"🔗 [WithdrawalManager](https://etherscan.io/address/{WITHDRAWAL_MANAGER})"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
+
+
+def check_pool_liquidity(client) -> None:
+    """Check pool USDC cash, withdrawal locked liquidity, and queue depth.
+
+    Alerts when locked liquidity exceeds LOCKED_LIQUIDITY_THRESHOLD ($1M), or when
+    pending withdrawal request count exceeds QUEUE_DEPTH_THRESHOLD.
+
+    Args:
+        client: Web3 client for Ethereum mainnet.
+    """
+    usdc = client.eth.contract(address=USDC_ADDRESS, abi=ABI_ERC20_BALANCE)
+    wm = client.eth.contract(address=WITHDRAWAL_MANAGER, abi=ABI_WITHDRAWAL_MANAGER)
+
+    with client.batch_requests() as batch:
+        batch.add(usdc.functions.balanceOf(SYRUP_USDC_POOL))
+        batch.add(wm.functions.lockedLiquidity())
+        batch.add(wm.functions.queue())
+
+        responses = client.execute_batch(batch)
+        if len(responses) != 3:
+            raise ValueError(f"Expected 3 responses, got {len(responses)}")
+
+    cash_balance = responses[0] / ONE_SHARE
+    locked_liquidity = responses[1] / ONE_SHARE
+    next_request_id, last_request_id = responses[2]
+    pending_requests = max(0, last_request_id - next_request_id + 1) if last_request_id >= next_request_id else 0
+
+    logger.info(
+        "Pool liquidity — Cash: %s, Locked: %s, Queue depth: %d pending",
+        format_usd(cash_balance),
+        format_usd(locked_liquidity),
+        pending_requests,
+    )
+
+    if locked_liquidity > LOCKED_LIQUIDITY_THRESHOLD:
+        message = (
+            f"🚨 *Maple syrupUSDC Locked Liquidity Exceeds Threshold*\n"
+            f"🔒 Locked: {format_usd(locked_liquidity)}\n"
+            f"💵 Cash: {format_usd(cash_balance)}\n"
+            f"⚠️ Locked liquidity exceeds threshold (${LOCKED_LIQUIDITY_THRESHOLD})\n"
+            f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
+        )
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
+
+    if pending_requests > QUEUE_DEPTH_THRESHOLD:
+        message = (
+            f"⚠️ *Maple syrupUSDC High Withdrawal Queue Depth*\n"
+            f"📊 Pending requests: {pending_requests} (threshold: {QUEUE_DEPTH_THRESHOLD})\n"
+            f"💵 Cash: {format_usd(cash_balance)} | Locked: {format_usd(locked_liquidity)}\n"
+            f"🔗 [WithdrawalManager](https://etherscan.io/address/{WITHDRAWAL_MANAGER})"
+        )
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
 
 def check_delegate_cover(client) -> None:
@@ -246,7 +302,7 @@ def check_delegate_cover(client) -> None:
                 f"⚠️ No delegate skin-in-the-game — reduced accountability for loan defaults\n"
                 f"🔗 [PoolDelegateCover](https://etherscan.io/address/{POOL_DELEGATE_COVER})"
             )
-            send_telegram_message(message, PROTOCOL)
+            send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
     elif previous_cover > 0 and cover_usd < previous_cover:
         decrease_pct = (previous_cover - cover_usd) / previous_cover * 100
         message = (
@@ -254,7 +310,7 @@ def check_delegate_cover(client) -> None:
             f"📊 Cover: {format_usd(previous_cover)} → {format_usd(cover_usd)} (-{decrease_pct:.1f}%)\n"
             f"🔗 [PoolDelegateCover](https://etherscan.io/address/{POOL_DELEGATE_COVER})"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
     if cover_usd != previous_cover:
         set_cache_value(CACHE_KEY_DELEGATE_COVER, cover_usd)
@@ -271,6 +327,7 @@ def main() -> None:
         tvl = check_tvl(client, pool)
         check_unrealized_losses(client)
         check_strategy_and_withdrawal_queue(client, pool)
+        check_pool_liquidity(client)
         check_collateral_risk()
         check_delegate_cover(client)
 
@@ -281,11 +338,7 @@ def main() -> None:
         )
     except Exception as e:
         logger.error("Error during Maple monitoring: %s", e)
-        send_telegram_message(
-            f"🚨 *Maple Monitoring Error*\n❌ {e}",
-            PROTOCOL,
-            plain_text=True,
-        )
+        send_alert(Alert(AlertSeverity.LOW, "Maple monitoring failed", PROTOCOL))
 
 
 if __name__ == "__main__":
