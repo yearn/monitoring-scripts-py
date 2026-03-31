@@ -84,6 +84,7 @@ class TestTelegram(unittest.TestCase):
             {
                 "TELEGRAM_BOT_TOKEN_TEST": "test_token",
                 "TELEGRAM_CHAT_ID_TEST": "test_chat_id",
+                "LOG_LEVEL": "INFO",
             },
         ):
             # Should not raise any exceptions
@@ -107,10 +108,10 @@ class TestTelegram(unittest.TestCase):
             # Verify no request was made
             mock_get.assert_not_called()
 
-    @patch("utils.telegram.requests.get")
-    def test_send_telegram_message_failure(self, mock_get):
+    @patch("utils.telegram.requests.post")
+    def test_send_telegram_message_failure(self, mock_post):
         # Setup mock response for failure
-        mock_get.side_effect = requests.RequestException("Connection error")
+        mock_post.side_effect = requests.RequestException("Connection error")
 
         # Test with environment variables
         with patch.dict(
@@ -118,11 +119,83 @@ class TestTelegram(unittest.TestCase):
             {
                 "TELEGRAM_BOT_TOKEN_TEST": "test_token",
                 "TELEGRAM_CHAT_ID_TEST": "test_chat_id",
+                "LOG_LEVEL": "INFO",
             },
         ):
             # Should raise TelegramError
             with self.assertRaises(TelegramError):
                 send_telegram_message("Test message", "test")
+
+    @patch("utils.telegram.requests.post")
+    def test_send_telegram_message_with_topic(self, mock_post):
+        """When TELEGRAM_TOPIC_ID is set, message goes to topics chat with message_thread_id."""
+        mock_response = unittest.mock.Mock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = unittest.mock.Mock()
+        mock_post.return_value = mock_response
+
+        with patch.dict(
+            os.environ,
+            {
+                "TELEGRAM_BOT_TOKEN_DEFAULT": "default_token",
+                "TELEGRAM_CHAT_ID_TOPICS": "topics_chat_id",
+                "TELEGRAM_TOPIC_ID_AAVE": "42",
+                "LOG_LEVEL": "INFO",
+            },
+        ):
+            send_telegram_message("Test message", "aave")
+
+            mock_post.assert_called_once()
+            url = mock_post.call_args[0][0]
+            kwargs = mock_post.call_args[1]
+            self.assertEqual(kwargs["json"]["chat_id"], "topics_chat_id")
+            self.assertEqual(kwargs["json"]["message_thread_id"], 42)
+            self.assertIn("default_token", url)
+
+    @patch("utils.telegram.requests.post")
+    def test_send_telegram_message_topic_uses_default_bot(self, mock_post):
+        """Topic routing always uses the default bot, even if protocol-specific bot exists."""
+        mock_response = unittest.mock.Mock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = unittest.mock.Mock()
+        mock_post.return_value = mock_response
+
+        with patch.dict(
+            os.environ,
+            {
+                "TELEGRAM_BOT_TOKEN_DEFAULT": "default_token",
+                "TELEGRAM_BOT_TOKEN_AAVE": "aave_specific_token",
+                "TELEGRAM_CHAT_ID_TOPICS": "topics_chat_id",
+                "TELEGRAM_TOPIC_ID_AAVE": "7",
+                "LOG_LEVEL": "INFO",
+            },
+        ):
+            send_telegram_message("Test", "aave")
+            url = mock_post.call_args[0][0]
+            self.assertIn("default_token", url)
+            self.assertNotIn("aave_specific_token", url)
+
+    @patch("utils.telegram.requests.post")
+    def test_send_telegram_message_no_topic_falls_back(self, mock_post):
+        """Without topic ID, uses legacy per-protocol chat routing."""
+        mock_response = unittest.mock.Mock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = unittest.mock.Mock()
+        mock_post.return_value = mock_response
+
+        with patch.dict(
+            os.environ,
+            {
+                "TELEGRAM_BOT_TOKEN_AAVE": "aave_token",
+                "TELEGRAM_CHAT_ID_AAVE": "aave_chat_id",
+                "TELEGRAM_CHAT_ID_TOPICS": "topics_chat_id",
+                "LOG_LEVEL": "INFO",
+            },
+        ):
+            send_telegram_message("Test", "aave")
+            kwargs = mock_post.call_args[1]
+            self.assertEqual(kwargs["json"]["chat_id"], "aave_chat_id")
+            self.assertNotIn("message_thread_id", kwargs["json"])
 
 
 class TestAlert(unittest.TestCase):

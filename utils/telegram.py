@@ -47,24 +47,33 @@ def send_telegram_message(
         message = message[: MAX_MESSAGE_LENGTH - 3] + "..."
         plain_text = True
 
-    # Get bot token and chat ID from environment variables
-    bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_{protocol.upper()}")
-    if not bot_token:
-        bot_token = os.getenv("TELEGRAM_BOT_TOKEN_DEFAULT")
+    # Check if this protocol has a topic ID configured (forum-style group)
+    topic_id = os.getenv(f"TELEGRAM_TOPIC_ID_{protocol.upper()}")
 
-    chat_id = os.getenv(f"TELEGRAM_CHAT_ID_{protocol.upper()}")
+    if topic_id:
+        # Topics always use the default bot and the shared topics chat
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN_DEFAULT")
+        chat_id = os.getenv("TELEGRAM_CHAT_ID_TOPICS")
+    else:
+        # Legacy per-protocol chat routing
+        bot_token = os.getenv(f"TELEGRAM_BOT_TOKEN_{protocol.upper()}")
+        if not bot_token:
+            bot_token = os.getenv("TELEGRAM_BOT_TOKEN_DEFAULT")
+        chat_id = os.getenv(f"TELEGRAM_CHAT_ID_{protocol.upper()}")
 
     if not bot_token or not chat_id:
         logger.warning("Missing Telegram credentials for %s", protocol)
         return
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    payload = {
+    payload: dict[str, object] = {
         "chat_id": chat_id,
         "text": message,
         "parse_mode": "Markdown" if not plain_text else None,
         "disable_notification": disable_notification,
     }
+    if topic_id:
+        payload["message_thread_id"] = int(topic_id)
 
     try:
         response = requests.post(url, json=payload, timeout=10)
