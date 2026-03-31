@@ -1,6 +1,9 @@
 """Tests for utility functions."""
 
+import importlib
 import os
+import sys
+import types
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -514,6 +517,25 @@ class TestDispatch(unittest.TestCase):
             # Old dispatch (past cooldown)
             mock_get.return_value = str(time.time() - 7200)
             self.assertFalse(_is_on_cooldown("infinifi", cooldown_seconds=3600))
+
+
+class TestDefiLlama(unittest.TestCase):
+    """Tests for the DeFiLlama stablecoin price helper."""
+
+    def test_fetch_prices_raises_on_api_error(self):
+        fake_client = MagicMock()
+        fake_client.prices.getCurrentPrices.side_effect = RuntimeError("upstream timeout")
+        fake_sdk = types.ModuleType("defillama_sdk")
+        fake_sdk.DefiLlama = MagicMock(return_value=fake_client)
+
+        with patch.dict(sys.modules, {"defillama_sdk": fake_sdk}):
+            sys.modules.pop("utils.defillama", None)
+            defillama = importlib.import_module("utils.defillama")
+            try:
+                with self.assertRaises(RuntimeError):
+                    defillama.fetch_prices(["ethereum:0xtoken"])
+            finally:
+                sys.modules.pop("utils.defillama", None)
 
 
 if __name__ == "__main__":

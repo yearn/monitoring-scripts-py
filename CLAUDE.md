@@ -20,6 +20,7 @@
 - Fix fixable lint issues: `uv run ruff check --fix .`
 - Type checking: `uv run mypy .`
 - use .env file to load API keys and other environment variables
+- Always pull latest main branch
 
 ## Code Style Guidelines
 - **Imports**: Use ruff for organizing imports (stdlib, third-party, local)
@@ -43,3 +44,4 @@
 - Add proper type annotations to improve IDE support and catch errors
 - Keep files small and focused on a single task. If a file is too large, split it into smaller files.
 - Ask questions if you are not sure about the code. Ask for clarification if needed before writing the code.
+- always print full addresses with links instead of truncated ones.

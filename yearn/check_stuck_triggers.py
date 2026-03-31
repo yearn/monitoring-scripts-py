@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Monitor TKS triggers to detect when they've been stuck in 'true' state for >24 hours.
+"""Monitor TKS triggers to detect when they've been stuck in 'true' state.
 
 Queries CommonReportTrigger contract on-chain to check if strategies and vaults
 have report/tend triggers that should be executed. Tracks trigger state over time
-and alerts when a trigger has been stuck in the 'true' state for over a threshold
-period (default 24 hours), which indicates potential keeper service issues.
+and alerts at escalating thresholds (24h, 3d, 7d, 14d) to avoid alert spam
+while keeping visibility into long-running issues.
 """
 
 import argparse
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -76,6 +76,9 @@ COMMON_REPORT_TRIGGER_ABI = [
 # Default cache file location
 DEFAULT_CACHE_FILE = "tks-trigger-cache.json"
 
+# Escalation thresholds in hours: alert only when crossing these milestones
+ESCALATION_THRESHOLDS_HOURS = [24, 72, 168, 336]  # 24h, 3 days, 7 days, 14 days
+
 
 @dataclass
 class TriggerState:
@@ -84,6 +87,7 @@ class TriggerState:
     triggered: bool
     first_seen: datetime
     last_checked: datetime
+    alerted_thresholds: List[int] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
@@ -91,6 +95,7 @@ class TriggerState:
             "triggered": self.triggered,
             "first_seen": self.first_seen.isoformat(),
             "last_checked": self.last_checked.isoformat(),
+            "alerted_thresholds": self.alerted_thresholds,
         }
 
     @classmethod
@@ -100,6 +105,7 @@ class TriggerState:
             triggered=data["triggered"],
             first_seen=datetime.fromisoformat(data["first_seen"]),
             last_checked=datetime.fromisoformat(data["last_checked"]),
+            alerted_thresholds=data.get("alerted_thresholds", []),
         )
 
 
@@ -112,6 +118,7 @@ class StuckTrigger:
     strategy_address: str
     vault_address: Optional[str]  # Only for vault_report triggers
     hours_stuck: float
+    threshold_crossed: int  # The escalation threshold (in hours) that was just crossed
     reason: Optional[str] = None
 
 
@@ -276,19 +283,36 @@ def update_cache_with_current_state(
                 del cache[cache_key]
 
 
+def get_newly_crossed_threshold(hours_stuck: float, alerted_thresholds: List[int]) -> Optional[int]:
+    """Determine if hours_stuck has crossed a new escalation threshold.
+
+    Args:
+        hours_stuck: How long the trigger has been stuck.
+        alerted_thresholds: List of thresholds (in hours) already alerted for.
+
+    Returns:
+        The highest crossed threshold not yet alerted, or None.
+    """
+    for threshold in reversed(ESCALATION_THRESHOLDS_HOURS):
+        if hours_stuck >= threshold and threshold not in alerted_thresholds:
+            return threshold
+    return None
+
+
 def identify_stuck_triggers(
-    cache: Dict[str, TriggerState], threshold_hours: float, now: datetime, current_reasons: Dict[str, str]
+    cache: Dict[str, TriggerState], now: datetime, current_reasons: Dict[str, str]
 ) -> List[StuckTrigger]:
-    """Identify triggers that have been stuck in 'true' state for too long.
+    """Identify triggers that have just crossed a new escalation threshold.
+
+    Only returns triggers that need alerting (crossed a new threshold since last run).
 
     Args:
         cache: The cache dictionary with trigger states.
-        threshold_hours: Minimum hours a trigger must be stuck to be reported.
         now: Current timestamp.
         current_reasons: Map of cache_key to current reason string from live on-chain queries.
 
     Returns:
-        List of StuckTrigger objects.
+        List of StuckTrigger objects that need alerting.
     """
     stuck_triggers = []
 
@@ -296,57 +320,78 @@ def identify_stuck_triggers(
         time_stuck = now - state.first_seen
         hours_stuck = time_stuck.total_seconds() / 3600
 
-        if hours_stuck >= threshold_hours:
-            try:
-                # Parse cache_key: "{chain_id}_{type}_{addresses}"
-                parts = cache_key.split("_", 3)
-                if len(parts) < 4:
-                    logger.warning("Malformed cache key: %s", cache_key)
-                    continue
+        threshold_crossed = get_newly_crossed_threshold(hours_stuck, state.alerted_thresholds)
+        if threshold_crossed is None:
+            continue
 
-                chain_id = int(parts[0])
-                trigger_type = f"{parts[1]}_{parts[2]}"  # e.g., "vault_report", "strategy_report"
-
-                chain = Chain.from_chain_id(chain_id)
-
-                # Parse addresses based on trigger type
-                if trigger_type == "vault_report":
-                    # Format: vault_report_{vault_addr}_{strategy_addr}
-                    remaining = parts[3]
-                    addr_parts = remaining.split("_")
-                    if len(addr_parts) < 2:
-                        logger.warning("Malformed vault_report cache key: %s", cache_key)
-                        continue
-                    vault_address = addr_parts[0]
-                    strategy_address = addr_parts[1]
-                else:
-                    # Format: strategy_report_{strategy_addr} or strategy_tend_{strategy_addr}
-                    strategy_address = parts[3]
-                    vault_address = None
-
-                stuck_triggers.append(
-                    StuckTrigger(
-                        chain=chain,
-                        trigger_type=trigger_type,
-                        strategy_address=strategy_address,
-                        vault_address=vault_address,
-                        hours_stuck=hours_stuck,
-                        reason=current_reasons.get(cache_key),
-                    )
-                )
-            except (ValueError, IndexError) as e:
-                logger.warning("Failed to parse cache key %s: %s", cache_key, e)
+        try:
+            # Parse cache_key: "{chain_id}_{type}_{addresses}"
+            parts = cache_key.split("_", 3)
+            if len(parts) < 4:
+                logger.warning("Malformed cache key: %s", cache_key)
                 continue
+
+            chain_id = int(parts[0])
+            trigger_type = f"{parts[1]}_{parts[2]}"  # e.g., "vault_report", "strategy_report"
+
+            chain = Chain.from_chain_id(chain_id)
+
+            # Parse addresses based on trigger type
+            if trigger_type == "vault_report":
+                # Format: vault_report_{vault_addr}_{strategy_addr}
+                remaining = parts[3]
+                addr_parts = remaining.split("_")
+                if len(addr_parts) < 2:
+                    logger.warning("Malformed vault_report cache key: %s", cache_key)
+                    continue
+                vault_address = addr_parts[0]
+                strategy_address = addr_parts[1]
+            else:
+                # Format: strategy_report_{strategy_addr} or strategy_tend_{strategy_addr}
+                strategy_address = parts[3]
+                vault_address = None
+
+            stuck_triggers.append(
+                StuckTrigger(
+                    chain=chain,
+                    trigger_type=trigger_type,
+                    strategy_address=strategy_address,
+                    vault_address=vault_address,
+                    hours_stuck=hours_stuck,
+                    threshold_crossed=threshold_crossed,
+                    reason=current_reasons.get(cache_key),
+                )
+            )
+
+            # Mark this threshold as alerted
+            state.alerted_thresholds.append(threshold_crossed)
+        except (ValueError, IndexError) as e:
+            logger.warning("Failed to parse cache key %s: %s", cache_key, e)
+            continue
 
     return stuck_triggers
 
 
-def build_alert_message(stuck_triggers: List[StuckTrigger], threshold_hours: float) -> str:
+def format_threshold_label(threshold_hours: int) -> str:
+    """Convert a threshold in hours to a human-readable label.
+
+    Args:
+        threshold_hours: Threshold value in hours.
+
+    Returns:
+        Human-readable label like "24 hours" or "3 days".
+    """
+    if threshold_hours < 48:
+        return f"{threshold_hours} hours"
+    days = threshold_hours // 24
+    return f"{days} days"
+
+
+def build_alert_message(stuck_triggers: List[StuckTrigger]) -> str:
     """Build Telegram alert message for stuck triggers.
 
     Args:
         stuck_triggers: List of stuck triggers to report.
-        threshold_hours: The threshold used (for message context).
 
     Returns:
         Formatted alert message.
@@ -360,7 +405,7 @@ def build_alert_message(stuck_triggers: List[StuckTrigger], threshold_hours: flo
 
     lines = [
         "⚠️ *TKS Trigger Alert*",
-        f"Found {len(stuck_triggers)} trigger(s) stuck for >{threshold_hours:.0f} hours\n",
+        f"Found {len(stuck_triggers)} trigger(s) crossing alert thresholds\n",
     ]
 
     for chain in sorted(by_chain.keys(), key=lambda c: c.chain_id):
@@ -369,15 +414,16 @@ def build_alert_message(stuck_triggers: List[StuckTrigger], threshold_hours: flo
 
         for trigger in triggers:
             trigger_label = trigger.trigger_type.replace("_", " ").title()
-            lines.append(f"  • {trigger_label}: stuck for {trigger.hours_stuck:.1f} hours")
+            threshold_label = format_threshold_label(trigger.threshold_crossed)
+            lines.append(f"  • {trigger_label}: stuck for {trigger.hours_stuck:.1f}h (>{threshold_label})")
 
             explorer_url = chain.explorer_url
             if trigger.vault_address:
                 vault_url = f"{explorer_url}/address/{trigger.vault_address}"
-                lines.append(f"    Vault: [{trigger.vault_address[:10]}...]({vault_url})")
+                lines.append(f"    Vault: [{trigger.vault_address}]({vault_url})")
 
             strategy_url = f"{explorer_url}/address/{trigger.strategy_address}"
-            lines.append(f"    Strategy: [{trigger.strategy_address[:10]}...]({strategy_url})")
+            lines.append(f"    Strategy: [{trigger.strategy_address}]({strategy_url})")
 
             if trigger.reason:
                 lines.append(f"    Reason: `{trigger.reason}`")
@@ -396,12 +442,6 @@ def build_alert_message(stuck_triggers: List[StuckTrigger], threshold_hours: flo
 def main() -> None:
     """Main entry point for the stuck trigger monitoring script."""
     parser = argparse.ArgumentParser(description="Monitor TKS triggers for strategies/vaults stuck in 'true' state")
-    parser.add_argument(
-        "--threshold-hours",
-        type=float,
-        default=24.0,
-        help="Minimum hours a trigger must be stuck to alert (default: 24.0)",
-    )
     parser.add_argument(
         "--chains",
         type=str,
@@ -435,7 +475,8 @@ def main() -> None:
     cache_file = Path(args.cache_file)
     now = datetime.now(timezone.utc)
 
-    logger.info("Starting TKS trigger monitoring (threshold: %.1f hours)", args.threshold_hours)
+    thresholds_str = ", ".join(format_threshold_label(t) for t in ESCALATION_THRESHOLDS_HOURS)
+    logger.info("Starting TKS trigger monitoring (escalation thresholds: %s)", thresholds_str)
 
     # Load existing cache
     cache = load_trigger_cache(cache_file)
@@ -480,24 +521,24 @@ def main() -> None:
             logger.error("Error checking triggers for %s: %s", chain.name, e, exc_info=True)
             continue
 
-    # Save updated cache
+    # Identify stuck triggers that just crossed a new escalation threshold
+    stuck_triggers = identify_stuck_triggers(cache, now, current_reasons)
+    logger.info("Found %d triggers crossing new thresholds", len(stuck_triggers))
+
+    # Save updated cache (includes newly marked alerted_thresholds)
     save_trigger_cache(cache_file, cache)
     logger.info("Saved %d trigger states to cache", len(cache))
 
-    # Identify stuck triggers
-    stuck_triggers = identify_stuck_triggers(cache, args.threshold_hours, now, current_reasons)
-    logger.info("Found %d stuck triggers", len(stuck_triggers))
-
     if not stuck_triggers:
-        logger.info("No stuck triggers found, no alert needed")
+        logger.info("No new threshold crossings, no alert needed")
         return
 
     # Build and send alert
-    message = build_alert_message(stuck_triggers, args.threshold_hours)
+    message = build_alert_message(stuck_triggers)
 
     fallback = (
         f"⚠️ *TKS Trigger Alert*\n"
-        f"Found {len(stuck_triggers)} trigger(s) stuck for >{args.threshold_hours:.0f} hours.\n"
+        f"Found {len(stuck_triggers)} trigger(s) crossing alert thresholds.\n"
         f"Too many to list here."
     )
     send_telegram_message_with_fallback(message, PROTOCOL, fallback)

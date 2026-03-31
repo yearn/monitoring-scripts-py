@@ -85,7 +85,7 @@ def send_telegram_message(
         raise TelegramError(f"Failed to send telegram message: {response.status_code} - {response.text}")
 
 
-def _get_github_run_url() -> str:
+def get_github_run_url() -> str:
     """Build a GitHub Actions run URL from environment variables, if available."""
     run_url = os.getenv("GITHUB_RUN_URL", "")
     if not run_url:
@@ -113,7 +113,7 @@ def send_telegram_message_with_fallback(
         max_length: Maximum character length before switching to fallback_message.
     """
     if len(message) > max_length:
-        run_url = _get_github_run_url()
+        run_url = get_github_run_url()
         message = fallback_message
         if run_url:
             message += f"\n[Check the full logs]({run_url})"

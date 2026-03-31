@@ -4,15 +4,12 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from utils.abi import load_abi
-from utils.alert import Alert, AlertSeverity, register_alert_hook, send_alert
-from utils.dispatch import dispatch_emergency_withdrawal
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.logging import get_logger
 from utils.web3_wrapper import Chain, ChainManager
 
 PROTOCOL = "ethena"
 logger = get_logger(PROTOCOL)
-
-register_alert_hook(dispatch_emergency_withdrawal)
 
 # NOTE: ethena cannot be used because it blocked for Github Actions IP
 # Ethena transparency API endpoints
