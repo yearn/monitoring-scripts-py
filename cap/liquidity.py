@@ -8,7 +8,7 @@ CUSD = "0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC"
 PROTOCOL = "cap"
 logger = get_logger(PROTOCOL)
 
-ALERT_THRESHOLD = 50_000_000  # 50M
+ALERT_THRESHOLD = 40_000_000  # 40M
 
 
 def main():
