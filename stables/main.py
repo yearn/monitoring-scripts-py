@@ -23,12 +23,12 @@ MONITORED_TOKENS: list[tuple[str, str, str, Decimal]] = [
     ("syrupUSDC", "ethereum:0x80ac24aa929eaf5013f6436cda2a7ba190f5cc0b", "maple", Decimal("1.1")),
     ("syrupUSDT", "ethereum:0x356b8d89c1e1239cbbb9de4815c39a1474d5ba7d", "maple", Decimal("1.1")),
     # cap
-    (
-        "cUSD",
-        "ethereum:0xcccc62962d17b8914c62d74ffb843d73b2a3cccc",
-        "cap",
-        Decimal("0.9"),
-    ),  # much lower because price is very volatile
+    # (
+    #     "cUSD",
+    #     "ethereum:0xcccc62962d17b8914c62d74ffb843d73b2a3cccc",
+    #     "cap",
+    #     Decimal("0.9"),
+    # ),  # much lower because price is very volatile
 ]
 
 
