@@ -7,7 +7,7 @@ transactions (timelocks and Safe multisigs).
 
 from dataclasses import dataclass
 
-from timelock.calldata_decoder import DecodedCall, decode_calldata
+from utils.calldata.decoder import DecodedCall, decode_calldata
 from utils.llm import get_llm_provider
 from utils.llm.base import LLMError
 from utils.logging import get_logger
