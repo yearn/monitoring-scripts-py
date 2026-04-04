@@ -12,8 +12,8 @@ from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
-from timelock.calldata_decoder import format_call_lines
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
+from utils.calldata.decoder import format_call_lines
 from utils.chains import EXPLORER_URLS, Chain
 from utils.llm.ai_explainer import explain_batch_transaction, explain_transaction, format_explanation_line
 from utils.logging import get_logger

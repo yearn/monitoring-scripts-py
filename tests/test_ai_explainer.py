@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import MagicMock, patch
 
-from timelock.calldata_decoder import DecodedCall
+from utils.calldata.decoder import DecodedCall
 from utils.llm.ai_explainer import (
     Explanation,
     _build_prompt,
