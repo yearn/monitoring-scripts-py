@@ -77,11 +77,13 @@ def check_positions():
             )
         except requests.RequestException as e:
             logger.error("Graph API query failed after retries: %s", e)
+            send_telegram_message(f"Graph API query failed after retries: {e}", PROTOCOL, True)
             return
 
         response_data = response.json()
         if "errors" in response_data:
             logger.error("GraphQL error in response: %s", response_data["errors"])
+            send_telegram_message(f"GraphQL error in response: {response_data['errors']}", PROTOCOL, True)
             return
 
         # Check if there are any positions returned
