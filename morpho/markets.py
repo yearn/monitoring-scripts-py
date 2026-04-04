@@ -47,6 +47,8 @@ VAULTS_BY_CHAIN = {
         ["Vault Bridge USDT", "0xc54b4E08C1Dcc199fdd35c6b5Ab589ffD3428a8d", 1],
         ["Vault Bridge WETH", "0x31A5684983EeE865d943A696AAC155363bA024f9", 1],
         ["Vault Bridge WBTC", "0x812B2C6Ab3f4471c0E43D4BB61098a9211017427", 2],
+        ["Sentora PYUSD", "0x19b3cD7032B8C062E8d44EaCad661a0970DD8c55", 2],
+        ["Sentora RLUSD", "0x71cb2F8038B2C5D65ddc740B2F3268890CD2A89C", 2],
     ],
     Chain.BASE: [
         ["GauntletUSDC Prime", "0xeE8F4eC5672F09119b96Ab6fB59C27E1b7e44b61", 1],
@@ -246,6 +248,19 @@ MARKETS_RISK_2 = {
         "0x729badf297ee9f2f6b3f717b96fd355fc6ec00422284ce1968e76647b258cf44",  # syrupUSDC/USDC -> lltv 91.5%, oracle: syrupUSDC MaplePool vault rate. Oracle is using convertToAssets() to get the price but maple pool returns different amount, it should use convertToExitAssets() instead.
         "0x61765602144e91e5ac9f9e98b8584eae308f9951596fd7f5e0f59f21cd2bf664",  # weETH/USDC -> lltv 91.5%, oracle: redstone weETH/usdc exchange rate
         "0xb7843fe78e7e7fd3106a1b939645367967d1f986c2e45edb8932ad1896450877",  # XAUT/USDT -> lltv 77%, oracle: Chainlink XAUT/USD and Chainlink USDT/USD.
+        "0xc0ae375fd761ff19b3f04de5534c0f1ec110f80e1c2ede27c42c1c43c3040394",  # syrupUSDC/RLUSD -> lltv 91.5%, oracle: syrupUSDC MaplePool ERC4626 to USDC, chainlink USDC/USD and Chainlink RLUSD/USD.
+        "0xffd010618ed3cb39bb2c5de0e3e58d3d2ec9f52187a180f29723c31756a939bc",  # cbBTC/RLUSD -> lltv 86%, oracle: chainlink cbBTC/USD and Chainlink RLUSD/USD.
+        "0xea4bfb18df0ee6bffb7b3f0270899a8adb92ab6b684709634c8276128813cfd4",  # weETH/RLUSD -> lltv 86%, oracle: chainlink weETH/ETH and chainlink ETH/USD and Chainlink RLUSD/USD.
+        "0x88abdf8693e663144c3544b9442e9b04520016d6ebc57aa76424c00ab1683c9d",  # wstETH/RLUSD -> lltv 86%, oracle: Compound wstETH/ETH price feed, chainlink ETH/USD and Chainlink RLUSD/USD.
+        "0x48a0da254e4df7b1046baa5ef11beb7916203886ce153a07a6d28c5d63cf8fad",  # sUSDe/RLUSD -> lltv 91.5%, oracle: sUSDe ERC4626 vault, chainlink USDe/USD and Chainlink RLUSD/USD.
+        "0xf5c5df23559b0fb56560a7578ea17d81e245153ba64b8132df026c9358864d27",  # wstETH/PYUSD -> lltv 86%, oracle: Compound wstETH/ETH feed, chainlink ETH/USD and Chainlink PYUSD/USD.
+        "0xa5beccdffd156dfe8c0871f143648c512f0a34f37c8a4ae2ff31ebfe944641d1",  # sUSDS/PYUSD -> lltv 94.5%, oracle: sUSDS ERC4626 vault, chainlink USDS/USD and Chainlink PYUSD/USD.
+        "0xc9629945524f3fde56c7e8854a6c3d48e76b9d97236abbe73c750fcc7aeb8501",  # syrupUSDC/PYUSD -> lltv 91.5%, oracle: syrupUSDC MaplePool ERC4626 to USDC, chainlink USDC/USD and Chainlink PYUSD/USD.
+        "0x6a7e36eb088bd501d73f7ab4c5b8671358559341a78ce521c9e499dc0bc642b9",  # LBTC/PYUSD -> lltv 86%, oracle: Redstone LBTC_FUNDAMENTAL, chainlink BTC/USD and Chainlink PYUSD/USD.
+        "0x85d59152eeeab7ca024804895b358868d8dd1e134171be400d7792d5604a212c",  # weETH/PYUSD -> lltv 86%, oracle: chainlink weETH/ETH and chainlink ETH/USD and Chainlink PYUSD/USD.
+        "0x90ef0c5a0dc7c4de4ad4585002d44e9d411d212d2f6258e94948beecf8b4c0d5",  # sUSDe/PYUSD -> lltv 91.5%, oracle: sUSDe ERC4626 vault, chainlink USDe/USD and Chainlink PYUSD/USD.
+        "0xcb12dcbc7c6c4f20ca1537a3cc1a41ec27501f85a3e322a710d9a16a88a28c0e",  # PT-sUSDE-7MAY2026/PYUSD -> lltv 91.5%, oracle: Pendle oracle PT to USDe, chainlink USDe/USD and Chainlink PYUSD/USD.
+        "0xd8a8e6667f58aa9229e8979bd619742b1660ee856c200a93e407dbccb7222323",  # cbBTC/PYUSD -> lltv 86%, oracle: chainlink cbBTC/USD and Chainlink PYUSD/USD.
     ],
     Chain.BASE: [
         "0x6aa81f51dfc955df598e18006deae56ce907ac02b0b5358705f1a28fcea23cc0",  # wstETH/WETH -> lltv 96.5%, oracle: Chainlink wstETH-stETH Exchange Rate
