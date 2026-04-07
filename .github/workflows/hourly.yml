@@ -34,6 +34,7 @@ jobs:
         timelock/timelock_alerts.py
         # always run proposals after timelock alerts
         aave/proposals.py
+        ustb/main.py
         compound/proposals.py
         fluid/proposals.py
         maker/proposals.py
