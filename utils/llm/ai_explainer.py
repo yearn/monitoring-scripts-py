@@ -141,6 +141,21 @@ def _build_prompt(
     return "\n".join(parts)
 
 
+def _find_marker(text: str, keyword: str) -> tuple[int, int]:
+    """Find a section marker like 'TLDR:' or '### DETAIL' and return (start_of_marker, start_of_content).
+
+    Handles variations: 'KEYWORD:', '## KEYWORD', '**KEYWORD**', '**KEYWORD:**', etc.
+    Returns (-1, -1) if not found.
+    """
+    import re
+
+    pattern = rf"(?:^|\n)\s*(?:#{1,4}\s+)?(?:\*{{2}})?{keyword}(?:\*{{2}})?[:\s]*"
+    match = re.search(pattern, text, re.IGNORECASE)
+    if match:
+        return match.start(), match.end()
+    return -1, -1
+
+
 def _parse_explanation(raw: str) -> Explanation:
     """Parse LLM response into summary and detail sections.
 
@@ -151,28 +166,23 @@ def _parse_explanation(raw: str) -> Explanation:
         <detailed analysis>
 
     Falls back gracefully if the LLM doesn't follow the format exactly.
+    Handles markdown-style headers like '### DETAIL' or '**TLDR:**'.
     """
-    # Try to split on DETAIL: marker
-    upper = raw.upper()
-    detail_idx = upper.find("DETAIL:")
-    tldr_idx = upper.find("TLDR:")
+    tldr_start, tldr_content = _find_marker(raw, "TLDR")
+    detail_start, detail_content = _find_marker(raw, "DETAIL")
 
-    if tldr_idx != -1 and detail_idx != -1:
-        # Both markers found — extract each section
-        tldr_start = tldr_idx + len("TLDR:")
-        summary = raw[tldr_start:detail_idx].strip()
-        detail = raw[detail_idx + len("DETAIL:") :].strip()
+    if tldr_start != -1 and detail_start != -1:
+        summary = raw[tldr_content:detail_start].strip()
+        detail = raw[detail_content:].strip()
         return Explanation(summary=summary, detail=detail)
 
-    if tldr_idx != -1:
-        # Only TLDR found — everything after it is the summary, no detail
-        summary = raw[tldr_idx + len("TLDR:") :].strip()
+    if tldr_start != -1:
+        summary = raw[tldr_content:].strip()
         return Explanation(summary=summary, detail="")
 
-    if detail_idx != -1:
-        # Only DETAIL found — everything before is summary
-        summary = raw[:detail_idx].strip()
-        detail = raw[detail_idx + len("DETAIL:") :].strip()
+    if detail_start != -1:
+        summary = raw[:detail_start].strip()
+        detail = raw[detail_content:].strip()
         return Explanation(summary=summary, detail=detail)
 
     # No markers — use full response as summary (backward compatible)
