@@ -80,8 +80,8 @@ VAULTS_BY_CHAIN = {
         ["SteakhousePrime USDC", "0x61D4F9D3797BA4dA152238c53a6f93Fb665C3c1d", 1],
         ["Gauntlet WETH", "0xC5e7AB07030305fc925175b25B93b285d40dCdFf", 1],
         ["Gauntlet WBTC", "0xf243523996ADbb273F0B237B53f30017C4364bBC", 1],
-        ["SteakhousePrime AUSD", "0x82c4C641CCc38719ae1f0FBd16A64808d838fDfD", 1],
-        ["Gauntlet AUSD", "0x9540441C503D763094921dbE4f13268E6d1d3B56", 1],
+        # ["SteakhousePrime AUSD", "0x82c4C641CCc38719ae1f0FBd16A64808d838fDfD", 1],
+        # ["Gauntlet AUSD", "0x9540441C503D763094921dbE4f13268E6d1d3B56", 1],
     ],
     Chain.POLYGON: [
         ["Compound WETH", "0xF5C81d25ee174d83f1FD202cA94AE6070d073cCF", 1],
