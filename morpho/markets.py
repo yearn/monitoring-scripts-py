@@ -139,11 +139,12 @@ VAULTS_WITH_YV_COLLATERAL_BY_ASSET = {
             ["Yearn OG WBTC", "0xe107cCdeb8e20E499545C813f98Cc90619b29859"],
             ["Gauntlet WBTC", "0xf243523996ADbb273F0B237B53f30017C4364bBC"],
         ],
+        # NOTE: skip AUSD vaults because it is used in low amounts as collateral
         # AUSD vaults - using addresses from VAULTS_BY_CHAIN as source of truth
-        "0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a": [  # AUSD asset address on Katana
-            ["SteakhousePrime AUSD", "0x82c4C641CCc38719ae1f0FBd16A64808d838fDfD"],
-            ["Gauntlet AUSD", "0x9540441C503D763094921dbE4f13268E6d1d3B56"],
-        ],
+        # "0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a": [  # AUSD asset address on Katana
+        #     ["SteakhousePrime AUSD", "0x82c4C641CCc38719ae1f0FBd16A64808d838fDfD"],
+        #     ["Gauntlet AUSD", "0x9540441C503D763094921dbE4f13268E6d1d3B56"],
+        # ],
     },
 }
 
