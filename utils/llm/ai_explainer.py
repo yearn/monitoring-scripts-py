@@ -28,8 +28,9 @@ DETAIL: A thorough analysis covering:
 - Asset/token flow changes
 - State changes and their impact
 - Risk assessment (LOW/MEDIUM/HIGH/CRITICAL)
-- Any concerns or notable observations
+- Any concerns or notable observations"""
 
+FORMAT_REMINDER = """
 Format your response exactly as:
 TLDR: <your short summary>
 
@@ -137,6 +138,8 @@ def _build_prompt(
 
     if simulation:
         parts.append(f"\n--- Simulation Results ---\n{_format_simulation_context(simulation)}")
+
+    parts.append(FORMAT_REMINDER)
 
     return "\n".join(parts)
 
