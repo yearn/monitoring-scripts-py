@@ -211,6 +211,7 @@ MARKETS_RISK_1 = {
         "0x0c909f9c866c4250cb2f15ef916b1eed5b1022b34ccd7ca947810011f5758c4f",  # BTCK/AUSD -> lltv 86%, oracle: RedStone Price Feed for BTC. USD=AUSD.
         "0xa6ce59291d90ae348b2fa956cc66f31df605a3304a9325e494c94e2cf5b0485a",  # weETH/vbUSDT -> lltv 77%, oracle: RedStone weETH/ETH fundamental price, Chainlink ETH/USD and Chainlink USDT/USD.
         "0x76e311d4b0e2e6ae88ad9bab18063452a6d39837d7104c430ff62457b91cb2cb",  # weETH/vbUSDC -> lltv 77%, oracle: RedStone weETH/ETH fundamental price, Chainlink ETH/USD and Chainlink USDC/USD.
+        "0xbb4fb94ca819744df6a8f3932fffad47d31e8d76d3c48216878295c4cf588caf",  # weETH/vbUSDT -> lltv 86%, oracle: RedStone weETH/ETH fundamental price, Chainlink ETH/USD and Chainlink USDT/USD.
     ],
     Chain.POLYGON: [
         "0xb8ae474af3b91c8143303723618b31683b52e9c86566aa54c06f0bc27906bcae",  # wstETH/WETH -> lltv 91.5%, oracle: Chainlink wstETH-stETH Exchange Rate
