@@ -27,9 +27,9 @@ logger = get_logger(PROTOCOL)
 # Contract addresses (Ethereum Mainnet)
 # ---------------------------------------------------------------------------
 USTB_TOKEN = "0x43415eB6ff9DB7E26A15b704e7A3eDCe97d31C4e"
-CONTINUOUS_ORACLE = "0xe4fa682f94610ccd170680cc3b045d77d9e528a8"
+CONTINUOUS_ORACLE = "0xE4fA682f94610cCd170680cc3B045d77D9E528a8"
 CHAINLINK_ORACLE = "0x289B5036cd942e619E1Ee48670F98d214E745AAC"
-REDEMPTION_IDLE = "0x4c21b7577c8fe8b0b0669165ee7c8f67fa1454cf"
+REDEMPTION_IDLE = "0x4c21B7577C8FE8b0B0669165ee7C8f67fa1454Cf"
 USDC_TOKEN = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
 # ---------------------------------------------------------------------------
@@ -46,6 +46,7 @@ STALENESS_THRESHOLD = 345_600  # 4 days in seconds (revert at 5 days / 432_000s)
 CACHE_FILE = "cache-id.txt"
 CACHE_KEY_SUPPLY = "ustb_total_supply"
 CACHE_KEY_SUPPLY_TS = "ustb_supply_ts"
+CACHE_KEY_CHAINLINK_NAV = "ustb_chainlink_nav"
 
 # ---------------------------------------------------------------------------
 # ABIs
@@ -104,6 +105,7 @@ def main() -> None:
     effective_at = int(latest_checkpoint[1])
 
     _check_nav_monotonicity(oracle_round_id, checkpoint_responses, oracle_decimals)
+    _check_chainlink_monotonicity(chainlink_answer, chainlink_decimals)
     _check_oracle_divergence(oracle_price, chainlink_price)
     _check_redemption_idle(usdc_balance_raw)
     _check_supply_change(total_supply_raw, current_timestamp, oracle_price)
@@ -178,6 +180,33 @@ def _check_oracle_divergence(oracle_price: float, chainlink_price: float) -> Non
                 PROTOCOL,
             )
         )
+
+
+def _check_chainlink_monotonicity(chainlink_answer: int, chainlink_decimals: int) -> None:
+    """Alert if the Chainlink NAV feed decreases versus the last observed value."""
+    previous_answer = get_last_value_for_key_from_file(CACHE_FILE, CACHE_KEY_CHAINLINK_NAV)
+    try:
+        previous_answer_int = int(previous_answer)
+    except (TypeError, ValueError):
+        previous_answer_int = 0
+
+    if previous_answer_int > 0 and chainlink_answer < previous_answer_int:
+        previous_price = previous_answer_int / (10**chainlink_decimals)
+        current_price = chainlink_answer / (10**chainlink_decimals)
+        decrease_pct = (previous_answer_int - chainlink_answer) / previous_answer_int * 100
+        send_alert(
+            Alert(
+                AlertSeverity.CRITICAL,
+                f"USTB Chainlink NAV DECREASED\n"
+                f"Previous: ${previous_price:.6f}\n"
+                f"Current: ${current_price:.6f}\n"
+                f"Decrease: {decrease_pct:.4f}%",
+                PROTOCOL,
+            )
+        )
+
+    if chainlink_answer != previous_answer_int:
+        write_last_value_to_file(CACHE_FILE, CACHE_KEY_CHAINLINK_NAV, chainlink_answer)
 
 
 def _check_redemption_idle(usdc_balance_raw: int) -> None:

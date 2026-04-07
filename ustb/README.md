@@ -2,7 +2,7 @@
 
 Monitors the [Superstate Short Duration US Government Securities Fund (USTB)](https://superstate.co/ustb) on Ethereum Mainnet.
 
-[Risk Score Report](https://github.com/yearn/risk-score/blob/master/reports/report/paxos-usdg.md)
+[Risk Score Report](https://curation.yearn.fi/report/superstate-ustb/)
 
 ## Structure
 
