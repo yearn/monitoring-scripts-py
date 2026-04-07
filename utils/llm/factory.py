@@ -8,6 +8,7 @@ Environment variables:
 
 Provider defaults:
     venice: base_url=https://api.venice.ai/api/v1, model=llama-3.3-70b
+    groq: base_url=https://api.groq.com/openai/v1, model=openai/gpt-oss-safeguard-20b
     openai: base_url=https://api.openai.com/v1, model=gpt-4o-mini
     anthropic: model=claude-haiku-4-5-20251001 (uses native Anthropic API)
     Custom: Set LLM_BASE_URL and LLM_MODEL explicitly.
@@ -25,6 +26,10 @@ _PROVIDER_DEFAULTS: dict[str, dict[str, str]] = {
     "venice": {
         "base_url": "https://api.venice.ai/api/v1",
         "model": "grok-41-fast",
+    },
+    "groq": {
+        "base_url": "https://api.groq.com/openai/v1",
+        "model": "openai/gpt-oss-safeguard-20b",
     },
     "openai": {
         "base_url": "https://api.openai.com/v1",
