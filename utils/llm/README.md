@@ -141,7 +141,7 @@ All configuration is via environment variables:
 
 | Variable | Default | Description |
 |---|---|---|
-| `LLM_PROVIDER` | `venice` | Provider name: `venice`, `openai`, `anthropic`, or custom |
+| `LLM_PROVIDER` | `venice` | Provider name: `venice`, `groq`, `openai`, `anthropic`, or custom |
 | `LLM_API_KEY` | *(required)* | API key for the LLM provider |
 | `LLM_MODEL` | `grok-41-fast` | Model identifier |
 | `LLM_BASE_URL` | *(per provider)* | API base URL (not needed for anthropic) |
@@ -154,6 +154,7 @@ All configuration is via environment variables:
 | Provider | Base URL | Default Model | Package |
 |---|---|---|---|
 | Venice.ai | `https://api.venice.ai/api/v1` | `grok-41-fast` | `openai` |
+| Groq | `https://api.groq.com/openai/v1` | `openai/gpt-oss-safeguard-20b` | `openai` |
 | OpenAI | `https://api.openai.com/v1` | `gpt-4o-mini` | `openai` |
 | Anthropic | *(native API)* | `claude-haiku-4-5-20251001` | `anthropic` |
 | Custom | Set `LLM_BASE_URL` | Set `LLM_MODEL` | `openai` |
