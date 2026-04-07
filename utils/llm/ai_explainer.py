@@ -152,7 +152,8 @@ def _find_marker(text: str, keyword: str) -> tuple[int, int]:
     """
     import re
 
-    pattern = rf"(?:^|\n)\s*(?:#{1,4}\s+)?(?:\*{{2}})?{keyword}(?:\*{{2}})?[:\s]*"
+    heading = r"#{1,4}"  # fmt: skip
+    pattern = rf"(?:^|\n)\s*(?:{heading}\s+)?(?:\*{{2}})?{keyword}(?:\*{{2}})?[:\s]*"
     match = re.search(pattern, text, re.IGNORECASE)
     if match:
         return match.start(), match.end()
