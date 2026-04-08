@@ -23,7 +23,7 @@ from utils.telegram import MAX_MESSAGE_LENGTH, send_telegram_message
 load_dotenv()
 
 ENVIO_GRAPHQL_URL = os.getenv("ENVIO_GRAPHQL_URL")
-DEFAULT_LOG_LEVEL = os.getenv("TIMELOCK_ALERTS_LOG_LEVEL", "WARNING")
+DEFAULT_LOG_LEVEL = os.getenv("TIMELOCK_ALERTS_LOG_LEVEL", "INFO")
 CACHE_KEY = "TIMELOCK_LAST_TS"
 
 
@@ -262,7 +262,7 @@ def _get_ai_explanation(events: list[dict], timelock_info: TimelockConfig, chain
             from_address=timelock_info.address,
         )
     except Exception:
-        _logger.debug("AI explanation failed", exc_info=True)
+        _logger.warning("AI explanation failed", exc_info=True)
         return None
 
 
