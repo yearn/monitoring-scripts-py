@@ -84,14 +84,14 @@ def get_llm_provider() -> LLMProvider:
     if _instance is not None:
         return _instance
 
-    provider_name = os.getenv("LLM_PROVIDER", "venice").lower()
+    provider_name = (os.getenv("LLM_PROVIDER") or "venice").lower()
     api_key = os.getenv("LLM_API_KEY")
     if not api_key:
         raise LLMError("LLM_API_KEY environment variable is not set")
 
     defaults = _PROVIDER_DEFAULTS.get(provider_name, {})
-    model = os.getenv("LLM_MODEL", defaults.get("model", ""))
-    base_url = os.getenv("LLM_BASE_URL", defaults.get("base_url", ""))
+    model = os.getenv("LLM_MODEL") or defaults.get("model", "")
+    base_url = os.getenv("LLM_BASE_URL") or defaults.get("base_url", "")
 
     if not model:
         raise LLMError(
