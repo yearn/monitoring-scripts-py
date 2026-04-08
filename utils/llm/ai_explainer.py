@@ -13,6 +13,7 @@ from utils.llm.base import LLMError
 from utils.logging import get_logger
 from utils.paste import upload_to_paste
 from utils.proxy import build_diff_url, detect_proxy_upgrade, get_current_implementation
+from utils.telegram import escape_markdown
 from utils.tenderly.simulation import SimulationResult, simulate_transaction
 
 logger = get_logger("utils.llm.ai_explainer")
@@ -362,7 +363,7 @@ def format_explanation_line(explanation: Explanation) -> str:
     Uses the short summary for the Telegram message. The detailed analysis
     is uploaded to a paste service (dpaste.org) for easy access.
     """
-    line = f"\n🤖 *AI Summary:*\n{explanation.summary}"
+    line = f"\n🤖 *AI Summary:*\n{escape_markdown(explanation.summary)}"
     if explanation.detail:
         paste_url = upload_to_paste(explanation.detail, title="AI Transaction Analysis")
         if paste_url:

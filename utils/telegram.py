@@ -13,6 +13,17 @@ logger = get_logger("utils.telegram")
 MAX_MESSAGE_LENGTH = 4096
 
 
+def escape_markdown(text: str) -> str:
+    """Escape special characters for Telegram Markdown V1.
+
+    Telegram Markdown V1 treats _ * ` [ as formatting characters.
+    This function escapes them so they render as literal text.
+    """
+    for ch in r"\_*`[":
+        text = text.replace(ch, f"\\{ch}")
+    return text
+
+
 class TelegramError(Exception):
     """Exception raised for errors in Telegram API interactions."""
 
