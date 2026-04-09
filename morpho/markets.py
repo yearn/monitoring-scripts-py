@@ -330,7 +330,8 @@ MARKETS_RISK_3 = {
         "0x0103cbcd14c690f68a91ec7c84607153311e9954c94ac6eac06c9462db3fabb6",  # rETH/EURC -> lltv 94.5%, oracle: Chainlink rETH/ETH, high risk oracle
     ],
     Chain.KATANA: [
-        "0xd8a93a4cd16f843c385391e208a9a9f2fd75aedfcca05e4810e5fbfcaa6baec6",  # wsrUSD/vbUSDC -> lltv 91.5%, oracle: API3 wsrUSD/rUSD Exchange Rate, rUSD = vbUSDC],
+        "0xd8a93a4cd16f843c385391e208a9a9f2fd75aedfcca05e4810e5fbfcaa6baec6",  # wsrUSD/vbUSDC -> lltv 91.5%, oracle: API3 wsrUSD/rUSD Exchange Rate, rUSD = vbUSDC.
+        "0xf7fc5cc82200ddf8f23188ddbd6727eda2c8bc41863e91fb767bbc6e4f71890e",  # siUSD/vbUSDC -> lltv 86%, oracle: MorphoChainlinkOracleV2, Chainlink SIUSD/USD; no quote feed (vbUSDC = USD).
     ],
     Chain.POLYGON: [],
     Chain.ARBITRUM: [
