@@ -28,6 +28,7 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts. Join
 - [Stargate](./stargate/README.md)
 - [USD0 - Usual Money](./usd0/README.md)
 - [USDAI](./usdai/README.md)
+- [USTB - Superstate](./ustb/README.md)
 - [Yearn](./yearn/README.md)
 
 ## Cross-Protocol Monitoring
