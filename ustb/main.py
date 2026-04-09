@@ -130,7 +130,9 @@ def _check_nav_monotonicity(
 ) -> None:
     """Alert if the latest NAV/Share checkpoint is lower than the previous one."""
     if round_id <= 0 or len(checkpoint_responses) < 2:
-        logger.info("Not enough checkpoints to compare (roundId=%d)", round_id)
+        send_alert(
+            Alert(AlertSeverity.CRITICAL, f"USTB: Not enough checkpoints to compare (roundId={round_id})", PROTOCOL)
+        )
         return
 
     current_navs = int(checkpoint_responses[0][2])
@@ -159,7 +161,7 @@ def _check_nav_monotonicity(
 def _check_oracle_divergence(oracle_price: float, chainlink_price: float) -> None:
     """Alert if the Continuous Oracle and Chainlink feed differ by more than 0.5%."""
     if chainlink_price <= 0:
-        logger.warning("Chainlink price is zero, skipping divergence check")
+        send_alert(Alert(AlertSeverity.CRITICAL, "USTB: Chainlink price is zero, skipping divergence check", PROTOCOL))
         return
 
     diff = abs(oracle_price - chainlink_price) / chainlink_price
