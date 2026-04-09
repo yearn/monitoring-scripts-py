@@ -31,7 +31,7 @@ Monitors the [Superstate Short Duration US Government Securities Fund (USTB)](ht
 
 ### Supply Changes
 
-- **Large supply change**: HIGH alert if USTB total supply changes by more than **+/-10%** compared to the 24h-cached baseline.
+- **Large supply change**: HIGH alert if USTB total supply changes by more than **+/-10%** compared to the previous hourly run.
 
 ### Oracle Staleness
 

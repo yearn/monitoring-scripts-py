@@ -5,7 +5,7 @@ Monitors on Ethereum Mainnet:
    Alerts on any NAV decrease (fund losses) or divergence > 0.5%.
 2. RedemptionIdle — USDC balance held by the RedemptionIdle contract.
    Alerts when below $500K.
-3. Large supply changes — alerts on >10% total supply change vs 24h-cached value.
+3. Large supply changes — alerts on >10% total supply change vs previous hourly run.
 4. Oracle staleness — alerts if latest checkpoint effectiveAt is > 4 days old
    (oracle reverts at 5 days).
 
@@ -45,7 +45,6 @@ STALENESS_THRESHOLD = 345_600  # 4 days in seconds (revert at 5 days / 432_000s)
 # ---------------------------------------------------------------------------
 CACHE_FILE = "cache-id.txt"
 CACHE_KEY_SUPPLY = "ustb_total_supply"
-CACHE_KEY_SUPPLY_TS = "ustb_supply_ts"
 CACHE_KEY_CHAINLINK_NAV = "ustb_chainlink_nav"
 
 # ---------------------------------------------------------------------------
@@ -108,7 +107,7 @@ def main() -> None:
     _check_chainlink_monotonicity(chainlink_answer, chainlink_decimals)
     _check_oracle_divergence(oracle_price, chainlink_price)
     _check_redemption_idle(usdc_balance_raw)
-    _check_supply_change(total_supply_raw, current_timestamp, oracle_price)
+    _check_supply_change(total_supply_raw, oracle_price)
     _check_oracle_staleness(current_timestamp, effective_at)
 
     logger.info(
@@ -228,35 +227,28 @@ def _check_redemption_idle(usdc_balance_raw: int) -> None:
         )
 
 
-def _check_supply_change(total_supply_raw: int, current_timestamp: int, nav_price: float) -> None:
-    """Alert if total supply changed by more than 10% compared to the 24h-cached value.
-
-    The cached supply value is only updated once every 24 hours so that hourly
-    runs compare against the same baseline.
-    """
+def _check_supply_change(total_supply_raw: int, nav_price: float) -> None:
+    """Alert if total supply changed by more than 10% since the previous hourly run."""
     total_supply = _to_tokens(total_supply_raw)
 
     prev_supply_str = str(get_last_value_for_key_from_file(CACHE_FILE, CACHE_KEY_SUPPLY))
-    prev_ts_str = str(get_last_value_for_key_from_file(CACHE_FILE, CACHE_KEY_SUPPLY_TS))
 
-    if prev_supply_str == "0" or prev_ts_str == "0":
+    if prev_supply_str == "0":
         logger.info("No cached supply found, initialising cache")
         write_last_value_to_file(CACHE_FILE, CACHE_KEY_SUPPLY, total_supply_raw)
-        write_last_value_to_file(CACHE_FILE, CACHE_KEY_SUPPLY_TS, current_timestamp)
         return
 
     prev_supply_raw = int(prev_supply_str)
-    prev_ts = int(prev_ts_str)
     prev_supply = _to_tokens(prev_supply_raw)
 
     if prev_supply > 0:
         supply_change = (total_supply - prev_supply) / prev_supply
-        logger.info("Supply change vs cached: %+.2f%%", supply_change * 100)
+        logger.info("Supply change vs previous run: %+.2f%%", supply_change * 100)
         if abs(supply_change) > SUPPLY_CHANGE_THRESHOLD:
             send_alert(
                 Alert(
                     AlertSeverity.HIGH,
-                    f"USTB large supply change detected (>{SUPPLY_CHANGE_THRESHOLD:.0%} in 24h)\n"
+                    f"USTB large supply change detected (>{SUPPLY_CHANGE_THRESHOLD:.0%})\n"
                     f"Previous: {format_usd(prev_supply * nav_price)} ({prev_supply:,.2f} USTB)\n"
                     f"Current: {format_usd(total_supply * nav_price)} ({total_supply:,.2f} USTB)\n"
                     f"Change: {supply_change:+.2%}",
@@ -264,10 +256,7 @@ def _check_supply_change(total_supply_raw: int, current_timestamp: int, nav_pric
                 )
             )
 
-    # Refresh baseline every 24 hours
-    if current_timestamp - prev_ts >= 86_400:
-        write_last_value_to_file(CACHE_FILE, CACHE_KEY_SUPPLY, total_supply_raw)
-        write_last_value_to_file(CACHE_FILE, CACHE_KEY_SUPPLY_TS, current_timestamp)
+    write_last_value_to_file(CACHE_FILE, CACHE_KEY_SUPPLY, total_supply_raw)
 
 
 def _check_oracle_staleness(current_timestamp: int, effective_at: int) -> None:
