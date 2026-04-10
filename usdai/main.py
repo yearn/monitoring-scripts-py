@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import requests
 from web3 import Web3
@@ -8,6 +9,7 @@ from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.config import Config
+from utils.defillama import fetch_prices
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
 
@@ -15,13 +17,64 @@ from utils.web3_wrapper import ChainManager
 PROTOCOL = "usdai"
 logger = get_logger(PROTOCOL)
 
-VAULT_ADDR = Web3.to_checksum_address("0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF")
-WM_TOKEN = Web3.to_checksum_address("0x437cc33344a0b27a429f795ff6b469c72698b291")
+USDAI_VAULT_ADDR = Web3.to_checksum_address("0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF")
+PYUSD_TOKEN_ADDR = Web3.to_checksum_address("0x46850aD61C2B7d64d08c9C754F45254596696984")
 SUSDAI_ADDR = Web3.to_checksum_address("0x0B2b2B2076d95dda7817e785989fE353fe955ef9")
-GRAPHQL_URL = "https://protocol-api.m0.org/graphql"
-
-
 LOAN_ROUTER_ADDR = Web3.to_checksum_address("0x0C2ED170F2bB1DF1a44292Ad621B577b3C9597D1")
+ARBISCAN_TOKEN_API_URL = "https://api.etherscan.io/v2/api"
+
+# Alert thresholds (absolute deviation from 1.0)
+# Raised defaults to reduce alert noise; still overrideable via env vars.
+USDAI_PYUSD_WARN_DEVIATION = Config.get_env_float("USDAI_PYUSD_WARN_DEVIATION", 0.003)  # 0.30%
+USDAI_PYUSD_CRITICAL_DEVIATION = Config.get_env_float("USDAI_PYUSD_CRITICAL_DEVIATION", 0.01)  # 1.00%
+PYUSD_USD_WARN_DEVIATION = Config.get_env_float("PYUSD_USD_WARN_DEVIATION", 0.003)  # 0.30%
+PYUSD_USD_CRITICAL_DEVIATION = Config.get_env_float("PYUSD_USD_CRITICAL_DEVIATION", 0.0075)  # 0.75%
+
+
+def send_breach_alert_once(cache_key, alert_message, severity=AlertSeverity.HIGH):
+    last_state = int(get_last_value_for_key_from_file(cache_filename, cache_key))
+    if last_state == 0:
+        send_alert(Alert(severity, alert_message, PROTOCOL))
+        write_last_value_to_file(cache_filename, cache_key, 1)
+
+
+def clear_breach_state(cache_key):
+    last_state = int(get_last_value_for_key_from_file(cache_filename, cache_key))
+    if last_state == 1:
+        write_last_value_to_file(cache_filename, cache_key, 0)
+
+
+def get_usdai_supply_from_arbiscan(decimals: int) -> float | None:
+    api_key = os.getenv("ARBISCAN_TOKEN") or os.getenv("ETHERSCAN_TOKEN")
+    if not api_key:
+        logger.warning("ARBISCAN_TOKEN/ETHERSCAN_TOKEN not set; cannot fetch USDai supply from Arbiscan API.")
+        return None
+
+    params = {
+        "chainid": Chain.ARBITRUM.chain_id,
+        "module": "stats",
+        "action": "tokensupply",
+        "contractaddress": USDAI_VAULT_ADDR,
+        "apikey": api_key,
+    }
+
+    try:
+        res = requests.get(ARBISCAN_TOKEN_API_URL, params=params, timeout=Config.get_request_timeout())
+        if res.status_code != 200:
+            logger.warning("Arbiscan API returned non-200 for USDai supply: %s", res.status_code)
+            return None
+
+        payload = res.json()
+        status = str(payload.get("status", "0"))
+        raw_supply = payload.get("result")
+        if status != "1" or not str(raw_supply).isdigit():
+            logger.warning("Arbiscan API returned unexpected payload for USDai supply: %s", payload)
+            return None
+
+        return int(raw_supply) / (10**decimals)
+    except Exception as exc:
+        logger.warning("Failed to fetch USDai supply from Arbiscan API: %s", exc)
+        return None
 
 
 def get_loan_details(client, owner_addr):
@@ -71,71 +124,115 @@ def main():
     # Common ABI
     erc20_abi = load_abi("common-abi/ERC20.json")
 
-    wm = client.get_contract(WM_TOKEN, erc20_abi)
+    usdai = client.get_contract(USDAI_VAULT_ADDR, erc20_abi)
+    pyusd = client.get_contract(PYUSD_TOKEN_ADDR, erc20_abi)
 
     try:
-        # --- On-Chain Supply ---
-        # USDai Supply (wM held by Vault)
-        vault_shares = wm.functions.balanceOf(VAULT_ADDR).call()
-        # Decimals will always be the same = 6
-        wm_decimals = 6
-        usdai_supply_fmt = vault_shares / (10**wm_decimals)
+        # --- 1) USDai / pyUSD Backing Ratio ---
+        with client.batch_requests() as batch:
+            batch.add(usdai.functions.decimals())
+            batch.add(pyusd.functions.decimals())
+            batch.add(pyusd.functions.symbol())
+            batch.add(pyusd.functions.balanceOf(USDAI_VAULT_ADDR))
+            usdai_decimals, pyusd_decimals, pyusd_symbol, pyusd_assets_raw = client.execute_batch(batch)
 
-        # 2. Get Mint Ratio via API
-        query = """
-        query {
-          mintRatio: protocolConfigs(
-            where: {key: "mint_ratio"}
-            orderBy: blockTimestamp
-            orderDirection: desc
-            first: 1
-          ) {
-            value
-            blockTimestamp
-          }
-        }
-        """
+        usdai_supply_fmt = get_usdai_supply_from_arbiscan(usdai_decimals)
+        supply_source = "Arbiscan API"
+        if usdai_supply_fmt is None:
+            usdai_supply_raw = usdai.functions.totalSupply().call()
+            usdai_supply_fmt = usdai_supply_raw / (10**usdai_decimals)
+            supply_source = "on-chain totalSupply fallback"
 
-        mint_ratio = 10000  # Default to 1:1 (scaled 1e4 for bps) if not found
-
-        try:
-            res = requests.post(GRAPHQL_URL, json={"query": query}, timeout=Config.get_request_timeout())
-            if res.status_code == 200:
-                data = res.json().get("data", {})
-
-                # --- Mint Ratio ---
-                configs = data.get("mintRatio", [])
-                if configs:
-                    # Mint ratio is scaled by 1e4 (e.g. 9950 = 99.5%)
-                    mint_ratio_raw = int(configs[0].get("value", 10000))
-                    mint_ratio = mint_ratio_raw
-
-        except Exception as e:
-            logger.error("API Error: %s", e)
-
-        # Derived Collateral from Mint Ratio
-        # Scaling: mint_ratio is in bps (1e4).
-        # So mint_ratio_fmt = mint_ratio / 10000.
-        mint_ratio_fmt = mint_ratio / 10000
-
-        # Avoid division by zero
-        required_collateral = 0
-        if mint_ratio_fmt > 0:
-            required_collateral = usdai_supply_fmt / mint_ratio_fmt
+        pyusd_assets_fmt = pyusd_assets_raw / (10**pyusd_decimals)
+        backing_ratio = (pyusd_assets_fmt / usdai_supply_fmt) if usdai_supply_fmt > 0 else 0
+        backing_deviation = abs(backing_ratio - 1)
 
         logger.info("--- USDai Stats ---")
         logger.info("USDai Supply:    $%s", f"{usdai_supply_fmt:,.2f}")
-        logger.info("Mint Ratio:      %s", f"{mint_ratio_fmt:.4f}")
+        logger.info("Supply Source:   %s", supply_source)
+        logger.info("%s Assets:    $%s", pyusd_symbol, f"{pyusd_assets_fmt:,.2f}")
+        logger.info("Backing Ratio:   %s %s / USDai", f"{backing_ratio:.6f}", pyusd_symbol)
 
-        collateral_metric = required_collateral
-        # Buffer = Collateral - Supply
-        buffer = collateral_metric - usdai_supply_fmt
+        cache_key_backing_warn = f"{PROTOCOL}_backing_ratio_warn_breach"
+        cache_key_backing_critical = f"{PROTOCOL}_backing_ratio_critical_breach"
 
-        logger.info("Collateral:      $%s", f"{collateral_metric:,.2f}")
-        logger.info("Buffer:          $%s", f"{buffer:,.2f}")
+        if usdai_supply_fmt > 0:
+            if backing_deviation >= USDAI_PYUSD_CRITICAL_DEVIATION:
+                send_breach_alert_once(
+                    cache_key=cache_key_backing_critical,
+                    severity=AlertSeverity.CRITICAL,
+                    alert_message=(
+                        "*USDai Backing Ratio Critical*\n\n"
+                        f"{pyusd_symbol} per USDai: {backing_ratio:.6f}\n"
+                        f"Deviation from 1.0: {backing_deviation:.3%}\n"
+                        f"{pyusd_symbol} Assets: ${pyusd_assets_fmt:,.2f}\n"
+                        f"USDai Supply: ${usdai_supply_fmt:,.2f}"
+                    ),
+                )
+            else:
+                clear_breach_state(cache_key_backing_critical)
+
+            if USDAI_PYUSD_WARN_DEVIATION <= backing_deviation < USDAI_PYUSD_CRITICAL_DEVIATION:
+                send_breach_alert_once(
+                    cache_key=cache_key_backing_warn,
+                    severity=AlertSeverity.HIGH,
+                    alert_message=(
+                        "*USDai Backing Ratio Alert*\n\n"
+                        f"{pyusd_symbol} per USDai: {backing_ratio:.6f}\n"
+                        f"Deviation from 1.0: {backing_deviation:.3%}\n"
+                        f"{pyusd_symbol} Assets: ${pyusd_assets_fmt:,.2f}\n"
+                        f"USDai Supply: ${usdai_supply_fmt:,.2f}"
+                    ),
+                )
+            else:
+                clear_breach_state(cache_key_backing_warn)
+
+        # --- 2) pyUSD / USD Peg ---
+        pyusd_key = f"{Chain.ARBITRUM.network_name}:{PYUSD_TOKEN_ADDR.lower()}"
+        pyusd_price = None
+        try:
+            prices = fetch_prices([pyusd_key])
+            pyusd_price = prices.get(pyusd_key)
+        except Exception as e:
+            logger.error("pyUSD price fetch error: %s", e)
+
+        if pyusd_price is not None:
+            pyusd_price = float(pyusd_price)
+            pyusd_price_deviation = abs(pyusd_price - 1)
+            logger.info("%s / USD:      %s", pyusd_symbol, f"{pyusd_price:.6f}")
+
+            cache_key_peg_warn = f"{PROTOCOL}_pyusd_peg_warn_breach"
+            cache_key_peg_critical = f"{PROTOCOL}_pyusd_peg_critical_breach"
+
+            if pyusd_price_deviation >= PYUSD_USD_CRITICAL_DEVIATION:
+                send_breach_alert_once(
+                    cache_key=cache_key_peg_critical,
+                    severity=AlertSeverity.CRITICAL,
+                    alert_message=(
+                        f"*{pyusd_symbol}/USD Peg Critical*\n\n"
+                        f"{pyusd_symbol}/USD: ${pyusd_price:.6f}\n"
+                        f"Deviation from $1: {pyusd_price_deviation:.3%}"
+                    ),
+                )
+            else:
+                clear_breach_state(cache_key_peg_critical)
+
+            if PYUSD_USD_WARN_DEVIATION <= pyusd_price_deviation < PYUSD_USD_CRITICAL_DEVIATION:
+                send_breach_alert_once(
+                    cache_key=cache_key_peg_warn,
+                    severity=AlertSeverity.HIGH,
+                    alert_message=(
+                        f"*{pyusd_symbol}/USD Peg Alert*\n\n"
+                        f"{pyusd_symbol}/USD: ${pyusd_price:.6f}\n"
+                        f"Deviation from $1: {pyusd_price_deviation:.3%}"
+                    ),
+                )
+            else:
+                clear_breach_state(cache_key_peg_warn)
+        else:
+            logger.warning("No price returned for %s (%s)", pyusd_symbol, pyusd_key)
 
         # --- Loan Monitoring (GPU Loans) ---
-
         all_loans = get_loan_details(client, SUSDAI_ADDR)
 
         # --- Manual Adjustment for Legacy Loan ---
@@ -190,7 +287,7 @@ def main():
                 )
 
                 msg = (
-                    f"*sUSDai Loan Activity*\n\n"
+                    "*sUSDai Loan Activity*\n\n"
                     f"Total Verified Principal has {change_type}.\n"
                     f"Change: ${diff:,.2f} ({percent_change:.2f}% of Total Loans)\n"
                     f"Old Total: ${last_principal:,.2f}\n"
@@ -201,38 +298,6 @@ def main():
 
             # Update cache
             write_last_value_to_file(cache_filename, cache_key_principal, total_verified_principal)
-
-        if collateral_metric > 0:
-            # 1. Check for Mint Ratio Change (Critical)
-            cache_key_ratio = f"{PROTOCOL}_mint_ratio"
-            last_ratio = int(get_last_value_for_key_from_file(cache_filename, cache_key_ratio))
-
-            if last_ratio != 0 and last_ratio != mint_ratio:
-                msg = f"*USDai Mint Ratio Changed*\n\nOld: {last_ratio / 10000:.4f}\nNew: {mint_ratio / 10000:.4f}"
-                send_alert(Alert(AlertSeverity.HIGH, msg, PROTOCOL))
-
-            # Always update ratio cache
-            write_last_value_to_file(cache_filename, cache_key_ratio, mint_ratio)
-
-            # 2. Check for Low Buffer (ignore withdrawals)
-            cache_key_buffer = f"{PROTOCOL}_buffer"
-            last_buffer = float(get_last_value_for_key_from_file(cache_filename, cache_key_buffer))
-
-            # Only alert when buffer drops below $1,000,000
-            buffer_alert_threshold = 1_000_000
-            if last_buffer != 0:
-                crossed_below = last_buffer >= buffer_alert_threshold and buffer < buffer_alert_threshold
-                if crossed_below:
-                    msg = (
-                        "*USDai Low Buffer Alert*\n\n"
-                        f"Buffer dropped below ${buffer_alert_threshold:,.0f}.\n"
-                        f"Old Buffer: ${last_buffer:,.2f}\n"
-                        f"New Buffer: ${buffer:,.2f}\n"
-                        f"(Collateral: ${collateral_metric:,.2f})"
-                    )
-                    send_alert(Alert(AlertSeverity.HIGH, msg, PROTOCOL))
-
-            write_last_value_to_file(cache_filename, cache_key_buffer, buffer)
 
     except Exception as e:
         logger.error("Error: %s", e)
