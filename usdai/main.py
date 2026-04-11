@@ -24,9 +24,6 @@ LOAN_ROUTER_ADDR = Web3.to_checksum_address("0x0C2ED170F2bB1DF1a44292Ad621B577b3
 ARBISCAN_TOKEN_API_URL = "https://api.etherscan.io/v2/api"
 
 # Alert thresholds (absolute deviation from 1.0)
-# Raised defaults to reduce alert noise; still overrideable via env vars.
-USDAI_PYUSD_WARN_DEVIATION = Config.get_env_float("USDAI_PYUSD_WARN_DEVIATION", 0.003)  # 0.30%
-USDAI_PYUSD_CRITICAL_DEVIATION = Config.get_env_float("USDAI_PYUSD_CRITICAL_DEVIATION", 0.01)  # 1.00%
 PYUSD_USD_WARN_DEVIATION = Config.get_env_float("PYUSD_USD_WARN_DEVIATION", 0.003)  # 0.30%
 PYUSD_USD_CRITICAL_DEVIATION = Config.get_env_float("PYUSD_USD_CRITICAL_DEVIATION", 0.0075)  # 0.75%
 
@@ -128,7 +125,7 @@ def main():
     pyusd = client.get_contract(PYUSD_TOKEN_ADDR, erc20_abi)
 
     try:
-        # --- 1) USDai / pyUSD Backing Ratio ---
+        # --- 1) USDai Supply and pyUSD Balance ---
         with client.batch_requests() as batch:
             batch.add(usdai.functions.decimals())
             batch.add(pyusd.functions.decimals())
@@ -144,48 +141,11 @@ def main():
             supply_source = "on-chain totalSupply fallback"
 
         pyusd_assets_fmt = pyusd_assets_raw / (10**pyusd_decimals)
-        backing_ratio = (pyusd_assets_fmt / usdai_supply_fmt) if usdai_supply_fmt > 0 else 0
-        backing_deviation = abs(backing_ratio - 1)
 
         logger.info("--- USDai Stats ---")
         logger.info("USDai Supply:    $%s", f"{usdai_supply_fmt:,.2f}")
         logger.info("Supply Source:   %s", supply_source)
         logger.info("%s Assets:    $%s", pyusd_symbol, f"{pyusd_assets_fmt:,.2f}")
-        logger.info("Backing Ratio:   %s %s / USDai", f"{backing_ratio:.6f}", pyusd_symbol)
-
-        cache_key_backing_warn = f"{PROTOCOL}_backing_ratio_warn_breach"
-        cache_key_backing_critical = f"{PROTOCOL}_backing_ratio_critical_breach"
-
-        if usdai_supply_fmt > 0:
-            if backing_deviation >= USDAI_PYUSD_CRITICAL_DEVIATION:
-                send_breach_alert_once(
-                    cache_key=cache_key_backing_critical,
-                    severity=AlertSeverity.CRITICAL,
-                    alert_message=(
-                        "*USDai Backing Ratio Critical*\n\n"
-                        f"{pyusd_symbol} per USDai: {backing_ratio:.6f}\n"
-                        f"Deviation from 1.0: {backing_deviation:.3%}\n"
-                        f"{pyusd_symbol} Assets: ${pyusd_assets_fmt:,.2f}\n"
-                        f"USDai Supply: ${usdai_supply_fmt:,.2f}"
-                    ),
-                )
-            else:
-                clear_breach_state(cache_key_backing_critical)
-
-            if USDAI_PYUSD_WARN_DEVIATION <= backing_deviation < USDAI_PYUSD_CRITICAL_DEVIATION:
-                send_breach_alert_once(
-                    cache_key=cache_key_backing_warn,
-                    severity=AlertSeverity.HIGH,
-                    alert_message=(
-                        "*USDai Backing Ratio Alert*\n\n"
-                        f"{pyusd_symbol} per USDai: {backing_ratio:.6f}\n"
-                        f"Deviation from 1.0: {backing_deviation:.3%}\n"
-                        f"{pyusd_symbol} Assets: ${pyusd_assets_fmt:,.2f}\n"
-                        f"USDai Supply: ${usdai_supply_fmt:,.2f}"
-                    ),
-                )
-            else:
-                clear_breach_state(cache_key_backing_warn)
 
         # --- 2) pyUSD / USD Peg ---
         pyusd_key = f"{Chain.ARBITRUM.network_name}:{PYUSD_TOKEN_ADDR.lower()}"
