@@ -1,0 +1,20 @@
+name: USDai Large Mint Monitor
+
+on:
+  schedule:
+    - cron: "0/10 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  usdai-large-mints:
+    uses: ./.github/workflows/_run-monitoring.yml
+    secrets: inherit
+    with:
+      cache_file: cache-id.txt
+      cache_key_prefix: cache-id-usdai-mints-v1
+      scripts: |
+        usdai/large_mints.py
