@@ -1,6 +1,4 @@
 import argparse
-import os
-import time
 
 import requests
 from web3 import Web3
@@ -21,7 +19,6 @@ STRATA_CDO = Web3.to_checksum_address("0x908B3921aaE4fC17191D382BB61020f2Ee6C0e2
 SUSDE = Web3.to_checksum_address("0x9D39A5DE30E57443BfF2A8307A4256c8797A3497")
 SUSDE_STRATEGY = Web3.to_checksum_address("0xdbf4FB6C310C1C85D0b41B5DbCA06096F2E7099F")
 USDE_COIN_KEY = "ethereum:0x4c9edd5852cd905f086c759e8383e09bff1e68b3"
-ENVIO_GRAPHQL_URL = os.getenv("ENVIO_GRAPHQL_URL")
 
 WEI = 10**18
 REQUEST_TIMEOUT = 15
@@ -29,9 +26,6 @@ REQUEST_TIMEOUT = 15
 COVERAGE_MIN = 1.05
 USDE_PEG_WARNING = 0.005
 USDE_PEG_CRITICAL = 0.02
-LARGE_FLOW_ALERT_USD = 1_000_000
-WHALE_FLOW_ALERT_USD = 5_000_000
-FLOW_LOOKBACK_SECONDS = 6 * 60 * 60
 STRATEGY_RATIO_DROP_ALERT = 0.20
 TVL_CHANGE_ALERT_RATIO = 0.15
 JR_DRAIN_ALERT_RATIO = 0.15
@@ -98,104 +92,6 @@ def _fetch_usde_price() -> float | None:
     except Exception as e:
         logger.warning("USDe price fetch failed: %s", e)
         return None
-
-
-def _load_sr_flow_events(since_ts: int) -> tuple[list[dict], int] | None:
-    if not ENVIO_GRAPHQL_URL:
-        logger.warning("ENVIO_GRAPHQL_URL is not set; skipping srUSDe Deposit/Withdraw monitoring.")
-        return None
-
-    query = """
-    query GetStrataFlows($sinceTs: Int!, $vaultAddress: String!, $chainId: Int!) {
-      deposits: Deposit(
-        where: {
-          vaultAddress: { _eq: $vaultAddress }
-          chainId: { _eq: $chainId }
-          blockTimestamp: { _gt: $sinceTs }
-        }
-        order_by: { blockTimestamp: asc, blockNumber: asc, logIndex: asc }
-        limit: 200
-      ) {
-        assets
-        blockTimestamp
-        transactionHash
-        transactionFrom
-      }
-      withdrawals: Withdraw(
-        where: {
-          vaultAddress: { _eq: $vaultAddress }
-          chainId: { _eq: $chainId }
-          blockTimestamp: { _gt: $sinceTs }
-        }
-        order_by: { blockTimestamp: asc, blockNumber: asc, logIndex: asc }
-        limit: 200
-      ) {
-        assets
-        blockTimestamp
-        transactionHash
-        transactionFrom
-      }
-    }
-    """
-    variables = {"sinceTs": since_ts, "vaultAddress": SRUSDE.lower(), "chainId": 1}
-
-    try:
-        response = requests.post(
-            ENVIO_GRAPHQL_URL,
-            json={"query": query, "variables": variables},
-            timeout=REQUEST_TIMEOUT,
-        )
-        if response.status_code != 200:
-            logger.warning("Envio flow query failed: HTTP %s", response.status_code)
-            return None
-        body = response.json()
-        if body.get("errors"):
-            logger.warning("Envio flow query returned errors: %s", body["errors"])
-            return None
-
-        events = []
-        for event in body.get("data", {}).get("deposits", []):
-            event["flowType"] = "Deposit"
-            events.append(event)
-        for event in body.get("data", {}).get("withdrawals", []):
-            event["flowType"] = "Withdraw"
-            events.append(event)
-
-        events.sort(key=lambda event: int(event.get("blockTimestamp", 0)))
-        max_ts = since_ts
-        for event in events:
-            max_ts = max(max_ts, int(event.get("blockTimestamp", since_ts)))
-        return events, max_ts
-    except Exception as e:
-        logger.warning("Envio flow query failed: %s", e)
-        return None
-
-
-def _check_large_flows(messages: list[str], since_ts: int, usde_price: float | None) -> int | None:
-    flow_data = _load_sr_flow_events(since_ts)
-    if flow_data is None:
-        return None
-
-    events, max_ts = flow_data
-    usde_reference_price = usde_price if usde_price is not None else 1.0
-    for event in events:
-        assets = float(event["assets"]) / WEI
-        usd_value = assets * usde_reference_price
-        if usd_value < LARGE_FLOW_ALERT_USD:
-            continue
-
-        prefix = "🚨 Whale" if usd_value >= WHALE_FLOW_ALERT_USD else "⚠️ Large"
-        message = (
-            f"{prefix} srUSDe {event['flowType']} detected.\n"
-            f"Amount: {assets:,.2f} USDe (~${usd_value:,.2f})\n"
-            f"Tx: {event.get('transactionHash', 'n/a')}"
-        )
-        tx_from = event.get("transactionFrom")
-        if tx_from:
-            message += f"\nFrom: {tx_from}"
-        messages.append(message)
-
-    return max_ts
 
 
 def _check_susde_vault(messages: list[str], client, susde_vault) -> None:
@@ -333,8 +229,6 @@ def main(profile: str) -> None:
                     f"⚠️ USDe peg moved away from $1.\nprice: ${usde_price:.4f}, deviation: {usde_deviation:.2%}",
                     messages,
                 )
-        else:
-            usde_price = None
 
         if profile in ("all", "daily"):
             strategy_ratio_cache_key = f"{PROTOCOL}_strategy_ratio"
@@ -351,15 +245,6 @@ def main(profile: str) -> None:
             _check_daily_tvl(messages, total_deposits)
             _check_jr_drain(messages, jr_assets)
             _check_susde_vault(messages, client, susde_vault)
-
-        if profile in ("all", "daily"):
-            flow_last_ts_cache_key = f"{PROTOCOL}_last_flow_ts"
-            flow_since_ts = _cache_int(flow_last_ts_cache_key)
-            if flow_since_ts is None:
-                flow_since_ts = int(time.time()) - FLOW_LOOKBACK_SECONDS
-            flow_max_ts = _check_large_flows(messages, flow_since_ts, usde_price)
-            if flow_max_ts is not None:
-                write_last_value_to_file(cache_filename, flow_last_ts_cache_key, flow_max_ts)
 
         if messages:
             send_telegram_message("\n\n".join(messages), PROTOCOL)
