@@ -1,7 +1,5 @@
 import datetime
-import os
 
-import requests
 from web3 import Web3
 
 from utils.abi import load_abi
@@ -21,7 +19,17 @@ USDAI_VAULT_ADDR = Web3.to_checksum_address("0x0A1a1A107E45b7Ced86833863f482BC5f
 PYUSD_TOKEN_ADDR = Web3.to_checksum_address("0x46850aD61C2B7d64d08c9C754F45254596696984")
 SUSDAI_ADDR = Web3.to_checksum_address("0x0B2b2B2076d95dda7817e785989fE353fe955ef9")
 LOAN_ROUTER_ADDR = Web3.to_checksum_address("0x0C2ED170F2bB1DF1a44292Ad621B577b3C9597D1")
-ARBISCAN_TOKEN_API_URL = "https://api.etherscan.io/v2/api"
+USDAI_INVARIANT_BREACH_THRESHOLD_RAW = Config.get_env_int("USDAI_INVARIANT_BREACH_THRESHOLD_RAW", 100 * 10**18)
+
+USDAI_PROXY_READ_ABI = [
+    {
+        "inputs": [],
+        "name": "bridgedSupply",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+]
 
 # Alert thresholds (absolute deviation from 1.0)
 PYUSD_USD_WARN_DEVIATION = Config.get_env_float("PYUSD_USD_WARN_DEVIATION", 0.003)  # 0.30%
@@ -39,39 +47,6 @@ def clear_breach_state(cache_key):
     last_state = int(get_last_value_for_key_from_file(cache_filename, cache_key))
     if last_state == 1:
         write_last_value_to_file(cache_filename, cache_key, 0)
-
-
-def get_usdai_supply_from_arbiscan(decimals: int) -> float | None:
-    api_key = os.getenv("ARBISCAN_TOKEN") or os.getenv("ETHERSCAN_TOKEN")
-    if not api_key:
-        logger.warning("ARBISCAN_TOKEN/ETHERSCAN_TOKEN not set; cannot fetch USDai supply from Arbiscan API.")
-        return None
-
-    params = {
-        "chainid": Chain.ARBITRUM.chain_id,
-        "module": "stats",
-        "action": "tokensupply",
-        "contractaddress": USDAI_VAULT_ADDR,
-        "apikey": api_key,
-    }
-
-    try:
-        res = requests.get(ARBISCAN_TOKEN_API_URL, params=params, timeout=Config.get_request_timeout())
-        if res.status_code != 200:
-            logger.warning("Arbiscan API returned non-200 for USDai supply: %s", res.status_code)
-            return None
-
-        payload = res.json()
-        status = str(payload.get("status", "0"))
-        raw_supply = payload.get("result")
-        if status != "1" or not str(raw_supply).isdigit():
-            logger.warning("Arbiscan API returned unexpected payload for USDai supply: %s", payload)
-            return None
-
-        return int(raw_supply) / (10**decimals)
-    except Exception as exc:
-        logger.warning("Failed to fetch USDai supply from Arbiscan API: %s", exc)
-        return None
 
 
 def get_loan_details(client, owner_addr):
@@ -122,30 +97,57 @@ def main():
     erc20_abi = load_abi("common-abi/ERC20.json")
 
     usdai = client.get_contract(USDAI_VAULT_ADDR, erc20_abi)
+    usdai_read = client.get_contract(USDAI_VAULT_ADDR, USDAI_PROXY_READ_ABI)
     pyusd = client.get_contract(PYUSD_TOKEN_ADDR, erc20_abi)
 
     try:
-        # --- 1) USDai Supply and pyUSD Balance ---
+        # --- 1) USDai Invariant Inputs ---
         with client.batch_requests() as batch:
             batch.add(usdai.functions.decimals())
+            batch.add(usdai.functions.totalSupply())
+            batch.add(usdai_read.functions.bridgedSupply())
             batch.add(pyusd.functions.decimals())
             batch.add(pyusd.functions.symbol())
             batch.add(pyusd.functions.balanceOf(USDAI_VAULT_ADDR))
-            usdai_decimals, pyusd_decimals, pyusd_symbol, pyusd_assets_raw = client.execute_batch(batch)
+            usdai_decimals, usdai_supply_raw, bridged_supply_raw, pyusd_decimals, pyusd_symbol, pyusd_assets_raw = (
+                client.execute_batch(batch)
+            )
 
-        usdai_supply_fmt = get_usdai_supply_from_arbiscan(usdai_decimals)
-        supply_source = "Arbiscan API"
-        if usdai_supply_fmt is None:
-            usdai_supply_raw = usdai.functions.totalSupply().call()
-            usdai_supply_fmt = usdai_supply_raw / (10**usdai_decimals)
-            supply_source = "on-chain totalSupply fallback"
-
+        usdai_supply_fmt = usdai_supply_raw / (10**usdai_decimals)
+        bridged_supply_fmt = bridged_supply_raw / (10**usdai_decimals)
         pyusd_assets_fmt = pyusd_assets_raw / (10**pyusd_decimals)
+        pyusd_assets_18_raw = pyusd_assets_raw * (10 ** max(usdai_decimals - pyusd_decimals, 0))
 
         logger.info("--- USDai Stats ---")
         logger.info("USDai Supply:    $%s", f"{usdai_supply_fmt:,.2f}")
-        logger.info("Supply Source:   %s", supply_source)
+        logger.info("USDai Bridged:   $%s", f"{bridged_supply_fmt:,.2f}")
         logger.info("%s Assets:    $%s", pyusd_symbol, f"{pyusd_assets_fmt:,.2f}")
+
+        # Invariant:
+        # totalSupply + bridgedSupply <= pyUSD.balanceOf(USDai)  (all in 1e18 scale)
+        lhs_required_backing_raw = usdai_supply_raw + bridged_supply_raw
+        invariant_gap_raw = lhs_required_backing_raw - pyusd_assets_18_raw
+        invariant_gap_fmt = invariant_gap_raw / (10**usdai_decimals)
+        lhs_required_backing_fmt = lhs_required_backing_raw / (10**usdai_decimals)
+
+        logger.info("Invariant LHS:   $%s (supply + bridged)", f"{lhs_required_backing_fmt:,.2f}")
+        logger.info("Invariant Gap:   $%s (LHS - pyUSD assets)", f"{invariant_gap_fmt:,.2f}")
+
+        cache_key_invariant_breach = f"{PROTOCOL}_backing_invariant_breach"
+        if invariant_gap_raw >= USDAI_INVARIANT_BREACH_THRESHOLD_RAW:
+            send_breach_alert_once(
+                cache_key=cache_key_invariant_breach,
+                severity=AlertSeverity.HIGH,
+                alert_message=(
+                    "*USDai Backing Invariant Breach*\n\n"
+                    f"Invariant violated by at least {USDAI_INVARIANT_BREACH_THRESHOLD_RAW / 1e18:,.0f} USDai.\n"
+                    f"totalSupply + bridgedSupply: ${lhs_required_backing_fmt:,.2f}\n"
+                    f"{pyusd_symbol} balance in USDai contract: ${pyusd_assets_fmt:,.2f}\n"
+                    f"Excess (LHS - RHS): ${invariant_gap_fmt:,.2f}"
+                ),
+            )
+        else:
+            clear_breach_state(cache_key_invariant_breach)
 
         # --- 2) pyUSD / USD Peg ---
         pyusd_key = f"{Chain.ARBITRUM.network_name}:{PYUSD_TOKEN_ADDR.lower()}"
