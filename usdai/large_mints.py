@@ -21,7 +21,6 @@ logger = get_logger(f"{PROTOCOL}.large_mints")
 USDAI_TOKEN_ADDR = Web3.to_checksum_address("0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF")
 
 MINT_THRESHOLD_TOKENS = Decimal(Config.get_env("USDAI_LARGE_MINT_THRESHOLD", "100000"))
-CONFIRMATIONS = Config.get_env_int("USDAI_MINT_CONFIRMATIONS", 10)
 
 CACHE_KEY_LAST_BLOCK = f"{PROTOCOL}_large_mints_last_block"
 CACHE_KEY_LAST_SUPPLY = f"{PROTOCOL}_large_mints_last_supply"
@@ -64,12 +63,7 @@ def main() -> None:
         threshold_raw = int(MINT_THRESHOLD_TOKENS * (Decimal(10) ** decimals))
 
         latest_block = int(client.eth.block_number)
-        block_to_read = latest_block - CONFIRMATIONS
-        if block_to_read <= 0:
-            logger.warning("Latest block is too low to read safely (latest=%s).", latest_block)
-            return
-
-        current_supply_raw = int(usdai.functions.totalSupply().call(block_identifier=block_to_read))
+        current_supply_raw = int(usdai.functions.totalSupply().call())
 
         last_supply_cached = _to_int(get_last_value_for_key_from_file(cache_filename, CACHE_KEY_LAST_SUPPLY))
         if last_supply_cached > 0:
@@ -83,7 +77,7 @@ def main() -> None:
                 )
 
         write_last_value_to_file(cache_filename, CACHE_KEY_LAST_SUPPLY, current_supply_raw)
-        write_last_value_to_file(cache_filename, CACHE_KEY_LAST_BLOCK, block_to_read)
+        write_last_value_to_file(cache_filename, CACHE_KEY_LAST_BLOCK, latest_block)
 
     except Exception as exc:
         logger.error("USDai large mint monitoring failed: %s", exc)
