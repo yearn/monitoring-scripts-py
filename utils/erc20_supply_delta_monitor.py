@@ -28,7 +28,6 @@ class ERC20SupplyDeltaMonitorConfig:
     chain: Chain
     token_address: str
     threshold_tokens: Decimal
-    confirmations: int = 10
     cache_suffix: str = "large_mints"
     alert_severity: AlertSeverity = AlertSeverity.MEDIUM
     alert_label: str = "Large Mint Alert (Supply Delta)"
@@ -92,12 +91,7 @@ def run_erc20_supply_delta_monitor(config: ERC20SupplyDeltaMonitorConfig) -> Non
         threshold_raw = int(config.threshold_tokens * (Decimal(10) ** int(decimals)))
 
         latest_block = int(client.eth.block_number)
-        block_to_read = latest_block - config.confirmations
-        if block_to_read <= 0:
-            logger.warning("Latest block is too low to read safely (latest=%s).", latest_block)
-            return
-
-        current_supply_raw = int(token.functions.totalSupply().call(block_identifier=block_to_read))
+        current_supply_raw = int(token.functions.totalSupply().call())
         last_supply_cached = _to_int(get_last_value_for_key_from_file(cache_filename, _cache_key_last_supply(config)))
 
         if last_supply_cached > 0:
@@ -119,7 +113,7 @@ def run_erc20_supply_delta_monitor(config: ERC20SupplyDeltaMonitorConfig) -> Non
                 )
 
         write_last_value_to_file(cache_filename, _cache_key_last_supply(config), current_supply_raw)
-        write_last_value_to_file(cache_filename, _cache_key_last_block(config), block_to_read)
+        write_last_value_to_file(cache_filename, _cache_key_last_block(config), latest_block)
 
     except Exception as exc:
         logger.error("ERC20 supply-delta monitor failed for %s: %s", config.protocol, exc)

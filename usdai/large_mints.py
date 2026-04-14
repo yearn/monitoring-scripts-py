@@ -15,7 +15,6 @@ logger = get_logger(f"{PROTOCOL}.large_mints")
 USDAI_TOKEN_ADDR = "0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF"
 
 MINT_THRESHOLD_TOKENS = Decimal(Config.get_env("USDAI_LARGE_MINT_THRESHOLD", "100000"))
-CONFIRMATIONS = Config.get_env_int("USDAI_MINT_CONFIRMATIONS", 10)
 
 
 def main() -> None:
@@ -25,7 +24,6 @@ def main() -> None:
             chain=Chain.ARBITRUM,
             token_address=USDAI_TOKEN_ADDR,
             threshold_tokens=MINT_THRESHOLD_TOKENS,
-            confirmations=CONFIRMATIONS,
             cache_suffix="large_mints",
             alert_severity=AlertSeverity.MEDIUM,
             alert_label="Large Mint Alert (Supply Delta)",
