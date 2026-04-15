@@ -43,7 +43,7 @@ It runs cached `totalSupply` delta checks and alerts when the increase is above:
 
 - `USDAI_LARGE_MINT_THRESHOLD` (default: `100000` USDai)
 
-The GitHub workflow `.github/workflows/usdai-mint-monitor.yml` runs hourly.
+The GitHub workflow `.github/workflows/hourly.yml` runs this monitor hourly.
 
 ## Price Monitoring Scope
 
