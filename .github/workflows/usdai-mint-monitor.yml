@@ -2,7 +2,7 @@ name: USDai Large Mint Monitor
 
 on:
   schedule:
-    - cron: "0/10 * * * *"
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 concurrency:

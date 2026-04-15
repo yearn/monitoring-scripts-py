@@ -22,7 +22,6 @@ USDAI_TOKEN_ADDR = Web3.to_checksum_address("0x0A1a1A107E45b7Ced86833863f482BC5f
 
 MINT_THRESHOLD_TOKENS = Decimal(Config.get_env("USDAI_LARGE_MINT_THRESHOLD", "100000"))
 
-CACHE_KEY_LAST_BLOCK = f"{PROTOCOL}_large_mints_last_block"
 CACHE_KEY_LAST_SUPPLY = f"{PROTOCOL}_large_mints_last_supply"
 
 
@@ -59,11 +58,14 @@ def main() -> None:
     usdai = client.get_contract(USDAI_TOKEN_ADDR, erc20_abi)
 
     try:
-        decimals = int(usdai.functions.decimals().call())
-        threshold_raw = int(MINT_THRESHOLD_TOKENS * (Decimal(10) ** decimals))
+        with client.batch_requests() as batch:
+            batch.add(usdai.functions.decimals())
+            batch.add(usdai.functions.totalSupply())
+            decimals, current_supply_raw = client.execute_batch(batch)
 
-        latest_block = int(client.eth.block_number)
-        current_supply_raw = int(usdai.functions.totalSupply().call())
+        decimals = int(decimals)
+        threshold_raw = int(MINT_THRESHOLD_TOKENS * (Decimal(10) ** decimals))
+        current_supply_raw = int(current_supply_raw)
 
         last_supply_cached = _to_int(get_last_value_for_key_from_file(cache_filename, CACHE_KEY_LAST_SUPPLY))
         if last_supply_cached > 0:
@@ -77,7 +79,6 @@ def main() -> None:
                 )
 
         write_last_value_to_file(cache_filename, CACHE_KEY_LAST_SUPPLY, current_supply_raw)
-        write_last_value_to_file(cache_filename, CACHE_KEY_LAST_BLOCK, latest_block)
 
     except Exception as exc:
         logger.error("USDai large mint monitoring failed: %s", exc)

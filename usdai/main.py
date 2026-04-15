@@ -7,7 +7,6 @@ from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.config import Config
-from utils.defillama import fetch_prices
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
 
@@ -30,10 +29,6 @@ USDAI_PROXY_READ_ABI = [
         "type": "function",
     }
 ]
-
-# Alert thresholds (absolute deviation from 1.0)
-PYUSD_USD_WARN_DEVIATION = Config.get_env_float("PYUSD_USD_WARN_DEVIATION", 0.003)  # 0.30%
-PYUSD_USD_CRITICAL_DEVIATION = Config.get_env_float("PYUSD_USD_CRITICAL_DEVIATION", 0.0075)  # 0.75%
 
 
 def send_breach_alert_once(cache_key, alert_message, severity=AlertSeverity.HIGH):
@@ -125,13 +120,13 @@ def main():
 
         # Invariant:
         # totalSupply + bridgedSupply <= pyUSD.balanceOf(USDai)  (all in 1e18 scale)
-        lhs_required_backing_raw = usdai_supply_raw + bridged_supply_raw
-        invariant_gap_raw = lhs_required_backing_raw - pyusd_assets_18_raw
+        required_backing_raw = usdai_supply_raw + bridged_supply_raw
+        invariant_gap_raw = required_backing_raw - pyusd_assets_18_raw
         invariant_gap_fmt = invariant_gap_raw / (10**usdai_decimals)
-        lhs_required_backing_fmt = lhs_required_backing_raw / (10**usdai_decimals)
+        required_backing_fmt = required_backing_raw / (10**usdai_decimals)
 
-        logger.info("Invariant LHS:   $%s (supply + bridged)", f"{lhs_required_backing_fmt:,.2f}")
-        logger.info("Invariant Gap:   $%s (LHS - pyUSD assets)", f"{invariant_gap_fmt:,.2f}")
+        logger.info("Required Backing: $%s (supply + bridged)", f"{required_backing_fmt:,.2f}")
+        logger.info("Invariant Gap:    $%s (required - pyUSD assets)", f"{invariant_gap_fmt:,.2f}")
 
         cache_key_invariant_breach = f"{PROTOCOL}_backing_invariant_breach"
         if invariant_gap_raw >= USDAI_INVARIANT_BREACH_THRESHOLD_RAW:
@@ -141,58 +136,13 @@ def main():
                 alert_message=(
                     "*USDai Backing Invariant Breach*\n\n"
                     f"Invariant violated by at least {USDAI_INVARIANT_BREACH_THRESHOLD_RAW / 1e18:,.0f} USDai.\n"
-                    f"totalSupply + bridgedSupply: ${lhs_required_backing_fmt:,.2f}\n"
+                    f"totalSupply + bridgedSupply: ${required_backing_fmt:,.2f}\n"
                     f"{pyusd_symbol} balance in USDai contract: ${pyusd_assets_fmt:,.2f}\n"
-                    f"Excess (LHS - RHS): ${invariant_gap_fmt:,.2f}"
+                    f"Excess (required - assets): ${invariant_gap_fmt:,.2f}"
                 ),
             )
         else:
             clear_breach_state(cache_key_invariant_breach)
-
-        # --- 2) pyUSD / USD Peg ---
-        pyusd_key = f"{Chain.ARBITRUM.network_name}:{PYUSD_TOKEN_ADDR.lower()}"
-        pyusd_price = None
-        try:
-            prices = fetch_prices([pyusd_key])
-            pyusd_price = prices.get(pyusd_key)
-        except Exception as e:
-            logger.error("pyUSD price fetch error: %s", e)
-
-        if pyusd_price is not None:
-            pyusd_price = float(pyusd_price)
-            pyusd_price_deviation = abs(pyusd_price - 1)
-            logger.info("%s / USD:      %s", pyusd_symbol, f"{pyusd_price:.6f}")
-
-            cache_key_peg_warn = f"{PROTOCOL}_pyusd_peg_warn_breach"
-            cache_key_peg_critical = f"{PROTOCOL}_pyusd_peg_critical_breach"
-
-            if pyusd_price_deviation >= PYUSD_USD_CRITICAL_DEVIATION:
-                send_breach_alert_once(
-                    cache_key=cache_key_peg_critical,
-                    severity=AlertSeverity.CRITICAL,
-                    alert_message=(
-                        f"*{pyusd_symbol}/USD Peg Critical*\n\n"
-                        f"{pyusd_symbol}/USD: ${pyusd_price:.6f}\n"
-                        f"Deviation from $1: {pyusd_price_deviation:.3%}"
-                    ),
-                )
-            else:
-                clear_breach_state(cache_key_peg_critical)
-
-            if PYUSD_USD_WARN_DEVIATION <= pyusd_price_deviation < PYUSD_USD_CRITICAL_DEVIATION:
-                send_breach_alert_once(
-                    cache_key=cache_key_peg_warn,
-                    severity=AlertSeverity.HIGH,
-                    alert_message=(
-                        f"*{pyusd_symbol}/USD Peg Alert*\n\n"
-                        f"{pyusd_symbol}/USD: ${pyusd_price:.6f}\n"
-                        f"Deviation from $1: {pyusd_price_deviation:.3%}"
-                    ),
-                )
-            else:
-                clear_breach_state(cache_key_peg_warn)
-        else:
-            logger.warning("No price returned for %s (%s)", pyusd_symbol, pyusd_key)
 
         # --- Loan Monitoring (GPU Loans) ---
         all_loans = get_loan_details(client, SUSDAI_ADDR)
