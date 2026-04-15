@@ -1,6 +1,5 @@
 import argparse
 
-import requests
 from web3 import Web3
 
 from utils.abi import load_abi
@@ -18,14 +17,10 @@ JRUSDE = Web3.to_checksum_address("0xC58D044404d8B14e953C115E67823784dEA53d8F")
 STRATA_CDO = Web3.to_checksum_address("0x908B3921aaE4fC17191D382BB61020f2Ee6C0e20")
 SUSDE = Web3.to_checksum_address("0x9D39A5DE30E57443BfF2A8307A4256c8797A3497")
 SUSDE_STRATEGY = Web3.to_checksum_address("0xdbf4FB6C310C1C85D0b41B5DbCA06096F2E7099F")
-USDE_COIN_KEY = "ethereum:0x4c9edd5852cd905f086c759e8383e09bff1e68b3"
 
 WEI = 10**18
-REQUEST_TIMEOUT = 15
 
 COVERAGE_MIN = 1.05
-USDE_PEG_WARNING = 0.005
-USDE_PEG_CRITICAL = 0.02
 STRATEGY_RATIO_DROP_ALERT = 0.20
 TVL_CHANGE_ALERT_RATIO = 0.15
 JR_DRAIN_ALERT_RATIO = 0.15
@@ -79,23 +74,21 @@ def _breach_once(cache_key: str, condition: bool, message: str, messages: list[s
         write_last_value_to_file(cache_filename, cache_key, 0)
 
 
-def _fetch_usde_price() -> float | None:
-    url = f"https://coins.llama.fi/prices/current/{USDE_COIN_KEY}"
+def _check_susde_vault(messages: list[str], client, susde_vault, cooldown_contract) -> None:
     try:
-        response = requests.get(url, timeout=REQUEST_TIMEOUT)
-        if response.status_code != 200:
-            logger.warning("USDe price fetch failed: HTTP %s", response.status_code)
-            return None
-
-        data = response.json()
-        return float(data["coins"][USDE_COIN_KEY]["price"])
+        with client.batch_requests() as batch:
+            batch.add(susde_vault.functions.convertToAssets(WEI))
+            batch.add(cooldown_contract.functions.cooldownDuration())
+            responses = client.execute_batch(batch)
     except Exception as e:
-        logger.warning("USDe price fetch failed: %s", e)
-        return None
+        logger.warning("Could not read sUSDe vault metrics: %s", e)
+        return
 
+    if len(responses) != 2:
+        logger.warning("sUSDe vault batch expected 2 responses, got %s", len(responses))
+        return
 
-def _check_susde_vault(messages: list[str], client, susde_vault) -> None:
-    susde_rate_raw = susde_vault.functions.convertToAssets(WEI).call()
+    susde_rate_raw, cooldown_duration = responses
     susde_rate = float(susde_rate_raw) / WEI
 
     susde_rate_cache_key = f"{PROTOCOL}_susde_rate"
@@ -108,18 +101,14 @@ def _check_susde_vault(messages: list[str], client, susde_vault) -> None:
         )
     _set_cache_float(susde_rate_cache_key, susde_rate)
 
-    try:
-        cooldown_contract = client.get_contract(SUSDE, SUSDE_COOLDOWN_ABI)
-        cooldown_duration = int(cooldown_contract.functions.cooldownDuration().call())
-        cooldown_cache_key = f"{PROTOCOL}_susde_cooldown_duration"
-        previous_cooldown = _cache_int(cooldown_cache_key)
-        if previous_cooldown is not None and cooldown_duration != previous_cooldown:
-            messages.append(
-                f"🚨 sUSDe cooldown duration changed.\nprevious: {previous_cooldown}s current: {cooldown_duration}s"
-            )
-        write_last_value_to_file(cache_filename, cooldown_cache_key, cooldown_duration)
-    except Exception as e:
-        logger.warning("Could not read sUSDe cooldownDuration: %s", e)
+    cooldown_duration_int = int(cooldown_duration)
+    cooldown_cache_key = f"{PROTOCOL}_susde_cooldown_duration"
+    previous_cooldown = _cache_int(cooldown_cache_key)
+    if previous_cooldown is not None and cooldown_duration_int != previous_cooldown:
+        messages.append(
+            f"🚨 sUSDe cooldown duration changed.\nprevious: {previous_cooldown}s current: {cooldown_duration_int}s"
+        )
+    write_last_value_to_file(cache_filename, cooldown_cache_key, cooldown_duration_int)
 
 
 def _check_daily_tvl(messages: list[str], total_deposits: float) -> None:
@@ -155,6 +144,7 @@ def main(profile: str) -> None:
     jr = client.get_contract(JRUSDE, ERC4626_ABI)
     susde = client.get_contract(SUSDE, ERC20_ABI)
     susde_vault = client.get_contract(SUSDE, ERC4626_ABI)
+    susde_cooldown = client.get_contract(SUSDE, SUSDE_COOLDOWN_ABI)
 
     try:
         with client.batch_requests() as batch:
@@ -213,23 +203,6 @@ def main(profile: str) -> None:
                 )
             _set_cache_float(sr_rate_cache_key, sr_rate)
 
-        if profile in ("all", "hourly"):
-            usde_price = _fetch_usde_price()
-            if usde_price is not None:
-                usde_deviation = abs(usde_price - 1.0)
-                _breach_once(
-                    f"{PROTOCOL}_usde_peg_critical",
-                    usde_deviation >= USDE_PEG_CRITICAL,
-                    f"🚨 USDe peg is heavily off $1.\nprice: ${usde_price:.4f}, deviation: {usde_deviation:.2%}",
-                    messages,
-                )
-                _breach_once(
-                    f"{PROTOCOL}_usde_peg_warning",
-                    USDE_PEG_WARNING <= usde_deviation < USDE_PEG_CRITICAL,
-                    f"⚠️ USDe peg moved away from $1.\nprice: ${usde_price:.4f}, deviation: {usde_deviation:.2%}",
-                    messages,
-                )
-
         if profile in ("all", "daily"):
             strategy_ratio_cache_key = f"{PROTOCOL}_strategy_ratio"
             previous_strategy_ratio = _cache_float(strategy_ratio_cache_key)
@@ -244,7 +217,7 @@ def main(profile: str) -> None:
             _set_cache_float(strategy_ratio_cache_key, strategy_ratio)
             _check_daily_tvl(messages, total_deposits)
             _check_jr_drain(messages, jr_assets)
-            _check_susde_vault(messages, client, susde_vault)
+            _check_susde_vault(messages, client, susde_vault, susde_cooldown)
 
         if messages:
             send_telegram_message("\n\n".join(messages), PROTOCOL)
@@ -259,7 +232,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--profile",
         default="all",
-        choices=["all", "hourly", "daily"],
+        choices=["all", "daily"],
         help="Monitoring profile by cadence.",
     )
     args = parser.parse_args()

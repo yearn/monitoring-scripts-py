@@ -1,6 +1,7 @@
 # Strata Monitoring
 
 Monitors Strata srUSDe/sUSDe risk and governance signals on Ethereum.
+Reference report: https://curation.yearn.fi/report/strata-srusde/
 
 ## Scope
 
@@ -20,12 +21,12 @@ Monitors Strata srUSDe/sUSDe risk and governance signals on Ethereum.
 
 ### Governance Monitoring
 - Admin Multisig: `0xA27cA9292268ee0f0258B749f1D5740c9Bb68B50`
+- 48h Timelock: `0xb2A3CF69C97AFD4dE7882E5fEE120e4efC77B706`
+- 24h Timelock: `0x4f2682b78F37910704fB1AFF29358A1da07E022d`
 - Monitor queued Safe transactions via `safe/main.py`.
+- Monitor timelock `CallScheduled/CallExecuted/Cancelled` via shared `timelock/timelock_alerts.py`.
 
 ### Ethena Dependency Monitoring
-- USDe peg:
-  - warning alert if deviation `>0.5%`
-  - critical alert if deviation `>2%`
 - sUSDe vault anomalies:
   - monitor `convertToAssets(1e18)` monotonicity
   - monitor cooldown period changes
@@ -35,6 +36,5 @@ Monitors Strata srUSDe/sUSDe risk and governance signals on Ethereum.
 - Proxy upgrade events: hourly via safe/timelock queue monitoring
 - srUSDe exchange rate: daily (`daily.yml`)
 - Senior coverage ratio: daily (`daily.yml`)
-- USDe peg stability: hourly (`hourly.yml`)
 - Strategy sUSDe balance: daily (`daily.yml`)
 - Protocol TVL changes: daily (`daily.yml`)
