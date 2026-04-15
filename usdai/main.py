@@ -16,6 +16,10 @@ logger = get_logger(PROTOCOL)
 
 USDAI_VAULT_ADDR = Web3.to_checksum_address("0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF")
 PYUSD_TOKEN_ADDR = Web3.to_checksum_address("0x46850aD61C2B7d64d08c9C754F45254596696984")
+# ERC20 decimals/symbol at USDAI_VAULT_ADDR and PYUSD_TOKEN_ADDR on Arbitrum (verified on-chain).
+USDAI_DECIMALS = 18
+PYUSD_DECIMALS = 6
+PYUSD_SYMBOL = "PYUSD"
 SUSDAI_ADDR = Web3.to_checksum_address("0x0B2b2B2076d95dda7817e785989fE353fe955ef9")
 LOAN_ROUTER_ADDR = Web3.to_checksum_address("0x0C2ED170F2bB1DF1a44292Ad621B577b3C9597D1")
 USDAI_INVARIANT_BREACH_THRESHOLD_RAW = Config.get_env_int("USDAI_INVARIANT_BREACH_THRESHOLD_RAW", 100 * 10**18)
@@ -98,32 +102,27 @@ def main():
     try:
         # --- 1) USDai Invariant Inputs ---
         with client.batch_requests() as batch:
-            batch.add(usdai.functions.decimals())
             batch.add(usdai.functions.totalSupply())
             batch.add(usdai_read.functions.bridgedSupply())
-            batch.add(pyusd.functions.decimals())
-            batch.add(pyusd.functions.symbol())
             batch.add(pyusd.functions.balanceOf(USDAI_VAULT_ADDR))
-            usdai_decimals, usdai_supply_raw, bridged_supply_raw, pyusd_decimals, pyusd_symbol, pyusd_assets_raw = (
-                client.execute_batch(batch)
-            )
+            usdai_supply_raw, bridged_supply_raw, pyusd_assets_raw = client.execute_batch(batch)
 
-        usdai_supply_fmt = usdai_supply_raw / (10**usdai_decimals)
-        bridged_supply_fmt = bridged_supply_raw / (10**usdai_decimals)
-        pyusd_assets_fmt = pyusd_assets_raw / (10**pyusd_decimals)
-        pyusd_assets_18_raw = pyusd_assets_raw * (10 ** max(usdai_decimals - pyusd_decimals, 0))
+        usdai_supply_fmt = usdai_supply_raw / (10**USDAI_DECIMALS)
+        bridged_supply_fmt = bridged_supply_raw / (10**USDAI_DECIMALS)
+        pyusd_assets_fmt = pyusd_assets_raw / (10**PYUSD_DECIMALS)
+        pyusd_assets_18_raw = pyusd_assets_raw * (10 ** max(USDAI_DECIMALS - PYUSD_DECIMALS, 0))
 
         logger.info("--- USDai Stats ---")
         logger.info("USDai Supply:    $%s", f"{usdai_supply_fmt:,.2f}")
         logger.info("USDai Bridged:   $%s", f"{bridged_supply_fmt:,.2f}")
-        logger.info("%s Assets:    $%s", pyusd_symbol, f"{pyusd_assets_fmt:,.2f}")
+        logger.info("%s Assets:    $%s", PYUSD_SYMBOL, f"{pyusd_assets_fmt:,.2f}")
 
         # Invariant:
         # totalSupply + bridgedSupply <= pyUSD.balanceOf(USDai)  (all in 1e18 scale)
         required_backing_raw = usdai_supply_raw + bridged_supply_raw
         invariant_gap_raw = required_backing_raw - pyusd_assets_18_raw
-        invariant_gap_fmt = invariant_gap_raw / (10**usdai_decimals)
-        required_backing_fmt = required_backing_raw / (10**usdai_decimals)
+        invariant_gap_fmt = invariant_gap_raw / (10**USDAI_DECIMALS)
+        required_backing_fmt = required_backing_raw / (10**USDAI_DECIMALS)
 
         logger.info("Required Backing: $%s (supply + bridged)", f"{required_backing_fmt:,.2f}")
         logger.info("Invariant Gap:    $%s (required - pyUSD assets)", f"{invariant_gap_fmt:,.2f}")
@@ -137,7 +136,7 @@ def main():
                     "*USDai Backing Invariant Breach*\n\n"
                     f"Invariant violated by at least {USDAI_INVARIANT_BREACH_THRESHOLD_RAW / 1e18:,.0f} USDai.\n"
                     f"totalSupply + bridgedSupply: ${required_backing_fmt:,.2f}\n"
-                    f"{pyusd_symbol} balance in USDai contract: ${pyusd_assets_fmt:,.2f}\n"
+                    f"{PYUSD_SYMBOL} balance in USDai contract: ${pyusd_assets_fmt:,.2f}\n"
                     f"Excess (required - assets): ${invariant_gap_fmt:,.2f}"
                 ),
             )
