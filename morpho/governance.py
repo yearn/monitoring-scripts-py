@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import requests
 from web3 import Web3
 
 from utils.abi import load_abi
@@ -9,6 +8,7 @@ from utils.cache import (
     write_last_executed_morpho_to_file,
 )
 from utils.chains import Chain
+from utils.http import request_with_retry
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
@@ -37,6 +37,8 @@ VAULTS_BY_CHAIN = {
         ["VaultBridge USDT", "0xc54b4E08C1Dcc199fdd35c6b5Ab589ffD3428a8d"],
         ["VaultBridge WETH", "0x31A5684983EeE865d943A696AAC155363bA024f9"],
         ["VaultBridge WBTC", "0x812B2C6Ab3f4471c0E43D4BB61098a9211017427"],
+        ["Sentora PYUSD", "0x19b3cD7032B8C062E8d44EaCad661a0970DD8c55"],
+        ["Sentora RLUSD", "0x71cb2F8038B2C5D65ddc740B2F3268890CD2A89C"],
         # ["Gauntlet WBTC Core", "0x443df5eEE3196e9b2Dd77CaBd3eA76C3dee8f9b2"],
         # ["Gauntlet LRT Core", "0x7Db8c75A903d66D669b2002870975cc5aA842b6D"],
         # ["MEV Capital USDC", "0xd63070114470f685b75B74D60EEc7c1113d33a3D"],
@@ -110,12 +112,11 @@ def fetch_market_name(market_id: str, chain: Chain) -> str:
     }
     """
     try:
-        response = requests.post(
+        response = request_with_retry(
+            "post",
             API_URL,
             json={"query": query, "variables": {"uniqueKey": market_id, "chainId": chain.chain_id}},
-            timeout=30,
         )
-        response.raise_for_status()
         data = response.json()
         market = data["data"]["marketByUniqueKey"]
         collateral_symbol = market["collateralAsset"]["symbol"] if market.get("collateralAsset") else "idle"

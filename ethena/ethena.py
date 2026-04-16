@@ -4,8 +4,8 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import Chain, ChainManager
 
 PROTOCOL = "ethena"
@@ -128,10 +128,12 @@ def get_llamarisk_data() -> LlamaRiskData | None:
 
     hours_ago = 12
     if is_stale_timestamp(timestamp_collateral, hours_ago):
-        send_telegram_message(
-            f"⚠️ Collateral data is older than {hours_ago} hours. Timestamp: {timestamp_collateral}",
-            PROTOCOL,
-            True,
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"⚠️ Collateral data is older than {hours_ago} hours. Timestamp: {timestamp_collateral}",
+                PROTOCOL,
+            )
         )
 
     if is_stale_timestamp(timestamp_chain, hours_ago):
@@ -139,10 +141,12 @@ def get_llamarisk_data() -> LlamaRiskData | None:
         logger.warning("Chain data is older than %s hours. Timestamp: %s", hours_ago, timestamp_chain)
 
     if is_stale_timestamp(timestamp_reserve, hours_ago):
-        send_telegram_message(
-            f"⚠️ Reserve data is older than {hours_ago} hours. Timestamp: {timestamp_reserve}",
-            PROTOCOL,
-            True,
+        send_alert(
+            Alert(
+                AlertSeverity.LOW,
+                f"⚠️ Reserve data is older than {hours_ago} hours. Timestamp: {timestamp_reserve}",
+                PROTOCOL,
+            )
         )
 
     # sum all collateral values
@@ -204,7 +208,7 @@ def get_tokens_supply() -> tuple[float, float] | tuple[None, None]:
                 raise Exception(f"Batch Call: Expected 3 responses, got {len(responses)}")
 
     except Exception:
-        send_telegram_message("Error during batch blockchain calls", PROTOCOL)
+        send_alert(Alert(AlertSeverity.LOW, "Error during batch blockchain calls", PROTOCOL))
         return None, None  # Cannot proceed if batch fails
 
     return usde_supply, susde_supply
@@ -214,7 +218,7 @@ def llama_risk_check():
     llama_risk = get_llamarisk_data()
 
     if llama_risk is None:
-        send_telegram_message("⚠️ Failed to fetch data", PROTOCOL, True)
+        send_alert(Alert(AlertSeverity.LOW, "⚠️ Failed to fetch data", PROTOCOL))
         return
 
     # NOTE: ethena data is not available, so we use llama_risk data only
@@ -224,16 +228,22 @@ def llama_risk_check():
     collateral = llama_risk.collateral_value
     value_diff_trigger = 0.001  # 0.1%
     if abs(supply - llama_risk.chain_metrics.total_usde_supply) / supply > value_diff_trigger:
-        send_telegram_message(
-            f"⚠️ USDe: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}",
-            PROTOCOL,
+        send_alert(
+            Alert(
+                AlertSeverity.MEDIUM,
+                f"⚠️ USDe: supply values are not similar: ethena {supply} != llama_risk {llama_risk.chain_metrics.total_usde_supply}",
+                PROTOCOL,
+            )
         )
         return
 
     if abs(collateral - llama_risk.collateral_value) / collateral > value_diff_trigger:
-        send_telegram_message(
-            f"⚠️ USDe: collateral values are not similar: ethena {collateral} != llama_risk {llama_risk.collateral_value}",
-            PROTOCOL,
+        send_alert(
+            Alert(
+                AlertSeverity.MEDIUM,
+                f"⚠️ USDe: collateral values are not similar: ethena {collateral} != llama_risk {llama_risk.collateral_value}",
+                PROTOCOL,
+            )
         )
         return
 
@@ -251,12 +261,20 @@ def llama_risk_check():
 
     error_messages = []
     if ratio < 1:
-        error_messages.append(
-            f"🚨 USDe is not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}"
+        send_alert(
+            Alert(
+                AlertSeverity.CRITICAL,
+                f"🚨 USDe is not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}",
+                PROTOCOL,
+            )
         )
     elif ratio < COLLATERAL_RATIO_TRIGGER:
-        error_messages.append(
-            f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}"
+        send_alert(
+            Alert(
+                AlertSeverity.HIGH,
+                f"🚨 USDe is almost not fully backed!\nCollateral/Supply ratio = {ratio:.4f}. \nLlamaRisk timestamp: {llama_risk.timestamp}",
+                PROTOCOL,
+            )
         )
 
     # Validate LlamaRisk data with on-chain data
@@ -291,7 +309,7 @@ def llama_risk_check():
 
     if error_messages:
         message = "⚠️ " + "\n".join(error_messages)
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
 
 @dataclass
@@ -309,7 +327,7 @@ class ChaosLabsAttestation:
 def chaos_labs_check():
     data = fetch_json(CHAOS_LABS_URL)
     if not data or not isinstance(data, list) or len(data) == 0:
-        send_telegram_message("⚠️ ETHENA: Failed to fetch Chaos Labs attestation data", PROTOCOL, True)
+        send_alert(Alert(AlertSeverity.LOW, "⚠️ ETHENA: Failed to fetch Chaos Labs attestation data", PROTOCOL))
         return
 
     # Get the latest attestation (last item in the list)
@@ -327,7 +345,7 @@ def chaos_labs_check():
             signature=latest_attestation_raw.get("signature"),
         )
     except KeyError as e:
-        send_telegram_message(f"⚠️ ETHENA: Missing field in Chaos Labs data: {e}", PROTOCOL)
+        send_alert(Alert(AlertSeverity.LOW, f"⚠️ ETHENA: Missing field in Chaos Labs data: {e}", PROTOCOL))
         return
 
     attestation_time = datetime.fromisoformat(attestation.timestamp.replace("Z", "+00:00"))
@@ -335,49 +353,45 @@ def chaos_labs_check():
         logger.warning("Attestation from Chaos Labs is older than 1 day: %s. Skipping check.", attestation_time)
         return
 
-    error_messages = []
-
     # Check if USDe is fully backed
     backing_ratio = attestation.backing_assets_usd_value / attestation.total_supply
     if not attestation.backing_assets_exceeds_usde_supply:
-        error_messages.append(
-            f"🚨 USDe NOT FULLY BACKED!\n"
-            f"Backing Assets: ${attestation.backing_assets_usd_value:,.2f}\n"
-            f"Total Supply: ${attestation.total_supply:,.2f}\n"
-            f"Backing Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)"
+        send_alert(
+            Alert(
+                AlertSeverity.CRITICAL,
+                f"🚨 USDe NOT FULLY BACKED!\nBacking Assets: ${attestation.backing_assets_usd_value:,.2f}\nTotal Supply: ${attestation.total_supply:,.2f}\nBacking Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)",
+                PROTOCOL,
+            )
         )
-
     # Cross-check with Chaos Labs flag (for data consistency)
     if not attestation.backing_assets_exceeds_usde_supply and backing_ratio >= 1:
-        error_messages.append(
-            "⚠️ Data inconsistency: Chaos Labs flag says not backed but ratio shows backed. Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)"
+        send_alert(
+            Alert(
+                AlertSeverity.HIGH,
+                f"⚠️ Data inconsistency: Chaos Labs flag says not backed but ratio shows backed. Ratio: {backing_ratio:.4f} ({backing_ratio * 100 - 100:+.2f}%)",
+                PROTOCOL,
+            )
         )
 
     # Check if only approved assets are used
     if not attestation.approved_assets_only:
-        error_messages.append("⚠️ Non-approved assets detected in backing!")
+        send_alert(Alert(AlertSeverity.MEDIUM, "⚠️ Non-approved assets detected in backing!", PROTOCOL))
 
     # Check if delta neutral strategy is maintained
     if not attestation.delta_neutral:
-        error_messages.append("⚠️ Delta neutral strategy not maintained!")
+        send_alert(Alert(AlertSeverity.MEDIUM, "⚠️ Delta neutral strategy not maintained!", PROTOCOL))
 
     # Check signature validity (missing signature could indicate issues)
     if attestation.signature is None:
-        error_messages.append("⚠️ Attestation signature missing - verification may be incomplete")
+        send_alert(
+            Alert(AlertSeverity.MEDIUM, "⚠️ Attestation signature missing - verification may be incomplete", PROTOCOL)
+        )
     # Calculate and report backing metrics for transparency
     backing_ratio = attestation.backing_assets_usd_value / attestation.total_supply
     reserve_buffer = attestation.backing_assets_and_reserve_fund_usd_value - attestation.total_supply
     logger.info("Attestation from Chaos Labs: %s", attestation.timestamp)
     logger.info("Backing Ratio: %s (%s%%)", f"{backing_ratio:.4f}", f"{backing_ratio * 100:,.2f}")
     logger.info("Reserve Buffer: $%s", f"{reserve_buffer:,.2f}")
-
-    if error_messages:
-        message = "🔴 ETHENA CHAOS LABS ALERTS:\n" + "\n".join(error_messages)
-        message += "\n📊 Current Metrics:\n"
-        message += f"Backing Ratio: {backing_ratio:.4f} ({backing_ratio * 100:,.2f}%)\n"
-        message += f"Reserve Buffer: ${reserve_buffer:,.2f}\n"
-        message += f"Last Update: {attestation.timestamp}"
-        send_telegram_message(message, PROTOCOL)
 
 
 if __name__ == "__main__":

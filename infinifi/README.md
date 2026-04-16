@@ -11,7 +11,7 @@ This folder contains monitoring scripts for the Infinifi protocol.
 
 ## Alerts
 
-- **Liquid Reserves**: A Telegram alert is triggered if liquid reserves drop below $15M.
+- **Liquid Reserves**: A Telegram alert is triggered if liquid reserves drop below $12M.
 - **Reserve Ratio Breach**: Alert if liquid ratio falls below protocol `reserveRatio` target.
 - **Illiquid Ratio Breach**: Alert if illiquid ratio rises above protocol `illiquidTargetRatio`.
 - **Backing Per iUSD**: Alert if `totalTVL / iUSD supply` drops below `0.999`.
@@ -19,6 +19,18 @@ This folder contains monitoring scripts for the Infinifi protocol.
 - **Farm Allocation Shift**: Alert if any farm allocation ratio (`farm assets / total TVL`) changes by more than `FARM_RATIO_CHANGE_ALERT_THRESHOLD` versus cached ratio. Farms below 1% of total TVL are excluded.
 - **Farm Activation**: Alert if a farm previously at `0` cached ratio moves above `FARM_RATIO_ACTIVATION_ALERT_THRESHOLD` of total TVL.
 - **Junior TVL Below Risky Exposure**: Alert if junior TVL (locked iUSD) covers less than 50% of risky farm TVL. Risky farms are all farms NOT in the `SAFE_FARM_IDENTIFIERS` whitelist.
+
+### Emergency dispatch
+
+HIGH and CRITICAL alerts automatically trigger a `repository_dispatch` to
+[liquidity-monitoring](https://github.com/tapired/liquidity-monitoring) to
+zero Morpho market caps for siUSD collateral:
+
+- **CRITICAL** — caps are zeroed and reallocation runs immediately
+- **HIGH** — a PR is opened with zeroed caps for team review; after merging, trigger reallocation manually
+
+Dispatch is rate-limited to once per 60 minutes per protocol. See
+`utils/dispatch.py` and `liquidity-monitoring/hooks.md` for details.
 
 ### Alerts disabled ⚠️
 
@@ -33,10 +45,10 @@ Governance monitoring will be monitored via Tenderly alerts on the following add
 
 - `0x80608f852D152024c0a2087b16939235fEc2400c`
 
-**Timelock Contracts**:
+**Timelock Contracts** — monitored by [internal timelock monitoring](../timelock/README.md) for CallScheduled events:
 
-- `TIMELOCK_SHORT`: `0x4B174afbeD7b98BA01F50E36109EEE5e6d327c32`
-- `TIMELOCK_LONG`: `0x3D18480CC32B6AB3B833dCabD80E76CfD41c48a9`
+- `TIMELOCK_SHORT`: [`0x4B174afbeD7b98BA01F50E36109EEE5e6d327c32`](https://etherscan.io/address/0x4B174afbeD7b98BA01F50E36109EEE5e6d327c32)
+- `TIMELOCK_LONG`: [`0x3D18480CC32B6AB3B833dCabD80E76CfD41c48a9`](https://etherscan.io/address/0x3D18480CC32B6AB3B833dCabD80E76CfD41c48a9)
 
 **Deployer Address**:
 

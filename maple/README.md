@@ -2,15 +2,17 @@
 
 ## What it monitors
 
-- **PPS (Price Per Share):** Tracks `convertToAssets(1e6)` on the syrupUSDC pool. Should be monotonically increasing. Alerts on any decrease, which would indicate loan impairment or loss.
-- **TVL (Total Value Locked):** Monitors `totalAssets()`. Alerts on changes exceeding 15% between runs.
-- **Unrealized Losses:** Checks both FixedTermLoanManager and OpenTermLoanManager for non-zero `unrealizedLosses()`. Any non-zero value indicates an active loan impairment.
-- **Unrealized Losses vs Pool Size:** (via subgraph) Per-pool check across syrupUSDC and syrupUSDT. Alerts when unrealized losses reach >=0.5% of pool total assets.
-- **Strategy Allocations:** Tracks `assetsUnderManagement()` on Aave and Sky strategy contracts for DeFi allocation visibility.
-- **Withdrawal Queue vs Liquid Funds:** Alerts when pending withdrawal shares reach 20% of liquid funds (Aave + Sky strategy AUM).
-- **Loan Collateral Risk:** Fetches combined collateral breakdown across both syrupUSDC and syrupUSDT pools from the Maple GraphQL API and calculates a USD-weighted risk score. Each collateral asset has a risk rating (1=low, 2=medium, 3=high). Alerts when the weighted score exceeds 1.5, or when unknown collateral assets appear.
-- **Collateralization Ratio:** Uses Maple's [`syrupGlobals`](https://docs.maple.finance/integrate/technical-resources/collateral-and-yield-disclosure) endpoint for the official combined collateralization ratio across all Syrup pools (syrupUSDC + syrupUSDT). The ratio only counts overcollateralized borrower loans as the denominator — DeFi strategy deployments (Sky, Aave, PYUSD, aUSDT, etc.) are excluded. Alerts when ratio drops below 150%.
-- **Pool Delegate Cover:** Monitors USDC balance of the PoolDelegateCover contract — the delegate's "skin in the game" that gets slashed first on defaults. Alerts on any decrease or zero balance.
+- **PPS (Price Per Share):** `convertToAssets(1e6)` on the syrupUSDC pool vs the value cached from the last run. Alerts on any decrease (HIGH); cache updates whenever PPS changes.
+- **TVL (Total Value Locked):** `totalAssets()` vs cached prior run. Alerts when absolute change is **≥15%** (HIGH).
+- **Unrealized Losses (on-chain):** Batched `unrealizedLosses()` on FixedTermLoanManager and OpenTermLoanManager. Alerts on any non-zero total (HIGH).
+- **Unrealized Losses vs Pool Size (subgraph):** Maple GraphQL `poolV2S` per syrupUSDC and syrupUSDT. Alerts when unrealized losses are **≥0.5%** of that pool's `totalAssets` (HIGH).
+- **Strategy AUM:** Logs `assetsUnderManagement()` on Aave and Sky strategies (visibility). Same figures define “liquid funds” for the withdrawal-queue ratio below.
+- **Withdrawal Queue vs Liquid Funds:** Pending withdrawal value (`totalShares` → `convertToAssets`) vs Aave + Sky AUM. Alerts when pending **>** **80%** of that liquid total (MEDIUM).
+- **Pool Liquidity:** USDC `balanceOf` the pool, withdrawal manager `lockedLiquidity`, and `queue` request range. Alerts if `lockedLiquidity` **>** **$1M** (`LOCKED_LIQUIDITY_THRESHOLD` in `main.py`; message includes cash for context), or if pending request count **>** **20** (MEDIUM).
+- **Loan Collateral Risk:** GraphQL collateral merged across both pools; USD-weighted risk from `ASSET_RISK_SCORES` in [`maple/collateral.py`](./collateral.py). Alerts when weighted average is **>** **1.5** (MEDIUM), or when a collateral symbol is missing from the map (MEDIUM; unknowns use default score 5 for weighting).
+- **Collateralization Ratio:** [`syrupGlobals`](https://docs.maple.finance/integrate/technical-resources/collateral-and-yield-disclosure) combined ratio (OC loans only; strategies excluded). Alerts when `collateralRatio` **<** **140%** (MEDIUM).
+- **Pool Delegate Cover:** USDC `balanceOf` on PoolDelegateCover vs cached prior. Alerts if balance hits **$0** after a non-zero cached value, or on any decrease vs that cached prior (MEDIUM).
+- **Stablecoin Peg (DeFiLlama):** `syrupUSDC` and `syrupUSDT` prices monitored via [`stables/main.py`](../stables/main.py) (runs every 10 min). Depeg alert below **$0.97** (CRITICAL); fetch failure alerts LOW.
 
 ## Key Contracts
 
@@ -26,17 +28,24 @@
 
 ## Alert Thresholds
 
+Severities match `AlertSeverity` in code (`utils.alert`): **CRITICAL** / **HIGH** (notifying morpho curation automation), **MEDIUM** / **LOW** (sending telegram messages).
+
 | Metric | Threshold | Severity |
 |--------|-----------|----------|
-| PPS decrease | Any decrease | Critical |
-| TVL change | >15% between runs | Warning |
-| Unrealized losses | Any non-zero (chain) | Critical |
-| Unrealized losses vs pool | >=0.5% of pool assets (subgraph) | Warning |
-| Withdrawal queue | >=20% of liquid funds | Warning |
-| Collateral risk score | >1.5 weighted average | Warning |
-| Unknown collateral asset | Any new asset not in risk map | Warning |
-| Collateralization ratio | <150% collateral/loans (via syrupGlobals, combined across pools) | Warning |
-| Delegate cover decrease | Any decrease or zero balance | Warning |
+| PPS decrease | Any decrease vs cached prior (`convertToAssets(1e6)`) | HIGH |
+| TVL change | ≥15% absolute change vs prior run (`totalAssets`) | HIGH |
+| Unrealized losses (on-chain) | Any non-zero on FixedTerm + OpenTerm loan managers | HIGH |
+| Unrealized losses vs pool | ≥0.5% of `totalAssets` per pool (subgraph; syrupUSDC + syrupUSDT) | HIGH |
+| Withdrawal queue vs liquid | Pending withdrawal value **>** 80% of Aave + Sky AUM | MEDIUM |
+| Locked liquidity | `lockedLiquidity` **>** $1M (`LOCKED_LIQUIDITY_THRESHOLD`) | MEDIUM |
+| Withdrawal queue depth | **>** 20 pending requests (`queue` range) | MEDIUM |
+| Collateral risk score | Weighted average **>** 1.5 (USD-weighted over collateral) | MEDIUM |
+| Unknown collateral asset | Collateral asset not in `ASSET_RISK_SCORES` | MEDIUM |
+| Collateralization ratio | `syrupGlobals.collateralRatio` **<** 140% (combined Syrup pools; OC loans only) | MEDIUM |
+| Delegate cover | USDC balance → $0 from cached non-zero, or any decrease vs cached prior | MEDIUM |
+| Stablecoin peg (DeFiLlama) | `syrupUSDC` / `syrupUSDT` price **<** $0.97 — see [`stables/main.py`](../stables/main.py) | CRITICAL |
+| DeFiLlama price fetch | Request fails — see [`stables/main.py`](../stables/main.py) | LOW |
+| Monitoring run failure | Uncaught exception in `main()` | LOW |
 
 ## Collateral Risk Scores
 

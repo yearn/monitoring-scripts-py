@@ -1,13 +1,14 @@
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.chains import Chain
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 CUSD = "0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC"
 PROTOCOL = "cap"
 logger = get_logger(PROTOCOL)
-ALERT_THRESHOLD = 60_000_000  # 60M
+
+ALERT_THRESHOLD = 40_000_000  # 40M
 
 
 def main():
@@ -53,7 +54,7 @@ def main():
 
     if total_normalized < ALERT_THRESHOLD:
         message = "🔻 CAP Withdrawable Liquidity (Mainnet)\n" + "\n".join(lines)
-        send_telegram_message(message, PROTOCOL, False)
+        send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
 
 
 if __name__ == "__main__":

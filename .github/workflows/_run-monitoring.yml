@@ -47,6 +47,7 @@ env:
 
   # ── Telegram Bot Tokens ──
   TELEGRAM_BOT_TOKEN_DEFAULT: ${{ secrets.TELEGRAM_BOT_TOKEN_DEFAULT }}
+  TELEGRAM_BOT_TOKEN_3JANE: ${{ secrets.TELEGRAM_BOT_TOKEN_3JANE }}
   TELEGRAM_BOT_TOKEN_AAVE: ${{ secrets.TELEGRAM_BOT_TOKEN_AAVE }}
   TELEGRAM_BOT_TOKEN_COMP: ${{ secrets.TELEGRAM_BOT_TOKEN_COMP }}
   TELEGRAM_BOT_TOKEN_EULER: ${{ secrets.TELEGRAM_BOT_TOKEN_EULER }}
@@ -58,6 +59,7 @@ env:
   TELEGRAM_BOT_TOKEN_STARGATE: ${{ secrets.TELEGRAM_BOT_TOKEN_STARGATE }}
 
   # ── Telegram Chat IDs ──
+  TELEGRAM_CHAT_ID_3JANE: ${{ secrets.TELEGRAM_CHAT_ID_3JANE }}
   TELEGRAM_CHAT_ID_AAVE: ${{ secrets.TELEGRAM_CHAT_ID_AAVE }}
   TELEGRAM_CHAT_ID_CAP: ${{ secrets.TELEGRAM_CHAT_ID_CAP }}
   TELEGRAM_CHAT_ID_COMP: ${{ secrets.TELEGRAM_CHAT_ID_COMP }}
@@ -82,6 +84,33 @@ env:
   TELEGRAM_CHAT_ID_USDAI: ${{ secrets.TELEGRAM_CHAT_ID_USDAI }}
   TELEGRAM_CHAT_ID_YEARN: ${{ secrets.TELEGRAM_CHAT_ID_YEARN }}
 
+  # ── Telegram Topics (forum-style group routing) ──
+  # These are non-sensitive config, so they use repo variables (vars.*) instead of secrets.
+  TELEGRAM_CHAT_ID_TOPICS: ${{ vars.TELEGRAM_CHAT_ID_TOPICS }}
+  TELEGRAM_TOPIC_ID_3JANE: ${{ vars.TELEGRAM_TOPIC_ID_3JANE }}
+  TELEGRAM_TOPIC_ID_AAVE: ${{ vars.TELEGRAM_TOPIC_ID_AAVE }}
+  TELEGRAM_TOPIC_ID_CAP: ${{ vars.TELEGRAM_TOPIC_ID_CAP }}
+  TELEGRAM_TOPIC_ID_COMP: ${{ vars.TELEGRAM_TOPIC_ID_COMP }}
+  TELEGRAM_TOPIC_ID_ETHENA: ${{ vars.TELEGRAM_TOPIC_ID_ETHENA }}
+  TELEGRAM_TOPIC_ID_EULER: ${{ vars.TELEGRAM_TOPIC_ID_EULER }}
+  TELEGRAM_TOPIC_ID_FLUID: ${{ vars.TELEGRAM_TOPIC_ID_FLUID }}
+  TELEGRAM_TOPIC_ID_INFINIFI: ${{ vars.TELEGRAM_TOPIC_ID_INFINIFI }}
+  TELEGRAM_TOPIC_ID_LIDO: ${{ vars.TELEGRAM_TOPIC_ID_LIDO }}
+  TELEGRAM_TOPIC_ID_LRT: ${{ vars.TELEGRAM_TOPIC_ID_LRT }}
+  TELEGRAM_TOPIC_ID_MAKER: ${{ vars.TELEGRAM_TOPIC_ID_MAKER }}
+  TELEGRAM_TOPIC_ID_MAPLE: ${{ vars.TELEGRAM_TOPIC_ID_MAPLE }}
+  TELEGRAM_TOPIC_ID_MORPHO: ${{ vars.TELEGRAM_TOPIC_ID_MORPHO }}
+  TELEGRAM_TOPIC_ID_PENDLE: ${{ vars.TELEGRAM_TOPIC_ID_PENDLE }}
+  TELEGRAM_TOPIC_ID_RTOKEN: ${{ vars.TELEGRAM_TOPIC_ID_RTOKEN }}
+  TELEGRAM_TOPIC_ID_SILO: ${{ vars.TELEGRAM_TOPIC_ID_SILO }}
+  TELEGRAM_TOPIC_ID_STRATA: ${{ vars.TELEGRAM_TOPIC_ID_STRATA }}
+  TELEGRAM_TOPIC_ID_USTB: ${{ vars.TELEGRAM_TOPIC_ID_USTB }}
+  TELEGRAM_TOPIC_ID_USDAI: ${{ vars.TELEGRAM_TOPIC_ID_USDAI }}
+  TELEGRAM_TOPIC_ID_YEARN: ${{ vars.TELEGRAM_TOPIC_ID_YEARN }}
+
+  # ── GitHub PAT (dispatch) ──
+  PAT_DISPATCH: ${{ secrets.PAT_DISPATCH }}
+
   # ── API Keys ──
   GRAPH_API_KEY: ${{ secrets.GRAPH_API_KEY }}
   TALLY_API_KEY: ${{ secrets.TALLY_API_KEY }}
@@ -93,6 +122,10 @@ env:
   COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
   TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
   SAFE_API_KEY: ${{ secrets.SAFE_API_KEY }}
+  SAFE_API_KEY_2: ${{ secrets.SAFE_API_KEY_2 }}
+  LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+  LLM_MODEL: ${{ secrets.LLM_MODEL }}
+  LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
 
 jobs:
   run:
@@ -100,19 +133,16 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-          cache: "pip"
-
       - name: Install uv
-        run: |
-          python -m pip install --upgrade pip
-          pip install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
 
       - name: Install dependencies
-        run: uv pip install --system .
+        run: uv sync --locked --extra ai
 
       - name: Set extra environment variables
         if: inputs.extra_env != ''

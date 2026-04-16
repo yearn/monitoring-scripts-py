@@ -1,3 +1,4 @@
+import itertools
 import os
 import time
 
@@ -9,6 +10,8 @@ from utils.cache import (
     get_last_executed_nonce_from_file,
     write_last_executed_nonce_to_file,
 )
+from utils.chains import safe_network_to_chain_id
+from utils.llm.ai_explainer import explain_transaction, format_explanation_line
 from utils.logging import get_logger
 from utils.telegram import send_telegram_message
 
@@ -18,6 +21,12 @@ logger = get_logger("safe")
 SAFE_WEBSITE_URL = "https://app.safe.global/transactions/queue?safe="
 provider_url_mainnet = os.getenv("PROVIDER_URL_MAINNET")
 provider_url_arb = os.getenv("PROVIDER_URL_ARBITRUM")
+
+# Round-robin iterator over available Safe API keys.
+_api_keys: list[str] = [k for k in [os.getenv("SAFE_API_KEY"), os.getenv("SAFE_API_KEY_2")] if k]
+if not _api_keys:
+    raise ValueError("At least one SAFE_API_KEY must be set.")
+_api_key_cycle = itertools.cycle(_api_keys)
 
 safe_address_network_prefix = {
     "mainnet": "eth",
@@ -192,9 +201,7 @@ def get_safe_transactions(
     if executed is not None:
         params["executed"] = str(executed).lower()
 
-    api_key = os.getenv("SAFE_API_KEY")
-    if not api_key:
-        raise ValueError("SAFE_API_KEY environment variable not set.")
+    api_key = next(_api_key_cycle)
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -234,20 +241,11 @@ def get_safe_transactions(
     return []
 
 
-def get_last_executed_nonce(safe_address: str, network_name: str) -> int:
-    executed_txs = get_safe_transactions(safe_address, network_name, executed=True, limit=1)
-    if executed_txs:
-        return int(executed_txs[0]["nonce"])
-    return -1  # Return -1 if no executed transactions found
-
-
-def get_pending_transactions_after_last_executed(safe_address: str, network_name: str) -> list[dict]:
-    last_executed_nonce = get_last_executed_nonce(safe_address, network_name)
+def get_pending_transactions(safe_address: str, network_name: str) -> list[dict]:
+    """Fetch pending transactions with nonce higher than the last cached nonce."""
+    last_cached_nonce = get_last_executed_nonce_from_file(safe_address)
     pending_txs = get_safe_transactions(safe_address, network_name, executed=False)
-
-    if pending_txs:
-        return [tx for tx in pending_txs if int(tx["nonce"]) > last_executed_nonce]
-    return []
+    return [tx for tx in pending_txs if int(tx["nonce"]) > last_cached_nonce]
 
 
 def get_safe_url(safe_address: str, network_name: str) -> str:
@@ -255,15 +253,11 @@ def get_safe_url(safe_address: str, network_name: str) -> str:
 
 
 def check_for_pending_transactions(safe_address: str, network_name: str, protocol: str) -> None:
-    pending_transactions = get_pending_transactions_after_last_executed(safe_address, network_name)
+    pending_transactions = get_pending_transactions(safe_address, network_name)
 
     if pending_transactions:
         for tx in pending_transactions:
             nonce = int(tx["nonce"])
-            # skip tx if the nonce is already processed
-            if nonce <= get_last_executed_nonce_from_file(safe_address):
-                logger.info("Skipping tx with nonce %s as it is already processed.", nonce)
-                continue
 
             target_contract = tx["to"]
 
@@ -308,6 +302,25 @@ def check_for_pending_transactions(safe_address: str, network_name: str, protoco
                 except Exception as e:
                     logger.error("Cannot decode Pendle aggregate calls: %s", e)
 
+            # AI explanation (best-effort, non-blocking)
+            hex_data = tx.get("data", "0x")
+            if hex_data and len(hex_data) >= 10:
+                chain_id = safe_network_to_chain_id(network_name)
+                try:
+                    explanation = explain_transaction(
+                        target=target_contract,
+                        calldata=hex_data,
+                        chain_id=chain_id,
+                        value=int(tx.get("value", 0)),
+                        protocol=protocol,
+                        label=additional_info or "",
+                        from_address=safe_address,
+                    )
+                    if explanation:
+                        message += format_explanation_line(explanation)
+                except Exception:
+                    logger.debug("AI explanation failed for Safe tx nonce=%s", nonce, exc_info=True)
+
             send_telegram_message(message, protocol, False)  # explicitly enable notification
             # write the last executed nonce to file
             write_last_executed_nonce_to_file(safe_address, nonce)
@@ -340,7 +353,7 @@ def main():
         logger.info("Running for %s on %s", safe[0], safe[1])
         last_api_call_time, request_counter = check_api_limit(last_api_call_time, request_counter)
         run_for_network(safe[1], safe[2], safe[0])
-        request_counter += 2
+        request_counter += 1
 
 
 if __name__ == "__main__":

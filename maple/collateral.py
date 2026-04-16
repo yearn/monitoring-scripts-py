@@ -20,9 +20,9 @@ from datetime import datetime, timezone
 
 import requests
 
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.formatting import format_usd
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 
 PROTOCOL = "maple"
 logger = get_logger(PROTOCOL)
@@ -35,6 +35,7 @@ SYRUP_USDT_POOL_ID = "0x356b8d89c1e1239cbbb9de4815c39a1474d5ba7d"
 # 1 = low risk, 2 = medium risk, 3 = high risk
 ASSET_RISK_SCORES: dict[str, int] = {
     "BTC": 1,
+    "ETH": 1,
     "XRP": 2,
     "USTB": 2,
     "LBTC": 2,
@@ -49,7 +50,7 @@ DEFAULT_RISK_SCORE = 5
 RISK_SCORE_THRESHOLD = 1.5
 
 # Alert if collateralization ratio drops below this threshold
-COLLATERALIZATION_RATIO_THRESHOLD = 1.5  # 150%
+COLLATERALIZATION_RATIO_THRESHOLD = 1.4  # 140%
 
 # Alert if unrealized losses exceed this % of pool total assets
 UNREALIZED_LOSSES_THRESHOLD = 0.005  # 0.5%
@@ -287,7 +288,7 @@ def check_collateralization_ratio() -> None:
             f"⚠️ Collateral coverage is below safe threshold\n"
             f"🔗 [Pool Details](https://app.maple.finance/earn/details)"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
 
 def check_unrealized_losses(pools_data: list[dict]) -> None:
@@ -309,7 +310,7 @@ def check_unrealized_losses(pools_data: list[dict]) -> None:
                 f"⚠️ Threshold: {UNREALIZED_LOSSES_THRESHOLD:.1%}\n"
                 f"🔗 [Pool Details](https://app.maple.finance/earn/details)"
             )
-            send_telegram_message(message, PROTOCOL)
+            send_alert(Alert(AlertSeverity.HIGH, message, PROTOCOL))
 
 
 def check_collateral_risk() -> None:
@@ -375,7 +376,7 @@ def check_collateral_risk() -> None:
             "⚠️ High-risk collateral concentration detected\n"
             "🔗 [Pool Details](https://app.maple.finance/earn/details)"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
     # Also alert on unknown assets (not in our risk mapping)
     unknown_assets = [c for c in active_collaterals if c["asset"] not in ASSET_RISK_SCORES]
@@ -387,4 +388,4 @@ def check_collateral_risk() -> None:
             + "\n".join(unknown_lines)
             + "\n\nPlease update the risk scores in `maple/collateral.py`"
         )
-        send_telegram_message(message, PROTOCOL)
+        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))

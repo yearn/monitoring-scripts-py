@@ -2,17 +2,19 @@ import requests
 from web3 import Web3
 
 from utils.abi import load_abi
+from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
 from utils.web3_wrapper import ChainManager
 
 # Constants
 PROTOCOL = "infinifi"
 logger = get_logger(PROTOCOL)
+
 IUSD_ADDRESS = Web3.to_checksum_address("0x48f9e38f3070AD8945DFEae3FA70987722E3D89c")
-LIQUID_RESERVES_THRESHOLD = 15_000_000
+
+LIQUID_RESERVES_THRESHOLD = 12_000_000
 BACKING_PER_IUSD_MIN = 0.999
 REDEMPTION_TO_LIQUID_RATIO_MAX = 0.8
 FARM_RATIO_CHANGE_ALERT_THRESHOLD = 0.30
@@ -24,6 +26,7 @@ SAFE_FARM_IDENTIFIERS = [
     "maple",
     "cap",
     "aave horizon",
+    "aave usdc",
     "syrupusdc",
     "autousd",
     "spark susdc",
@@ -62,11 +65,10 @@ def to_float(value, default=0.0):
         return default
 
 
-def send_breach_alert_once(cache_key, alert_message):
+def send_breach_alert_once(cache_key, alert_message, severity=AlertSeverity.HIGH):
     last_state = int(get_last_value_for_key_from_file(cache_filename, cache_key))
-
     if last_state == 0:
-        send_telegram_message(alert_message, PROTOCOL)
+        send_alert(Alert(severity, alert_message, PROTOCOL))
         write_last_value_to_file(cache_filename, cache_key, 1)
 
 
@@ -184,7 +186,8 @@ def main():
                 and last_reserves >= LIQUID_RESERVES_THRESHOLD
             ):
                 msg = f"📉 *Infinifi Liquid Reserves Alert*\n\nReserves dropped below ${LIQUID_RESERVES_THRESHOLD:,.0f}: ${liquid_reserves:,.2f}"
-                send_telegram_message(msg, PROTOCOL)
+                # TODO: add hook data
+                send_alert(Alert(AlertSeverity.HIGH, msg, PROTOCOL))
 
             write_last_value_to_file(cache_filename, cache_key_reserves, liquid_reserves)
 
@@ -220,6 +223,7 @@ def main():
             if backing_per_iusd < BACKING_PER_IUSD_MIN:
                 send_breach_alert_once(
                     cache_key=cache_key_backing,
+                    severity=AlertSeverity.CRITICAL,
                     alert_message=(
                         "🚨 *Infinifi Backing Alert*\n\n"
                         f"Backing per iUSD is {backing_per_iusd:.6f}, below {BACKING_PER_IUSD_MIN:.3f}.\n"
@@ -290,29 +294,35 @@ def main():
                 moved_farms.sort(key=lambda x: x["change_pct"], reverse=True)
                 moved_lines = [
                     (f"- {f['label']}: {f['last_ratio']:.2%} -> {f['new_ratio']:.2%} ({f['change_pct']:.2%} change)")
-                    for f in moved_farms[:10]
+                    for f in moved_farms
                 ]
                 more_count = len(moved_farms) - 10
                 if more_count > 0:
                     moved_lines.append(f"- ...and {more_count} more farms")
 
-                send_telegram_message(
-                    "⚠️ *Infinifi Farm Allocation Shift Alert*\n\n"
-                    "Farm allocation ratio changed by more than 10% vs previous run:\n" + "\n".join(moved_lines),
-                    PROTOCOL,
+                send_alert(
+                    Alert(
+                        AlertSeverity.MEDIUM,
+                        "*Infinifi Farm Allocation Shift Alert*\n\n"
+                        "Farm allocation ratio changed by more than 10% vs previous run:\n" + "\n".join(moved_lines),
+                        PROTOCOL,
+                    )
                 )
 
             if activated_farms:
                 activated_farms.sort(key=lambda x: x["new_ratio"], reverse=True)
-                activated_lines = [f"- {f['label']}: {f['new_ratio']:.2%}" for f in activated_farms[:10]]
+                activated_lines = [f"- {f['label']}: {f['new_ratio']:.2%}" for f in activated_farms]
                 more_count = len(activated_farms) - 10
                 if more_count > 0:
                     activated_lines.append(f"- ...and {more_count} more farms")
 
-                send_telegram_message(
-                    "ℹ️ *Infinifi Farm Activation Alert*\n\n"
-                    "Farms previously at 0 ratio are now above 5% of TVL:\n" + "\n".join(activated_lines),
-                    PROTOCOL,
+                send_alert(
+                    Alert(
+                        AlertSeverity.LOW,
+                        "*Infinifi Farm Activation Alert*\n\n"
+                        "Farms previously at 0 ratio are now above 5% of TVL:\n" + "\n".join(activated_lines),
+                        PROTOCOL,
+                    )
                 )
 
         # Alert 7: Junior TVL below risky farm exposure
@@ -358,7 +368,7 @@ def main():
 
     except Exception as e:
         logger.error("Error: %s", e)
-        send_telegram_message(f"⚠️ Infinifi monitoring failed: {e}", PROTOCOL, False, True)
+        send_alert(Alert(AlertSeverity.LOW, f"Infinifi monitoring failed: {e}", PROTOCOL))
 
 
 if __name__ == "__main__":

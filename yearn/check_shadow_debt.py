@@ -13,7 +13,6 @@ from the default queue.
 """
 
 import argparse
-import os
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, List, Set
@@ -25,7 +24,7 @@ from web3 import Web3
 from utils.abi import load_abi
 from utils.chains import Chain
 from utils.logging import get_logger
-from utils.telegram import send_telegram_message
+from utils.telegram import send_telegram_message_with_fallback
 from utils.web3_wrapper import ChainManager
 
 load_dotenv()
@@ -46,6 +45,20 @@ CHAINS = [Chain.MAINNET, Chain.POLYGON, Chain.BASE, Chain.ARBITRUM, Chain.KATANA
 # Minimum debt threshold (in tokens) to alert on - ignore dust amounts
 # This will be scaled per vault based on decimals
 MIN_DEBT_THRESHOLD_TOKENS = Decimal("1")  # 1 token, regardless of decimals
+
+# Strategies allowed to have shadow debt for specific vaults (keyed by chain_id -> vault_address -> set of strategy addresses)
+# These strategies intentionally operate outside the default queue and should not trigger alerts
+SHADOW_DEBT_WHITELIST: Dict[int, Dict[str, Set[str]]] = {
+    Chain.MAINNET.chain_id: {
+        "0x696d02db93291651ed510704c9b286841d506987": {  # yvUSD
+            "0xf28dc8b6ded7e45f8cf84b9972487c8e1857a442",  # syrupUSDC/USDC Morpho Looper
+            "0xb73a2f9f57aaa125ade3a11a1e661d28a919c66d",  # PT siUSD March 25 Morpho Looper
+            "0x2f56d106c6df739bdbb777c2fee79ffaed88d179",  # Arbitrum syrupUSDC/USDC Morpho Looper
+            "0x7bf1d269bf2cb79e628f51b93763b342fd059d1d",  # PT stcUSD Jul 23 Morpho Looper
+            "0x4c0e4d3cb62b91afbbf1fe8e830f98a513c7234b",  # USD3 Pendle PT Maxi
+        },
+    },
+}
 
 
 @dataclass
@@ -202,6 +215,9 @@ def detect_shadow_debt(
     # Scale threshold to vault's decimal precision
     threshold_in_wei = min_debt_threshold * Decimal(10) ** vault_decimals
 
+    # Get whitelisted strategies for this vault
+    whitelisted_strategies = SHADOW_DEBT_WHITELIST.get(chain.chain_id, {}).get(vault_address, set())
+
     for strategy_info in strategies_info.values():
         # Only count activated strategies
         if strategy_info.activation == 0:
@@ -211,6 +227,16 @@ def detect_shadow_debt(
 
         # Check if strategy has debt but is not in default queue
         if strategy_info.current_debt > 0 and not strategy_info.in_default_queue:
+            # Skip strategies that are whitelisted for shadow debt
+            if strategy_info.address in whitelisted_strategies:
+                logger.debug(
+                    "Skipping whitelisted shadow debt: vault=%s strategy=%s debt=%d",
+                    vault_address,
+                    strategy_info.address,
+                    strategy_info.current_debt,
+                )
+                continue
+
             # Apply minimum threshold to avoid alerting on dust
             if Decimal(strategy_info.current_debt) >= threshold_in_wei:
                 strategies_with_shadow_debt.append(strategy_info)
@@ -341,7 +367,7 @@ def build_alert_message(issues: List[ShadowDebtIssue]) -> str:
             )
 
             explorer_url = chain.explorer_url
-            vault_link = f"[{issue.vault_address[:10]}...]({explorer_url}/address/{issue.vault_address})"
+            vault_link = f"[{issue.vault_address}]({explorer_url}/address/{issue.vault_address})"
 
             lines.append(
                 f"  • {vault_link} ({issue.vault_symbol}): "
@@ -352,7 +378,7 @@ def build_alert_message(issues: List[ShadowDebtIssue]) -> str:
 
             # List each strategy
             for strategy in issue.strategies_with_shadow_debt:
-                strategy_link = f"[{strategy.address[:10]}...]({explorer_url}/address/{strategy.address})"
+                strategy_link = f"[{strategy.address}]({explorer_url}/address/{strategy.address})"
                 lines.append(f"    - {strategy_link}: {format_amount(strategy.current_debt, issue.vault_decimals)}")
 
         lines.append("")
@@ -470,28 +496,13 @@ def main() -> None:
 
     # Send alert
     message = build_alert_message(all_issues)
-
-    # If message is too long, send summary
-    max_length = 3000
-    if len(message) > max_length:
-        run_url = os.getenv("GITHUB_RUN_URL", "")
-        if not run_url:
-            server = os.getenv("GITHUB_SERVER_URL", "https://github.com")
-            repo = os.getenv("GITHUB_REPOSITORY", "")
-            run_id = os.getenv("GITHUB_RUN_ID", "")
-            if repo and run_id:
-                run_url = f"{server}/{repo}/actions/runs/{run_id}"
-
-        total_strategies = sum(len(issue.strategies_with_shadow_debt) for issue in all_issues)
-        message = (
-            f"🌑 *Shadow Debt Alert*\n"
-            f"Found {total_issues} vault(s) with shadow debt affecting {total_strategies} strateg(ies).\n"
-            f"Too many to list here."
-        )
-        if run_url:
-            message += f"\n[Check full logs]({run_url})"
-
-    send_telegram_message(message, PROTOCOL)
+    total_strategies = sum(len(issue.strategies_with_shadow_debt) for issue in all_issues)
+    fallback = (
+        f"🌑 *Shadow Debt Alert*\n"
+        f"Found {total_issues} vault(s) with shadow debt affecting {total_strategies} strateg(ies).\n"
+        f"Too many to list here."
+    )
+    send_telegram_message_with_fallback(message, PROTOCOL, fallback)
 
 
 if __name__ == "__main__":
