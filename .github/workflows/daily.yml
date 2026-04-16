@@ -22,7 +22,7 @@ jobs:
       scripts: |
         morpho/governance.py
         ethena/ethena.py
-        strata/main.py --profile daily
+        strata/main.py
         cap/liquidity.py
         utils/tenderly/tenderly.py
         yearn/check_shadow_debt.py

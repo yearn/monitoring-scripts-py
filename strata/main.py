@@ -1,5 +1,3 @@
-import argparse
-
 from web3 import Web3
 
 from utils.abi import load_abi
@@ -137,7 +135,7 @@ def _check_jr_drain(messages: list[str], jr_assets: float) -> None:
     _set_cache_float(jr_assets_cache_key, jr_assets)
 
 
-def main(profile: str) -> None:
+def main() -> None:
     client = ChainManager.get_client(Chain.MAINNET)
 
     sr = client.get_contract(SRUSDE, ERC4626_ABI)
@@ -181,43 +179,41 @@ def main(profile: str) -> None:
 
         messages: list[str] = []
 
-        if profile in ("all", "daily"):
-            _breach_once(
-                f"{PROTOCOL}_coverage_below_105",
-                coverage_ratio < COVERAGE_MIN,
-                (
-                    "🚨 Strata senior coverage ratio below 105%.\n"
-                    f"coverage ratio: {coverage_ratio:.4f} (min {COVERAGE_MIN:.2f})\n"
-                    f"StrataCDO: {STRATA_CDO}"
-                ),
-                messages,
+        _breach_once(
+            f"{PROTOCOL}_coverage_below_105",
+            coverage_ratio < COVERAGE_MIN,
+            (
+                "🚨 Strata senior coverage ratio below 105%.\n"
+                f"coverage ratio: {coverage_ratio:.4f} (min {COVERAGE_MIN:.2f})\n"
+                f"StrataCDO: {STRATA_CDO}"
+            ),
+            messages,
+        )
+
+        sr_rate_cache_key = f"{PROTOCOL}_sr_rate"
+        previous_sr_rate = _cache_float(sr_rate_cache_key)
+        if previous_sr_rate is not None and sr_rate < previous_sr_rate:
+            drop_bps = ((previous_sr_rate - sr_rate) / previous_sr_rate) * 10_000
+            messages.append(
+                "🚨 srUSDe share value decreased.\n"
+                f"previous: {previous_sr_rate:.8f} current: {sr_rate:.8f} ({drop_bps:.2f} bps drop)"
             )
+        _set_cache_float(sr_rate_cache_key, sr_rate)
 
-            sr_rate_cache_key = f"{PROTOCOL}_sr_rate"
-            previous_sr_rate = _cache_float(sr_rate_cache_key)
-            if previous_sr_rate is not None and sr_rate < previous_sr_rate:
-                drop_bps = ((previous_sr_rate - sr_rate) / previous_sr_rate) * 10_000
+        strategy_ratio_cache_key = f"{PROTOCOL}_strategy_ratio"
+        previous_strategy_ratio = _cache_float(strategy_ratio_cache_key)
+        if previous_strategy_ratio is not None and previous_strategy_ratio > 0:
+            strategy_ratio_drop = (previous_strategy_ratio - strategy_ratio) / previous_strategy_ratio
+            if strategy_ratio_drop >= STRATEGY_RATIO_DROP_ALERT:
                 messages.append(
-                    "🚨 srUSDe share value decreased.\n"
-                    f"previous: {previous_sr_rate:.8f} current: {sr_rate:.8f} ({drop_bps:.2f} bps drop)"
+                    "⚠️ sUSDe strategy balance dropped relative to total deposits.\n"
+                    f"previous ratio: {previous_strategy_ratio:.2%} current ratio: {strategy_ratio:.2%} "
+                    f"({strategy_ratio_drop:.2%} drop)"
                 )
-            _set_cache_float(sr_rate_cache_key, sr_rate)
-
-        if profile in ("all", "daily"):
-            strategy_ratio_cache_key = f"{PROTOCOL}_strategy_ratio"
-            previous_strategy_ratio = _cache_float(strategy_ratio_cache_key)
-            if previous_strategy_ratio is not None and previous_strategy_ratio > 0:
-                strategy_ratio_drop = (previous_strategy_ratio - strategy_ratio) / previous_strategy_ratio
-                if strategy_ratio_drop >= STRATEGY_RATIO_DROP_ALERT:
-                    messages.append(
-                        "⚠️ sUSDe strategy balance dropped relative to total deposits.\n"
-                        f"previous ratio: {previous_strategy_ratio:.2%} current ratio: {strategy_ratio:.2%} "
-                        f"({strategy_ratio_drop:.2%} drop)"
-                    )
-            _set_cache_float(strategy_ratio_cache_key, strategy_ratio)
-            _check_daily_tvl(messages, total_deposits)
-            _check_jr_drain(messages, jr_assets)
-            _check_susde_vault(messages, client, susde_vault, susde_cooldown)
+        _set_cache_float(strategy_ratio_cache_key, strategy_ratio)
+        _check_daily_tvl(messages, total_deposits)
+        _check_jr_drain(messages, jr_assets)
+        _check_susde_vault(messages, client, susde_vault, susde_cooldown)
 
         if messages:
             send_telegram_message("\n\n".join(messages), PROTOCOL)
@@ -228,12 +224,4 @@ def main(profile: str) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Strata monitoring")
-    parser.add_argument(
-        "--profile",
-        default="all",
-        choices=["all", "daily"],
-        help="Monitoring profile by cadence.",
-    )
-    args = parser.parse_args()
-    main(args.profile)
+    main()
