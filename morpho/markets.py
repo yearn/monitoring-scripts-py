@@ -83,15 +83,6 @@ VAULTS_BY_CHAIN = {
         # ["SteakhousePrime AUSD", "0x82c4C641CCc38719ae1f0FBd16A64808d838fDfD", 1],
         # ["Gauntlet AUSD", "0x9540441C503D763094921dbE4f13268E6d1d3B56", 1],
     ],
-    Chain.POLYGON: [
-        ["Compound WETH", "0xF5C81d25ee174d83f1FD202cA94AE6070d073cCF", 1],
-        ["Compound USDC", "0x781FB7F6d845E3bE129289833b04d43Aa8558c42", 1],
-        [
-            "Compound USDT",
-            "0xfD06859A671C21497a2EB8C5E3fEA48De924D6c8",
-            1,
-        ],  # NOTE: disable because we don't have funds there currently
-    ],
 }
 
 # Morpho Vaults that are used by Yearn Strategies which are used as YV collateral in Morpho Markets
