@@ -6,7 +6,7 @@ Monitors:
 - TVL (Total Value Locked) via totalAssets() — alerts on >15% change
 - Unrealized losses on loan managers — alerts on any non-zero value
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
-- Withdrawal queue vs liquid funds — alerts when pending withdrawals > 80% of liquid funds (Aave + Sky)
+- Withdrawal queue vs liquid funds — alerts when pending exit value > 80% of liquid funds (Aave + Sky)
 - Pool liquidity — cash and withdrawal queue depth
 - Loan collateral risk — weighted risk score based on collateral asset types
 - Collateralization ratio (via syrupGlobals) — alerts when combined ratio drops below 140%
@@ -179,7 +179,7 @@ def check_unrealized_losses(client) -> float:
 
 
 def check_strategy_and_withdrawal_queue(client, pool) -> None:
-    """Check strategy allocations and alert if pending withdrawals > 80% of liquid funds."""
+    """Check strategy allocations and alert if pending exit value > 80% of liquid funds."""
     aave_strategy = client.eth.contract(address=AAVE_STRATEGY, abi=ABI_STRATEGY)
     sky_strategy = client.eth.contract(address=SKY_STRATEGY, abi=ABI_STRATEGY)
     wm = client.eth.contract(address=WITHDRAWAL_MANAGER, abi=ABI_WITHDRAWAL_MANAGER)
@@ -197,10 +197,10 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
     sky_assets = responses[1] / ONE_SHARE
     pending_shares = responses[2]
 
-    # Convert pending shares to asset value
+    # Convert pending shares to their exit value, accounting for unrealized losses.
     pending_assets = 0.0
     if pending_shares > 0:
-        pending_assets_raw = client.execute(pool.functions.convertToAssets(pending_shares).call)
+        pending_assets_raw = client.execute(pool.functions.convertToExitAssets(pending_shares).call)
         pending_assets = pending_assets_raw / ONE_SHARE
 
     liquid_funds = aave_assets + sky_assets
@@ -227,13 +227,13 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
 def check_pool_liquidity(client, pool) -> None:
     """Check pool USDC cash vs pending withdrawal value.
 
-    Alerts when pending withdrawal value exceeds available cash (delegate cannot satisfy
+    Alerts when pending withdrawal exit value exceeds available cash (delegate cannot satisfy
     the queue from idle cash and would need to pull from strategies/loans). Queue size
     is fetched only when alerting, to add context to the message.
 
     Args:
         client: Web3 client for Ethereum mainnet.
-        pool: syrupUSDC pool contract (for share→asset conversion).
+        pool: syrupUSDC pool contract (for share→exit asset conversion).
     """
     usdc = client.eth.contract(address=USDC_ADDRESS, abi=ABI_ERC20_BALANCE)
     wm = client.eth.contract(address=WITHDRAWAL_MANAGER, abi=ABI_WITHDRAWAL_MANAGER)
@@ -251,7 +251,7 @@ def check_pool_liquidity(client, pool) -> None:
 
     pending_assets = 0.0
     if pending_shares > 0:
-        pending_assets_raw = client.execute(pool.functions.convertToAssets(pending_shares).call)
+        pending_assets_raw = client.execute(pool.functions.convertToExitAssets(pending_shares).call)
         pending_assets = pending_assets_raw / ONE_SHARE
 
     logger.info(
