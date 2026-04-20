@@ -29,11 +29,13 @@ jobs:
         infinifi/main.py
         silo/ur_sniff.py
         usdai/main.py
+        usdai/large_mints.py
         yearn/alert_large_flows.py
         maple/main.py
         timelock/timelock_alerts.py
         # always run proposals after timelock alerts
         aave/proposals.py
+        ustb/main.py
         compound/proposals.py
         fluid/proposals.py
         maker/proposals.py

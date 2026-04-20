@@ -7,7 +7,6 @@ from utils.alert import Alert, AlertSeverity, send_alert
 from utils.cache import cache_filename, get_last_value_for_key_from_file, write_last_value_to_file
 from utils.chains import Chain
 from utils.config import Config
-from utils.defillama import fetch_prices
 from utils.logging import get_logger
 from utils.web3_wrapper import ChainManager
 
@@ -17,6 +16,10 @@ logger = get_logger(PROTOCOL)
 
 USDAI_VAULT_ADDR = Web3.to_checksum_address("0x0A1a1A107E45b7Ced86833863f482BC5f4ed82EF")
 PYUSD_TOKEN_ADDR = Web3.to_checksum_address("0x46850aD61C2B7d64d08c9C754F45254596696984")
+# ERC20 decimals/symbol at USDAI_VAULT_ADDR and PYUSD_TOKEN_ADDR on Arbitrum (verified on-chain).
+USDAI_DECIMALS = 18
+PYUSD_DECIMALS = 6
+PYUSD_SYMBOL = "PYUSD"
 SUSDAI_ADDR = Web3.to_checksum_address("0x0B2b2B2076d95dda7817e785989fE353fe955ef9")
 LOAN_ROUTER_ADDR = Web3.to_checksum_address("0x0C2ED170F2bB1DF1a44292Ad621B577b3C9597D1")
 USDAI_INVARIANT_BREACH_THRESHOLD_RAW = Config.get_env_int("USDAI_INVARIANT_BREACH_THRESHOLD_RAW", 100 * 10**18)
@@ -30,10 +33,6 @@ USDAI_PROXY_READ_ABI = [
         "type": "function",
     }
 ]
-
-# Alert thresholds (absolute deviation from 1.0)
-PYUSD_USD_WARN_DEVIATION = Config.get_env_float("PYUSD_USD_WARN_DEVIATION", 0.003)  # 0.30%
-PYUSD_USD_CRITICAL_DEVIATION = Config.get_env_float("PYUSD_USD_CRITICAL_DEVIATION", 0.0075)  # 0.75%
 
 
 def send_breach_alert_once(cache_key, alert_message, severity=AlertSeverity.HIGH):
@@ -103,35 +102,30 @@ def main():
     try:
         # --- 1) USDai Invariant Inputs ---
         with client.batch_requests() as batch:
-            batch.add(usdai.functions.decimals())
             batch.add(usdai.functions.totalSupply())
             batch.add(usdai_read.functions.bridgedSupply())
-            batch.add(pyusd.functions.decimals())
-            batch.add(pyusd.functions.symbol())
             batch.add(pyusd.functions.balanceOf(USDAI_VAULT_ADDR))
-            usdai_decimals, usdai_supply_raw, bridged_supply_raw, pyusd_decimals, pyusd_symbol, pyusd_assets_raw = (
-                client.execute_batch(batch)
-            )
+            usdai_supply_raw, bridged_supply_raw, pyusd_assets_raw = client.execute_batch(batch)
 
-        usdai_supply_fmt = usdai_supply_raw / (10**usdai_decimals)
-        bridged_supply_fmt = bridged_supply_raw / (10**usdai_decimals)
-        pyusd_assets_fmt = pyusd_assets_raw / (10**pyusd_decimals)
-        pyusd_assets_18_raw = pyusd_assets_raw * (10 ** max(usdai_decimals - pyusd_decimals, 0))
+        usdai_supply_fmt = usdai_supply_raw / (10**USDAI_DECIMALS)
+        bridged_supply_fmt = bridged_supply_raw / (10**USDAI_DECIMALS)
+        pyusd_assets_fmt = pyusd_assets_raw / (10**PYUSD_DECIMALS)
+        pyusd_assets_18_raw = pyusd_assets_raw * (10 ** max(USDAI_DECIMALS - PYUSD_DECIMALS, 0))
 
         logger.info("--- USDai Stats ---")
         logger.info("USDai Supply:    $%s", f"{usdai_supply_fmt:,.2f}")
         logger.info("USDai Bridged:   $%s", f"{bridged_supply_fmt:,.2f}")
-        logger.info("%s Assets:    $%s", pyusd_symbol, f"{pyusd_assets_fmt:,.2f}")
+        logger.info("%s Assets:    $%s", PYUSD_SYMBOL, f"{pyusd_assets_fmt:,.2f}")
 
         # Invariant:
         # totalSupply + bridgedSupply <= pyUSD.balanceOf(USDai)  (all in 1e18 scale)
-        lhs_required_backing_raw = usdai_supply_raw + bridged_supply_raw
-        invariant_gap_raw = lhs_required_backing_raw - pyusd_assets_18_raw
-        invariant_gap_fmt = invariant_gap_raw / (10**usdai_decimals)
-        lhs_required_backing_fmt = lhs_required_backing_raw / (10**usdai_decimals)
+        required_backing_raw = usdai_supply_raw + bridged_supply_raw
+        invariant_gap_raw = required_backing_raw - pyusd_assets_18_raw
+        invariant_gap_fmt = invariant_gap_raw / (10**USDAI_DECIMALS)
+        required_backing_fmt = required_backing_raw / (10**USDAI_DECIMALS)
 
-        logger.info("Invariant LHS:   $%s (supply + bridged)", f"{lhs_required_backing_fmt:,.2f}")
-        logger.info("Invariant Gap:   $%s (LHS - pyUSD assets)", f"{invariant_gap_fmt:,.2f}")
+        logger.info("Required Backing: $%s (supply + bridged)", f"{required_backing_fmt:,.2f}")
+        logger.info("Invariant Gap:    $%s (required - pyUSD assets)", f"{invariant_gap_fmt:,.2f}")
 
         cache_key_invariant_breach = f"{PROTOCOL}_backing_invariant_breach"
         if invariant_gap_raw >= USDAI_INVARIANT_BREACH_THRESHOLD_RAW:
@@ -141,58 +135,13 @@ def main():
                 alert_message=(
                     "*USDai Backing Invariant Breach*\n\n"
                     f"Invariant violated by at least {USDAI_INVARIANT_BREACH_THRESHOLD_RAW / 1e18:,.0f} USDai.\n"
-                    f"totalSupply + bridgedSupply: ${lhs_required_backing_fmt:,.2f}\n"
-                    f"{pyusd_symbol} balance in USDai contract: ${pyusd_assets_fmt:,.2f}\n"
-                    f"Excess (LHS - RHS): ${invariant_gap_fmt:,.2f}"
+                    f"totalSupply + bridgedSupply: ${required_backing_fmt:,.2f}\n"
+                    f"{PYUSD_SYMBOL} balance in USDai contract: ${pyusd_assets_fmt:,.2f}\n"
+                    f"Excess (required - assets): ${invariant_gap_fmt:,.2f}"
                 ),
             )
         else:
             clear_breach_state(cache_key_invariant_breach)
-
-        # --- 2) pyUSD / USD Peg ---
-        pyusd_key = f"{Chain.ARBITRUM.network_name}:{PYUSD_TOKEN_ADDR.lower()}"
-        pyusd_price = None
-        try:
-            prices = fetch_prices([pyusd_key])
-            pyusd_price = prices.get(pyusd_key)
-        except Exception as e:
-            logger.error("pyUSD price fetch error: %s", e)
-
-        if pyusd_price is not None:
-            pyusd_price = float(pyusd_price)
-            pyusd_price_deviation = abs(pyusd_price - 1)
-            logger.info("%s / USD:      %s", pyusd_symbol, f"{pyusd_price:.6f}")
-
-            cache_key_peg_warn = f"{PROTOCOL}_pyusd_peg_warn_breach"
-            cache_key_peg_critical = f"{PROTOCOL}_pyusd_peg_critical_breach"
-
-            if pyusd_price_deviation >= PYUSD_USD_CRITICAL_DEVIATION:
-                send_breach_alert_once(
-                    cache_key=cache_key_peg_critical,
-                    severity=AlertSeverity.CRITICAL,
-                    alert_message=(
-                        f"*{pyusd_symbol}/USD Peg Critical*\n\n"
-                        f"{pyusd_symbol}/USD: ${pyusd_price:.6f}\n"
-                        f"Deviation from $1: {pyusd_price_deviation:.3%}"
-                    ),
-                )
-            else:
-                clear_breach_state(cache_key_peg_critical)
-
-            if PYUSD_USD_WARN_DEVIATION <= pyusd_price_deviation < PYUSD_USD_CRITICAL_DEVIATION:
-                send_breach_alert_once(
-                    cache_key=cache_key_peg_warn,
-                    severity=AlertSeverity.HIGH,
-                    alert_message=(
-                        f"*{pyusd_symbol}/USD Peg Alert*\n\n"
-                        f"{pyusd_symbol}/USD: ${pyusd_price:.6f}\n"
-                        f"Deviation from $1: {pyusd_price_deviation:.3%}"
-                    ),
-                )
-            else:
-                clear_breach_state(cache_key_peg_warn)
-        else:
-            logger.warning("No price returned for %s (%s)", pyusd_symbol, pyusd_key)
 
         # --- Loan Monitoring (GPU Loans) ---
         all_loans = get_loan_details(client, SUSDAI_ADDR)
