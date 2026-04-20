@@ -7,7 +7,7 @@ Monitors:
 - Unrealized losses on loan managers — alerts on any non-zero value
 - Strategy allocations (Aave and Sky) — tracks DeFi allocation changes
 - Withdrawal queue vs liquid funds — alerts when pending withdrawals > 80% of liquid funds (Aave + Sky)
-- Pool liquidity — cash, locked liquidity (alert if > $1M), withdrawal queue depth
+- Pool liquidity — cash and withdrawal queue depth
 - Loan collateral risk — weighted risk score based on collateral asset types
 - Collateralization ratio (via syrupGlobals) — alerts when combined ratio drops below 140%
 - Pool Delegate Cover — alerts when delegate cover balance drops to zero
@@ -46,7 +46,6 @@ USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 # USDC has 6 decimals
 USDC_DECIMALS = 6
 ONE_SHARE = 10**USDC_DECIMALS  # 1e6
-LOCKED_LIQUIDITY_THRESHOLD = 1_000_000  # $1M
 
 # --- Cache Keys ---
 CACHE_KEY_PPS = "MAPLE_PPS"
@@ -67,7 +66,6 @@ ABI_ERC20_BALANCE = [
 # --- Thresholds ---
 TVL_CHANGE_THRESHOLD = 0.15  # 15% TVL change alert
 WITHDRAWAL_QUEUE_THRESHOLD = 0.80  # 80% of liquid funds
-QUEUE_DEPTH_THRESHOLD = 20  # Max pending withdrawal requests
 
 
 def get_cache_value(key: str) -> float:
@@ -226,54 +224,49 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
         send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
 
 
-def check_pool_liquidity(client) -> None:
-    """Check pool USDC cash, withdrawal locked liquidity, and queue depth.
+def check_pool_liquidity(client, pool) -> None:
+    """Check pool USDC cash vs pending withdrawal value.
 
-    Alerts when locked liquidity exceeds LOCKED_LIQUIDITY_THRESHOLD ($1M), or when
-    pending withdrawal request count exceeds QUEUE_DEPTH_THRESHOLD.
+    Alerts when pending withdrawal value exceeds available cash (delegate cannot satisfy
+    the queue from idle cash and would need to pull from strategies/loans). Queue size
+    is fetched only when alerting, to add context to the message.
 
     Args:
         client: Web3 client for Ethereum mainnet.
+        pool: syrupUSDC pool contract (for share→asset conversion).
     """
     usdc = client.eth.contract(address=USDC_ADDRESS, abi=ABI_ERC20_BALANCE)
     wm = client.eth.contract(address=WITHDRAWAL_MANAGER, abi=ABI_WITHDRAWAL_MANAGER)
 
     with client.batch_requests() as batch:
         batch.add(usdc.functions.balanceOf(SYRUP_USDC_POOL))
-        batch.add(wm.functions.lockedLiquidity())
-        batch.add(wm.functions.queue())
+        batch.add(wm.functions.totalShares())
 
         responses = client.execute_batch(batch)
-        if len(responses) != 3:
-            raise ValueError(f"Expected 3 responses, got {len(responses)}")
+        if len(responses) != 2:
+            raise ValueError(f"Expected 2 responses, got {len(responses)}")
 
     cash_balance = responses[0] / ONE_SHARE
-    locked_liquidity = responses[1] / ONE_SHARE
-    next_request_id, last_request_id = responses[2]
-    pending_requests = max(0, last_request_id - next_request_id + 1) if last_request_id >= next_request_id else 0
+    pending_shares = responses[1]
+
+    pending_assets = 0.0
+    if pending_shares > 0:
+        pending_assets_raw = client.execute(pool.functions.convertToAssets(pending_shares).call)
+        pending_assets = pending_assets_raw / ONE_SHARE
 
     logger.info(
-        "Pool liquidity — Cash: %s, Locked: %s, Queue depth: %d pending",
+        "Pool liquidity — Cash: %s, Pending: %s",
         format_usd(cash_balance),
-        format_usd(locked_liquidity),
-        pending_requests,
+        format_usd(pending_assets),
     )
 
-    if locked_liquidity > LOCKED_LIQUIDITY_THRESHOLD:
+    if pending_assets > cash_balance:
+        next_request_id, last_request_id = client.execute(wm.functions.queue().call)
+        pending_requests = max(0, last_request_id - next_request_id + 1) if last_request_id >= next_request_id else 0
         message = (
-            f"🚨 *Maple syrupUSDC Locked Liquidity Exceeds Threshold*\n"
-            f"🔒 Locked: {format_usd(locked_liquidity)}\n"
-            f"💵 Cash: {format_usd(cash_balance)}\n"
-            f"⚠️ Locked liquidity exceeds threshold (${LOCKED_LIQUIDITY_THRESHOLD})\n"
-            f"🔗 [syrupUSDC Pool](https://etherscan.io/address/{SYRUP_USDC_POOL})"
-        )
-        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
-
-    if pending_requests > QUEUE_DEPTH_THRESHOLD:
-        message = (
-            f"⚠️ *Maple syrupUSDC High Withdrawal Queue Depth*\n"
-            f"📊 Pending requests: {pending_requests} (threshold: {QUEUE_DEPTH_THRESHOLD})\n"
-            f"💵 Cash: {format_usd(cash_balance)} | Locked: {format_usd(locked_liquidity)}\n"
+            f"*Maple syrupUSDC Pending Withdrawals Exceed Cash*\n"
+            f"💵 Pending: {format_usd(pending_assets)} | Cash: {format_usd(cash_balance)}\n"
+            f"📊 Queue depth: {pending_requests} pending requests\n"
             f"🔗 [WithdrawalManager](https://etherscan.io/address/{WITHDRAWAL_MANAGER})"
         )
         send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
@@ -327,7 +320,7 @@ def main() -> None:
         tvl = check_tvl(client, pool)
         check_unrealized_losses(client)
         check_strategy_and_withdrawal_queue(client, pool)
-        check_pool_liquidity(client)
+        check_pool_liquidity(client, pool)
         check_collateral_risk()
         check_delegate_cover(client)
 
