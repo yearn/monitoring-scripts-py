@@ -27,9 +27,9 @@ class ERC20SupplyDeltaMonitorConfig:
     protocol: str
     chain: Chain
     token_address: str
-    threshold_tokens: Decimal
+    threshold_percent: Decimal
     cache_suffix: str = "large_mints"
-    alert_severity: AlertSeverity = AlertSeverity.MEDIUM
+    alert_severity: AlertSeverity = AlertSeverity.LOW
     alert_label: str = "Large Mint Alert (Supply Delta)"
     monitor_note: str = "This monitor intentionally uses only totalSupply deltas (no event scanning)."
 
@@ -45,10 +45,6 @@ def _format_units(raw_value: int, decimals: int) -> Decimal:
     return Decimal(raw_value) / (Decimal(10) ** decimals)
 
 
-def _cache_key_last_block(config: ERC20SupplyDeltaMonitorConfig) -> str:
-    return f"{config.protocol}_{config.cache_suffix}_last_block"
-
-
 def _cache_key_last_supply(config: ERC20SupplyDeltaMonitorConfig) -> str:
     return f"{config.protocol}_{config.cache_suffix}_last_supply"
 
@@ -62,13 +58,15 @@ def _build_alert_message(
     delta_raw: int,
     decimals: int,
 ) -> str:
-    threshold = config.threshold_tokens
     previous = _format_units(previous_raw, decimals)
     current = _format_units(current_raw, decimals)
     delta = _format_units(delta_raw, decimals)
+    threshold_tokens = _format_units(int(previous_raw * config.threshold_percent), decimals)
+    threshold_percent_display = config.threshold_percent * Decimal(100)
     return (
         f"*{token_symbol} {config.alert_label}*\n\n"
-        f"Threshold: {threshold:,.0f} {token_symbol}\n"
+        f"Threshold: {threshold_percent_display:,.2f}% of totalSupply "
+        f"(~{threshold_tokens:,.2f} {token_symbol} at previous supply)\n"
         f"Supply increase: {delta:,.2f} {token_symbol}\n"
         f"Previous totalSupply: {previous:,.2f}\n"
         f"Current totalSupply: {current:,.2f}\n\n"
@@ -88,14 +86,12 @@ def run_erc20_supply_delta_monitor(config: ERC20SupplyDeltaMonitorConfig) -> Non
             batch.add(token.functions.symbol())
             decimals, token_symbol = client.execute_batch(batch)
 
-        threshold_raw = int(config.threshold_tokens * (Decimal(10) ** int(decimals)))
-
-        latest_block = int(client.eth.block_number)
         current_supply_raw = int(token.functions.totalSupply().call())
         last_supply_cached = _to_int(get_last_value_for_key_from_file(cache_filename, _cache_key_last_supply(config)))
 
         if last_supply_cached > 0:
             delta_raw = current_supply_raw - last_supply_cached
+            threshold_raw = int(last_supply_cached * config.threshold_percent)
             if delta_raw >= threshold_raw:
                 send_alert(
                     Alert(
@@ -113,7 +109,6 @@ def run_erc20_supply_delta_monitor(config: ERC20SupplyDeltaMonitorConfig) -> Non
                 )
 
         write_last_value_to_file(cache_filename, _cache_key_last_supply(config), current_supply_raw)
-        write_last_value_to_file(cache_filename, _cache_key_last_block(config), latest_block)
 
     except Exception as exc:
         logger.error("ERC20 supply-delta monitor failed for %s: %s", config.protocol, exc)
