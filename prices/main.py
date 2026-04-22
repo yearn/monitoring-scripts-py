@@ -1,11 +1,13 @@
 """Depeg monitoring for LRTs and stablecoins.
 
 Uses Redstone fundamental oracles where available, falls back to DefiLlama pricing.
-- Fundamental oracles: any depeg triggers CRITICAL alert
-- DefiLlama pricing: 2%+ depeg triggers CRITICAL alert
+Each asset carries its own depeg threshold so stablecoins can trip tighter than
+LRTs and accruing LRTs can be checked against a per-asset fair value rather than
+a flat 1:1 ETH peg. When the market ratio deviates below ``threshold`` of the
+asset's ``fair_value``, a CRITICAL alert is raised.
 
-LRT alerts are sent to a single "lrt" protocol channel, each identified by token symbol.
-Stablecoin alerts are sent to a "stables" protocol channel.
+LRT alerts are sent to the ``lrt`` protocol channel, each identified by token symbol.
+Stablecoin alerts are sent to the ``stables`` protocol channel.
 """
 
 from dataclasses import dataclass
@@ -26,12 +28,10 @@ logger = get_logger("prices")
 LRT_PROTOCOL = "lrt"
 STABLES_PROTOCOL = "stables"
 
-# Oracle threshold: any meaningful depeg from fundamental oracle is critical
-ORACLE_DEPEG_THRESHOLD = Decimal("0.998")
-# DefiLlama threshold: 2% depeg from market price is critical
-DEFILLAMA_DEPEG_THRESHOLD = Decimal("0.98")
+# Default DefiLlama threshold: alert when market ratio deviates more than 2% below fair value
+DEFAULT_DEFILLAMA_THRESHOLD = Decimal("0.98")
 
-# Reference tokens for LRT/BTC ratio computation via DefiLlama
+# Reference tokens for LRT/ETH ratio computation via DefiLlama
 WETH_KEY = "ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
 AGGREGATOR_V3_ABI = load_abi("prices/abi/AggregatorV3.json")
@@ -48,16 +48,26 @@ class OracleAsset:
     chain: Chain
     decimals: int
     protocol: str
+    # Asset-specific depeg threshold. Matches the Tenderly alert documented in README.
+    threshold: Decimal = Decimal("0.998")
 
 
 @dataclass(frozen=True)
 class DefiLlamaAsset:
-    """Asset monitored via DefiLlama market price."""
+    """Asset monitored via DefiLlama market price.
+
+    ``fair_value`` is the expected ratio vs the ``underlying`` reference (ETH or USD).
+    Accruing LRTs trade above 1 ETH, so using a flat 1.0 baseline would miss real depegs
+    until the price crashed below parity. Per-asset fair values let us catch smaller
+    deviations from the accrued value.
+    """
 
     symbol: str
     defillama_key: str
     underlying: str  # "ETH" or "USD"
     protocol: str
+    fair_value: Decimal = Decimal("1.0")
+    threshold: Decimal = DEFAULT_DEFILLAMA_THRESHOLD
 
 
 # ---------------------------------------------------------------------------
@@ -73,36 +83,53 @@ ORACLE_ASSETS: list[OracleAsset] = [
         chain=Chain.MAINNET,
         decimals=8,
         protocol=LRT_PROTOCOL,
+        threshold=Decimal("0.998"),
     ),
     # cUSD/USD fundamental - Redstone push
-    # Tenderly alert: 316f440e-457b-4cfa-a69e-f7f54230bf44
+    # Tenderly alert 316f440e-457b-4cfa-a69e-f7f54230bf44 fires at latestAnswer < 0.9998.
     OracleAsset(
         symbol="cUSD",
         oracle_address="0x9a5a3c3ed0361505cc1d4e824b3854de5724434a",
         chain=Chain.MAINNET,
         decimals=8,
         protocol=STABLES_PROTOCOL,
+        threshold=Decimal("0.9998"),
     ),
 ]
 
 # ---------------------------------------------------------------------------
-# DefiLlama-monitored LRT assets (market price vs ETH)
-# No on-chain fundamental push oracle available on Ethereum mainnet.
-# Redstone provides off-chain fundamental feeds for weETH, ezETH, rsETH,
-# pufETH but these are pull-model (not persistent on-chain contracts).
+# DefiLlama-monitored LRT assets (market price vs ETH).
+#
+# No on-chain fundamental push oracle available on Ethereum mainnet. Redstone
+# provides off-chain fundamental feeds for weETH/ezETH/rsETH/pufETH but these
+# are pull-model (not persistent on-chain contracts).
+#
+# ``fair_value`` is a conservative floor under the current Redstone fundamental
+# (~1.07-1.09 ETH for accruing LRTs). Using 1.0 would mask multi-percent depegs
+# from the accrued value; keeping it slightly under the real fundamental avoids
+# false alerts from bumpy DefiLlama pricing while still catching real deviations.
 # ---------------------------------------------------------------------------
 DEFILLAMA_LRTS: list[DefiLlamaAsset] = [
-    DefiLlamaAsset("weETH", "ethereum:0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee", "ETH", LRT_PROTOCOL),
-    DefiLlamaAsset("ezETH", "ethereum:0xbf5495Efe5DB9ce00f80364C8B423567e58d2110", "ETH", LRT_PROTOCOL),
-    DefiLlamaAsset("rsETH", "ethereum:0xA1290d69c65A6Fe4DF752f95823Fae25cB99e5A7", "ETH", LRT_PROTOCOL),
-    DefiLlamaAsset("pufETH", "ethereum:0xD9A442856C234a39a81a089C06451EBAa4306a72", "ETH", LRT_PROTOCOL),
+    DefiLlamaAsset(
+        "weETH", "ethereum:0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee", "ETH", LRT_PROTOCOL, Decimal("1.07")
+    ),
+    DefiLlamaAsset(
+        "ezETH", "ethereum:0xbf5495Efe5DB9ce00f80364C8B423567e58d2110", "ETH", LRT_PROTOCOL, Decimal("1.06")
+    ),
+    DefiLlamaAsset(
+        "rsETH", "ethereum:0xA1290d69c65A6Fe4DF752f95823Fae25cB99e5A7", "ETH", LRT_PROTOCOL, Decimal("1.05")
+    ),
+    DefiLlamaAsset(
+        "pufETH", "ethereum:0xD9A442856C234a39a81a089C06451EBAa4306a72", "ETH", LRT_PROTOCOL, Decimal("1.05")
+    ),
+    # No documented off-chain fundamental feed; use 1.0 ETH as a catastrophic-depeg floor.
     DefiLlamaAsset("osETH", "ethereum:0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38", "ETH", LRT_PROTOCOL),
     DefiLlamaAsset("rswETH", "ethereum:0xFAe103DC9cf190eD75350761e95403b7b8aFa6c0", "ETH", LRT_PROTOCOL),
     DefiLlamaAsset("mETH", "ethereum:0xd5F7838F5C461fefF7FE49ea5ebaF7728bB0ADfa", "ETH", LRT_PROTOCOL),
 ]
 
 # ---------------------------------------------------------------------------
-# DefiLlama-monitored stablecoins (market price vs $1 USD)
+# DefiLlama-monitored stablecoins (market price vs $1 USD).
 # Blue-chip stables (USDC, USDT, DAI) are excluded; they are Tier 1 and
 # extremely unlikely to depeg. Focus on higher-risk stables.
 # ---------------------------------------------------------------------------
@@ -110,7 +137,15 @@ DEFILLAMA_STABLES: list[DefiLlamaAsset] = [
     DefiLlamaAsset("FDUSD", "ethereum:0xc5f0f7b66764F6ec8C8Dff7BA683102295E16409", "USD", STABLES_PROTOCOL),
     DefiLlamaAsset("deUSD", "ethereum:0x15700B564Ca08D9439C58cA5053166E8317aa138", "USD", STABLES_PROTOCOL),
     DefiLlamaAsset("USD0", "ethereum:0x73A15FeD60Bf67631dC6cd7Bc5B6e8da8190aCF5", "USD", STABLES_PROTOCOL),
-    DefiLlamaAsset("USD0++", "ethereum:0x35D8949372D46B7a3D5A56006AE77B215fc69bC0", "USD", STABLES_PROTOCOL),
+    # USD0++ is a ~4-year locked bond that legitimately trades at a discount vs USD0.
+    # Use a looser floor so we only alert on catastrophic dislocation, not normal discount.
+    DefiLlamaAsset(
+        "USD0++",
+        "ethereum:0x35D8949372D46B7a3D5A56006AE77B215fc69bC0",
+        "USD",
+        STABLES_PROTOCOL,
+        threshold=Decimal("0.90"),
+    ),
     DefiLlamaAsset("USDe", "ethereum:0x4c9EDD5852cd905f086C759E8383e09bff1E68B3", "USD", STABLES_PROTOCOL),
 ]
 
@@ -137,26 +172,27 @@ def check_oracle_assets() -> None:
         logger.error("Expected %d oracle responses, got %d", len(mainnet_assets), len(responses))
         return
 
-    depegged_lrt: list[tuple[str, Decimal]] = []
-    depegged_stables: list[tuple[str, Decimal]] = []
+    depegged_lrt: list[tuple[str, Decimal, Decimal]] = []
+    depegged_stables: list[tuple[str, Decimal, Decimal]] = []
 
     for asset, result in zip(mainnet_assets, responses):
         try:
             # latestRoundData returns (roundId, answer, startedAt, updatedAt, answeredInRound)
             answer = Decimal(str(result[1])) / Decimal(10**asset.decimals)
-            logger.info("%s oracle price: %s (threshold: %s)", asset.symbol, answer, ORACLE_DEPEG_THRESHOLD)
+            logger.info("%s oracle price: %s (threshold: %s)", asset.symbol, answer, asset.threshold)
 
-            if answer < ORACLE_DEPEG_THRESHOLD:
+            if answer < asset.threshold:
+                entry = (asset.symbol, answer, asset.threshold)
                 if asset.protocol == LRT_PROTOCOL:
-                    depegged_lrt.append((asset.symbol, answer))
+                    depegged_lrt.append(entry)
                 else:
-                    depegged_stables.append((asset.symbol, answer))
+                    depegged_stables.append(entry)
         except Exception as exc:
             logger.error("Failed to parse oracle response for %s: %s", asset.symbol, exc)
             send_alert(Alert(AlertSeverity.MEDIUM, f"Oracle parse failed for {asset.symbol}: {exc}", asset.protocol))
 
-    _send_depeg_alerts(depegged_lrt, LRT_PROTOCOL, "Oracle", ORACLE_DEPEG_THRESHOLD)
-    _send_depeg_alerts(depegged_stables, STABLES_PROTOCOL, "Oracle", ORACLE_DEPEG_THRESHOLD)
+    _send_depeg_alerts(depegged_lrt, LRT_PROTOCOL, "Oracle")
+    _send_depeg_alerts(depegged_stables, STABLES_PROTOCOL, "Oracle")
 
 
 def check_defillama_assets() -> None:
@@ -181,38 +217,62 @@ def check_defillama_assets() -> None:
         send_alert(Alert(AlertSeverity.MEDIUM, "Missing ETH reference price from DefiLlama", LRT_PROTOCOL))
         return
 
-    depegged_lrt: list[tuple[str, Decimal]] = []
-    depegged_stables: list[tuple[str, Decimal]] = []
+    depegged_lrt: list[tuple[str, Decimal, Decimal]] = []
+    depegged_stables: list[tuple[str, Decimal, Decimal]] = []
+    missing_by_protocol: dict[str, list[str]] = {}
 
     for asset in all_assets:
         price = prices.get(asset.defillama_key)
         if price is None:
             logger.warning("No price returned for %s (%s)", asset.symbol, asset.defillama_key)
+            missing_by_protocol.setdefault(asset.protocol, []).append(asset.symbol)
             continue
 
         if asset.underlying == "ETH":
-            ratio = price / eth_price
+            market_ratio = price / eth_price
         else:
-            ratio = price  # Already in USD, peg is $1
+            market_ratio = price  # Already in USD, peg is $1
+        # Normalize against the asset's fair value so accruing LRTs are checked against
+        # their accrued rate rather than a flat 1:1 peg.
+        deviation = market_ratio / asset.fair_value
 
-        logger.info("%s price: $%s, ratio vs %s: %s", asset.symbol, price, asset.underlying, ratio)
+        logger.info(
+            "%s price: $%s, %s ratio: %.4f, fair: %s, deviation: %.4f (threshold: %s)",
+            asset.symbol,
+            price,
+            asset.underlying,
+            market_ratio,
+            asset.fair_value,
+            deviation,
+            asset.threshold,
+        )
 
-        if ratio < DEFILLAMA_DEPEG_THRESHOLD:
+        if deviation < asset.threshold:
+            entry = (asset.symbol, deviation, asset.threshold)
             if asset.protocol == LRT_PROTOCOL:
-                depegged_lrt.append((asset.symbol, ratio))
+                depegged_lrt.append(entry)
             else:
-                depegged_stables.append((asset.symbol, ratio))
+                depegged_stables.append(entry)
 
-    _send_depeg_alerts(depegged_lrt, LRT_PROTOCOL, "DefiLlama", DEFILLAMA_DEPEG_THRESHOLD)
-    _send_depeg_alerts(depegged_stables, STABLES_PROTOCOL, "DefiLlama", DEFILLAMA_DEPEG_THRESHOLD)
+    for protocol, symbols in missing_by_protocol.items():
+        send_alert(
+            Alert(
+                AlertSeverity.MEDIUM,
+                f"DefiLlama returned no price for: {', '.join(symbols)} — depeg coverage degraded",
+                protocol,
+            )
+        )
+
+    _send_depeg_alerts(depegged_lrt, LRT_PROTOCOL, "DefiLlama")
+    _send_depeg_alerts(depegged_stables, STABLES_PROTOCOL, "DefiLlama")
 
 
-def _send_depeg_alerts(depegged: list[tuple[str, Decimal]], protocol: str, source: str, threshold: Decimal) -> None:
-    """Send CRITICAL alert listing all depegged assets."""
+def _send_depeg_alerts(depegged: list[tuple[str, Decimal, Decimal]], protocol: str, source: str) -> None:
+    """Send CRITICAL alert listing all depegged assets with their per-asset thresholds."""
     if not depegged:
         return
-    lines = [f"*{symbol}*: {value:.4f}" for symbol, value in depegged]
-    message = f"Depeg detected ({source}, below {threshold}):\n" + "\n".join(lines)
+    lines = [f"*{symbol}*: {value:.4f} (threshold {threshold})" for symbol, value, threshold in depegged]
+    message = f"Depeg detected ({source}):\n" + "\n".join(lines)
     send_alert(Alert(AlertSeverity.CRITICAL, message, protocol))
 
 
