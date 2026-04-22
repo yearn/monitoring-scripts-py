@@ -6,6 +6,8 @@ This folder contains monitoring scripts for the Infinifi protocol.
 
 - `main.py`: Monitors protocol reserves, backing, and liquid USDC reserves.
   Run this script hourly using github actions.
+- `large_mints.py`: Monitors large iUSD supply increases from `totalSupply` deltas only.
+  Run this script hourly using github actions.
 
 [Risk Score Report](https://github.com/yearn/risk-score/blob/master/reports/report/infinifi.md)
 
@@ -19,6 +21,14 @@ This folder contains monitoring scripts for the Infinifi protocol.
 - **Farm Allocation Shift**: Alert if any farm allocation ratio (`farm assets / total TVL`) changes by more than `FARM_RATIO_CHANGE_ALERT_THRESHOLD` versus cached ratio. Farms below 1% of total TVL are excluded.
 - **Farm Activation**: Alert if a farm previously at `0` cached ratio moves above `FARM_RATIO_ACTIVATION_ALERT_THRESHOLD` of total TVL.
 - **Junior TVL Below Risky Exposure**: Alert if junior TVL (locked iUSD) covers less than 50% of risky farm TVL. Risky farms are all farms NOT in the `SAFE_FARM_IDENTIFIERS` whitelist.
+
+## Large Mint Monitoring (No Event Scanning)
+
+`large_mints.py` intentionally does **not** scan events.
+
+It compares cached `totalSupply` deltas and alerts when the increase is above:
+
+- `IUSD_LARGE_MINT_THRESHOLD` (default: `100000` iUSD)
 
 ### Emergency dispatch
 

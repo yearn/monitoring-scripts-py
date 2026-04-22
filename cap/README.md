@@ -21,3 +21,11 @@ It monitors withdrawable liquidity for the CAP protocol's cUSD contract [`0xcCcc
 3. **Sums normalized values** across all assets
 4. **Sends Telegram alert** if total withdrawable liquidity falls below [defined threshold](./liquidity.py#L8) telegram alert is sent
 5. **RedStone Price Feed for cUSD_FUNDAMENTAL** if the value falls below 99980000, telegram alert is sent. [Tenderly alert](https://dashboard.tenderly.co/yearn/sam/alerts/rules/316f440e-457b-4cfa-a69e-f7f54230bf44)
+
+## Large Mint Monitoring (No Event Scanning)
+
+The script [large_mints.py](./large_mints.py) is run [hourly by Github actions](../.github/workflows/hourly.yml).
+
+It intentionally does **not** scan events. Instead, it compares cached `totalSupply` values and alerts when the increase is above:
+
+- `CUSD_LARGE_MINT_THRESHOLD` (default: `100000` cUSD)
