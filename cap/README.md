@@ -28,4 +28,4 @@ The script [large_mints.py](./large_mints.py) is run [hourly by Github actions](
 
 It intentionally does **not** scan events. Instead, it compares cached `totalSupply` values and alerts when the increase is above:
 
-- `CUSD_LARGE_MINT_THRESHOLD` (default: `100000` cUSD)
+- `CUSD_LARGE_MINT_THRESHOLD_PERCENT` (default: `0.05`, i.e. `5%` of previous `totalSupply`)

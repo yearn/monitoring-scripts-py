@@ -28,7 +28,7 @@ This folder contains monitoring scripts for the Infinifi protocol.
 
 It compares cached `totalSupply` deltas and alerts when the increase is above:
 
-- `IUSD_LARGE_MINT_THRESHOLD` (default: `100000` iUSD)
+- `IUSD_LARGE_MINT_THRESHOLD_PERCENT` (default: `0.05`, i.e. `5%` of previous `totalSupply`)
 
 ### Emergency dispatch
 

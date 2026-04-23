@@ -20,7 +20,7 @@ logger = get_logger(f"{PROTOCOL}.large_mints")
 
 CUSD_TOKEN_ADDR = Web3.to_checksum_address("0xcCcc62962d17b8914c62D74FfB843d73B2a3cccC")
 
-MINT_THRESHOLD_TOKENS = Decimal(Config.get_env("CUSD_LARGE_MINT_THRESHOLD", "100000"))
+MINT_THRESHOLD_PERCENT = Decimal(Config.get_env("CUSD_LARGE_MINT_THRESHOLD_PERCENT", "0.05"))
 
 CACHE_KEY_LAST_SUPPLY = f"{PROTOCOL}_large_mints_last_supply"
 
@@ -40,16 +40,19 @@ def _send_large_supply_increase_alert(delta_raw: int, previous_raw: int, current
     delta = _format_units(delta_raw, decimals)
     previous = _format_units(previous_raw, decimals)
     current = _format_units(current_raw, decimals)
+    threshold_tokens = _format_units(int(previous_raw * MINT_THRESHOLD_PERCENT), decimals)
+    threshold_percent_display = MINT_THRESHOLD_PERCENT * Decimal(100)
 
     msg = (
         "*cUSD Large Mint Alert (Supply Delta)*\n\n"
-        f"Threshold: {MINT_THRESHOLD_TOKENS:,.0f} cUSD\n"
+        f"Threshold: {threshold_percent_display:,.2f}% of totalSupply "
+        f"(~{threshold_tokens:,.2f} cUSD at previous supply)\n"
         f"Supply increase: {delta:,.2f} cUSD\n"
         f"Previous totalSupply: {previous:,.2f}\n"
         f"Current totalSupply: {current:,.2f}\n\n"
         "This monitor intentionally uses only totalSupply deltas (no event scanning)."
     )
-    send_alert(Alert(AlertSeverity.MEDIUM, msg, PROTOCOL))
+    send_alert(Alert(AlertSeverity.LOW, msg, PROTOCOL))
 
 
 def main() -> None:
@@ -64,12 +67,12 @@ def main() -> None:
             decimals, current_supply_raw = client.execute_batch(batch)
 
         decimals = int(decimals)
-        threshold_raw = int(MINT_THRESHOLD_TOKENS * (Decimal(10) ** decimals))
         current_supply_raw = int(current_supply_raw)
 
         last_supply_cached = _to_int(get_last_value_for_key_from_file(cache_filename, CACHE_KEY_LAST_SUPPLY))
         if last_supply_cached > 0:
             delta_raw = current_supply_raw - last_supply_cached
+            threshold_raw = int(last_supply_cached * MINT_THRESHOLD_PERCENT)
             if delta_raw >= threshold_raw:
                 _send_large_supply_increase_alert(
                     delta_raw=delta_raw,
@@ -82,7 +85,7 @@ def main() -> None:
 
     except Exception as exc:
         logger.error("cUSD large mint monitoring failed: %s", exc)
-        send_alert(Alert(AlertSeverity.MEDIUM, f"cUSD large mint monitor failed: {exc}", PROTOCOL), plain_text=True)
+        send_alert(Alert(AlertSeverity.LOW, f"cUSD large mint monitor failed: {exc}", PROTOCOL), plain_text=True)
 
 
 if __name__ == "__main__":
