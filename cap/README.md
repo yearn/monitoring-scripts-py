@@ -24,7 +24,7 @@ It monitors withdrawable liquidity for the CAP protocol's cUSD contract [`0xcCcc
 
 ## Large Mint Monitoring (No Event Scanning)
 
-The script [large_mints.py](./large_mints.py) is run [hourly by Github actions](../.github/workflows/hourly.yml).
+Large mint monitoring is integrated into [liquidity.py](./liquidity.py).
 
 It intentionally does **not** scan events. Instead, it compares cached `totalSupply` values and alerts when the increase is above:
 

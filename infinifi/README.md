@@ -6,8 +6,6 @@ This folder contains monitoring scripts for the Infinifi protocol.
 
 - `main.py`: Monitors protocol reserves, backing, and liquid USDC reserves.
   Run this script hourly using github actions.
-- `large_mints.py`: Monitors large iUSD supply increases from `totalSupply` deltas only.
-  Run this script hourly using github actions.
 
 [Risk Score Report](https://github.com/yearn/risk-score/blob/master/reports/report/infinifi.md)
 
@@ -24,7 +22,7 @@ This folder contains monitoring scripts for the Infinifi protocol.
 
 ## Large Mint Monitoring (No Event Scanning)
 
-`large_mints.py` intentionally does **not** scan events.
+`main.py` includes large iUSD mint monitoring and intentionally does **not** scan events.
 
 It compares cached `totalSupply` deltas and alerts when the increase is above:
 
