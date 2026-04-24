@@ -62,7 +62,7 @@ VAULTS_BY_CHAIN = {
         ["Seamless/Gauntlet USDC", "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738", 2],
         ["Seamless/Gauntlet cbBTC", "0x5a47C803488FE2BB0A0EAaf346b420e4dF22F3C7", 2],
         ["Yearn OG WETH", "0x1D795E29044A62Da42D927c4b179269139A28A6B", 2],
-        ["Yearn OG USDC", "0xef417a2512C5a41f69AE4e021648b69a7CdE5D03", 2],
+        # ["Yearn OG USDC", "0xef417a2512C5a41f69AE4e021648b69a7CdE5D03", 2],
         [
             "Moonwell Frontier cbBTC",
             "0x543257eF2161176D7C8cD90BA65C2d4CaEF5a796",
