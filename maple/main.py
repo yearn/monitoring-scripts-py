@@ -216,12 +216,12 @@ def check_strategy_and_withdrawal_queue(client, pool) -> None:
     if liquid_funds > 0 and pending_assets / liquid_funds > WITHDRAWAL_QUEUE_THRESHOLD:
         ratio = pending_assets / liquid_funds
         message = (
-            f"🚨 *Maple syrupUSDC Withdrawal Queue Alert*\n"
+            f"*Maple syrupUSDC Withdrawal Queue Alert*\n"
             f"📊 Pending withdrawals: {format_usd(pending_assets)} ({ratio:.1%} of liquid funds)\n"
             f"💧 Liquid funds: {format_usd(liquid_funds)} (Aave: {format_usd(aave_assets)}, Sky: {format_usd(sky_assets)})\n"
             f"🔗 [WithdrawalManager](https://etherscan.io/address/{WITHDRAWAL_MANAGER})"
         )
-        send_alert(Alert(AlertSeverity.MEDIUM, message, PROTOCOL))
+        send_alert(Alert(AlertSeverity.LOW, message, PROTOCOL))
 
 
 def check_pool_liquidity(client, pool) -> None:
