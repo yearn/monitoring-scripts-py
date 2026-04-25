@@ -11,7 +11,7 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts. Join
 - [Cap](./cap/README.md)
 - [Compound V3](./compound/README.md)
 - [Ethena](./ethena/README.md)
-- [Euler](./euler/README.md)
+- [Euler](./euler/README.md) — _monitoring disabled_
 - [Fluid](./fluid/README.md)
 - [Infinifi](./infinifi/README.md)
 - [Lido](./lido/README.md)
@@ -21,12 +21,12 @@ Monitoring scripts for DeFi protocols to track key metrics and send alerts. Join
 - [Moonwell](./moonwell/README.md)
 - [Morpho](./morpho/README.md)
 - [Pendle](./pendle/README.md)
-- [Resolv](./resolv/README.md)
+- [Resolv](./resolv/README.md) — _monitoring disabled_
 - [RTokens - ETH+](./rtoken/README.md)
-- [Silo](./silo/README.md)
+- [Silo](./silo/README.md) — _monitoring disabled_
 - [Spark](./spark/README.md)
 - [Strata](./strata/README.md)
-- [Stargate](./stargate/README.md)
+- [Stargate](./stargate/README.md) — _monitoring disabled_
 - [USD0 - Usual Money](./usd0/README.md)
 - [USDAI](./usdai/README.md)
 - [USTB - Superstate](./ustb/README.md)
