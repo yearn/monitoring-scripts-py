@@ -124,6 +124,12 @@ ALL_SAFE_ADDRESSES = [
         "thBILL minter role. Markets used on Morpho Arbitrum",
     ],  # thBILL minter role
     [
+        "LRT",
+        "mainnet",
+        "0x9F6e831c8F8939DC0C830C6e492e7cEf4f9C2F5f",
+        "tBTC bridge owner multisig. aka, Council Multisig",
+    ],  # tBTC bridge owner multisig (Council Multisig)
+    [
         "USDAI",
         "arbitrum-main",
         "0xF223F8d92465CfC303B3395fA3A25bfaE02AED51",
