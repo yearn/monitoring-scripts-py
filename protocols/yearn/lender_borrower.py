@@ -261,7 +261,10 @@ def aave_borrow_apr_wad(reserve_data: tuple[Any, ...]) -> int:
     """Return an Aave-compatible reserve's variable borrow APR in WAD."""
     if len(reserve_data) < 5:
         raise ValueError("Aave reserve data is missing the variable borrow rate")
-    return int(reserve_data[4]) // RAY_TO_WAD
+    rate_wad = int(reserve_data[4]) // RAY_TO_WAD
+    if rate_wad <= 0:
+        raise ValueError("Aave-compatible pool returned a non-positive variable borrow rate")
+    return rate_wad
 
 
 def _divide_to_zero(numerator: int, denominator: int) -> int:

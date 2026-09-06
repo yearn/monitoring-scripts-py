@@ -67,6 +67,11 @@ def test_aave_borrow_apr_converts_ray_to_wad() -> None:
     assert aave_borrow_apr_wad(reserve_data) == reserve_data[4] // RAY_TO_WAD
 
 
+def test_aave_borrow_apr_rejects_zero_rate() -> None:
+    with pytest.raises(ValueError, match="non-positive variable borrow rate"):
+        aave_borrow_apr_wad((0, 0, 0, 0, 0))
+
+
 def test_accumulator_config_targets_underlying_borrower() -> None:
     config = STRATEGIES[1]
     assert config.address == "0x13f6Cb609959a43c3bE29407766A683b42e26D28"
