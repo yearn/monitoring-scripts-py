@@ -478,8 +478,8 @@ def build_report(summary: str, detail: str, ctx: ReportContext, risk_tag: str = 
     """Assemble the full markdown gist body.
 
     Sections: metadata header, the Telegram-visible summary (so the gist is
-    self-contained), the deterministic call flow, optional protocol context,
-    a deterministic address reference, and the LLM's analysis.
+    self-contained), the LLM's analysis, the deterministic call flow, optional
+    protocol context, and a deterministic address reference.
 
     Args:
         summary: The authoritative TLDR, risk tag already stripped by the caller.
@@ -499,6 +499,8 @@ def build_report(summary: str, detail: str, ctx: ReportContext, risk_tag: str = 
         sections.append(metadata)
     if summary:
         sections.append(f"## Summary\n\n{summary}")
+    if detail:
+        sections.append(f"## Analysis\n\n{_REDUNDANT_ANALYSIS_HEADING_RE.sub('', detail)}")
     call_flow = format_call_flow(ctx)
     if call_flow:
         sections.append(f"## Call Flow\n\n{call_flow}")
@@ -507,6 +509,4 @@ def build_report(summary: str, detail: str, ctx: ReportContext, risk_tag: str = 
     reference = format_reference_table(ctx)
     if reference:
         sections.append(f"## Reference\n\n{reference}")
-    if detail:
-        sections.append(f"## Analysis\n\n{_REDUNDANT_ANALYSIS_HEADING_RE.sub('', detail)}")
     return "\n\n".join(sections)
