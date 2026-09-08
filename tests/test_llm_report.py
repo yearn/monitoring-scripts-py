@@ -362,17 +362,17 @@ class TestReferenceTable(unittest.TestCase):
 class TestBuildReport(unittest.TestCase):
     def test_sections_in_order(self) -> None:
         report = build_report("Registers a type-2 farm.", "Long analysis.", _add_farms_ctx(), "MEDIUM")
-        self.assertLess(report.index("## Summary"), report.index("## Call Flow"))
+        self.assertLess(report.index("## Summary"), report.index("## Analysis"))
+        self.assertLess(report.index("## Analysis"), report.index("## Call Flow"))
         self.assertLess(report.index("## Call Flow"), report.index("## Reference"))
-        self.assertLess(report.index("## Reference"), report.index("## Analysis"))
 
-    def test_protocol_context_is_deterministic_section_before_analysis(self) -> None:
+    def test_protocol_context_is_deterministic_section_after_call_flow(self) -> None:
         ctx = _add_farms_ctx(protocol_context="- **Farm:** New Silver 2 Senior")
         report = build_report("Updates the rate.", "Long analysis.", ctx, "LOW")
         self.assertIn("## Protocol Context\n\n- **Farm:** New Silver 2 Senior", report)
+        self.assertLess(report.index("## Analysis"), report.index("## Call Flow"))
         self.assertLess(report.index("## Call Flow"), report.index("## Protocol Context"))
         self.assertLess(report.index("## Protocol Context"), report.index("## Reference"))
-        self.assertLess(report.index("## Reference"), report.index("## Analysis"))
 
     def test_metadata_header(self) -> None:
         report = build_report("Summary.", "Analysis.", _add_farms_ctx(label_address=TIMELOCK), "HIGH")

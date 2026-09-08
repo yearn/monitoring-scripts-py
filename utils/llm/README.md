@@ -349,6 +349,9 @@ The gist is the artifact a reviewer actually opens, so it carries more than the 
 ## Summary
 Registers a new type-2 farm in FarmRegistry. …
 
+## Analysis
+<the LLM detail>
+
 ## Call Flow
 **From:** [`0x4B17…7c32`](https://etherscan.io/address/0x4B17…)
 
@@ -356,12 +359,9 @@ Registers a new type-2 farm in FarmRegistry. …
    - `uint256 _type`: `2`
    - `address[] _farms`:
      - [`0x79e1…971f`](https://etherscan.io/address/0x79e1…)
-
-## Analysis
-<the LLM detail>
 ```
 
-The report also includes a code-generated `## Reference` table before Analysis:
+The report also ends with a code-generated `## Reference` table after Call Flow:
 
 ```markdown
 | Address | Label | Role | Description |
