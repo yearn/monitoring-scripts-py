@@ -368,17 +368,14 @@ protocols:
 
   stables:
     display_name: "Stablecoins"
-    description: "Cross-protocol stablecoin peg, oracle, and large-transfer monitoring"
+    description: "Cross-protocol stablecoin peg and oracle monitoring"
     cadence: "Hourly / Every 10 minutes"
     tasks:
       - protocols/stables/main.py
-      - protocols/stables/dune_large_transfers.py
       - protocols/stables/oracles.py
     monitors:
       - name: "Stablecoin Prices"
         description: "Depeg alerts via DeFiLlama (USDe/sUSDe/iUSD/syrupUSDC/syrupUSDT/USTB thresholds)"
-      - name: "Large Transfers"
-        description: "Dune-backed large transfers >=$5M for cUSD and iUSD"
       - name: "Oracle Health"
         description: "Chainlink staleness, round health, peg deviation, oracle-market divergence; rate-oracle monotonicity/delta"
 
