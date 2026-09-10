@@ -1,4 +1,5 @@
 import importlib.util
+from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
 
@@ -366,6 +367,54 @@ def test_borrower_default_watch_alert_is_medium_and_deduped(monkeypatch: pytest.
     assert "3Jane Borrower Default Watch" in alerts[0].message
     assert "Status: Delinquent (7d)" in alerts[0].message
     assert "Ending balance" in alerts[0].message
+    assert len(cache) == 1
+
+
+def test_borrower_default_watch_dedupe_survives_config_period_change(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A governance change to the grace/delinquency periods must not re-send milestones."""
+    module = load_3jane_module()
+    alerts: list = []
+    cache: dict[str, str] = {}
+    monkeypatch.setattr(module, "send_alert", alerts.append)
+    monkeypatch.setattr(
+        module,
+        "get_last_value_for_key_from_file",
+        lambda _filename, key: cache.get(key, 0),
+    )
+    monkeypatch.setattr(
+        module,
+        "write_last_value_to_file",
+        lambda _filename, key, value: cache.__setitem__(key, str(value)),
+    )
+
+    snapshot = module.BorrowerRepaymentSnapshot(
+        market_id="0x" + "78" * 32,
+        borrower="0x00000000000000000000000000000000000000A3",
+        cycle_id=6,
+        cycle_end=1_700_000_000,
+        amount_due_raw=250_000 * module.ONE_SHARE,
+        ending_balance_raw=1_000_000 * module.ONE_SHARE,
+        credit_raw=2_000_000 * module.ONE_SHARE,
+        default_started=False,
+        repayment_status="Delinquent",
+        default_at=1_700_000_000 + 30 * module.SECONDS_PER_DAY,
+        seconds_to_default=6 * module.SECONDS_PER_DAY,
+        seconds_since_default=0,
+        default_bucket="7d",
+    )
+    module.check_borrower_default_watch_snapshot(snapshot)
+
+    # Governance extends DELINQUENCY_PERIOD by a day: same borrower, same cycle,
+    # same milestone, only default_at moves.
+    module.check_borrower_default_watch_snapshot(
+        replace(
+            snapshot,
+            default_at=snapshot.default_at + module.SECONDS_PER_DAY,
+            seconds_to_default=snapshot.seconds_to_default + module.SECONDS_PER_DAY,
+        )
+    )
+
+    assert len(alerts) == 1
     assert len(cache) == 1
 
 

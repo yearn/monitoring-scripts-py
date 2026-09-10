@@ -454,10 +454,17 @@ def format_utc_timestamp(timestamp: int) -> str:
 
 
 def _borrower_default_cache_key(snapshot: BorrowerRepaymentSnapshot, bucket: str) -> str:
+    """Build the dedupe key for one borrower/cycle/milestone.
+
+    Deliberately excludes default_at: it is derived from the live GRACE_PERIOD
+    and DELINQUENCY_PERIOD config, so including it would invalidate every stored
+    marker whenever governance changes either period and re-send milestones that
+    were already delivered. The cycle id already scopes the key to one obligation.
+    """
     return (
         f"{CACHE_KEY_BORROWER_DEFAULT_WATCH_PREFIX}:"
         f"{snapshot.market_id}:{snapshot.borrower.lower()}:"
-        f"{snapshot.cycle_id}:{snapshot.default_at}:{bucket}"
+        f"{snapshot.cycle_id}:{bucket}"
     )
 
 
